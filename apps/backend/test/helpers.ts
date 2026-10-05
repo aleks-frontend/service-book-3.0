@@ -8,21 +8,17 @@ export const STAFF: NewStaffMember = {
   name: "Test Staff",
 };
 
-export function testApp(options?: Parameters<typeof createApp>[0]) {
-  return createApp(options);
-}
-
 /**
  * A Supertest agent logged in as a freshly seeded staff member. The agent
  * keeps the session cookie, so every later request is authenticated.
  */
-export async function authenticatedAgent(staff: NewStaffMember = STAFF) {
-  const staffMember = await createStaffMember(staff);
-  const agent = request.agent(testApp());
+export async function authenticatedAgent() {
+  const staffMember = await createStaffMember(STAFF);
+  const agent = request.agent(createApp());
 
   const response = await agent
     .post("/api/auth/sign-in/email")
-    .send({ email: staff.email, password: staff.password });
+    .send({ email: STAFF.email, password: STAFF.password });
   if (response.status !== 200) {
     throw new Error(`Test login failed with ${response.status}: ${JSON.stringify(response.body)}`);
   }

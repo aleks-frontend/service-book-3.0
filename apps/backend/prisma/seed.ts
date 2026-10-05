@@ -1,19 +1,17 @@
 import "dotenv/config";
-import { createStaffMember } from "../src/lib/staffMembers.js";
-import { auth } from "../src/lib/auth.js";
+import { createStaffMember, findStaffMemberByEmail } from "../src/lib/staffMembers.js";
 import { prisma } from "../src/lib/prisma.js";
 
 async function seedStaffMember() {
   const email = process.env.SEED_STAFF_EMAIL;
   const password = process.env.SEED_STAFF_PASSWORD;
-  const name = process.env.SEED_STAFF_NAME || "Admin";
+  const name = process.env.SEED_STAFF_NAME || email?.split("@")[0];
 
-  if (!email || !password) {
+  if (!email || !password || !name) {
     throw new Error("SEED_STAFF_EMAIL and SEED_STAFF_PASSWORD must be set to seed a staff member.");
   }
 
-  const ctx = await auth.$context;
-  if (await ctx.internalAdapter.findUserByEmail(email)) {
+  if (await findStaffMemberByEmail(email)) {
     console.log(`Staff member ${email} already exists, skipping.`);
     return;
   }

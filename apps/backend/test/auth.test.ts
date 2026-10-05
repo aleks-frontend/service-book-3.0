@@ -1,11 +1,12 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { createStaffMember } from "../src/lib/staffMembers.js";
-import { STAFF, authenticatedAgent, testApp } from "./helpers.js";
+import { createApp } from "../src/app.js";
+import { STAFF, authenticatedAgent } from "./helpers.js";
 
 describe("API authentication", () => {
   it("rejects an unauthenticated request to a non-auth /api route with 401", async () => {
-    const response = await request(testApp()).get("/api/me");
+    const response = await request(createApp()).get("/api/me");
 
     expect(response.status).toBe(401);
     expect(response.body).toEqual({ error: "Unauthorized" });
@@ -23,13 +24,14 @@ describe("API authentication", () => {
 
 describe("API authentication: staff accounts", () => {
   it("has no public sign-up", async () => {
-    const response = await request(testApp())
+    const response = await request(createApp())
       .post("/api/auth/sign-up/email")
       .send({ email: "stranger@example.com", password: "let-me-in-please", name: "Stranger" });
 
-    expect(response.status).not.toBe(200);
+    expect(response.status).toBe(400);
+    expect(response.body).toMatchObject({ code: "EMAIL_PASSWORD_SIGN_UP_DISABLED" });
 
-    const login = await request(testApp())
+    const login = await request(createApp())
       .post("/api/auth/sign-in/email")
       .send({ email: "stranger@example.com", password: "let-me-in-please" });
     expect(login.status).toBe(401);
@@ -38,7 +40,7 @@ describe("API authentication: staff accounts", () => {
   it("rejects a wrong password", async () => {
     await createStaffMember(STAFF);
 
-    const response = await request(testApp())
+    const response = await request(createApp())
       .post("/api/auth/sign-in/email")
       .send({ email: STAFF.email, password: "wrong-password" });
 
@@ -66,7 +68,7 @@ describe("API authentication: staff accounts", () => {
 
 describe("API authentication: unknown /api paths", () => {
   it("returns 401 for an unknown /api path when unauthenticated", async () => {
-    const response = await request(testApp()).get("/api/does-not-exist");
+    const response = await request(createApp()).get("/api/does-not-exist");
 
     expect(response.status).toBe(401);
   });

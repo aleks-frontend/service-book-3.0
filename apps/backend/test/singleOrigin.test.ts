@@ -2,7 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import request from "supertest";
 import { describe, expect, it } from "vitest";
-import { testApp } from "./helpers.js";
+import { createApp } from "../src/app.js";
 
 const adminPanelDir = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -10,7 +10,7 @@ const adminPanelDir = path.join(
 );
 
 describe("single origin: serving the admin panel", () => {
-  const app = testApp({ adminPanelDir });
+  const app = createApp({ adminPanelDir });
 
   it("serves the admin panel's index.html at the root", async () => {
     const response = await request(app).get("/");

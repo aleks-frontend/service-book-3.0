@@ -7,6 +7,12 @@ export type NewStaffMember = {
   name: string;
 };
 
+export async function findStaffMemberByEmail(email: string): Promise<StaffMember | null> {
+  const ctx = await auth.$context;
+  const found = await ctx.internalAdapter.findUserByEmail(email);
+  return found && { id: found.user.id, name: found.user.name, email: found.user.email };
+}
+
 /**
  * Creates a staff member who can log in with email and password. Sign-up is
  * disabled, so this goes through Better Auth's internal adapter (as in the
@@ -17,13 +23,11 @@ export async function createStaffMember({
   password,
   name,
 }: NewStaffMember): Promise<StaffMember> {
-  const ctx = await auth.$context;
-
-  const existing = await ctx.internalAdapter.findUserByEmail(email);
-  if (existing) {
+  if (await findStaffMemberByEmail(email)) {
     throw new Error(`A staff member with email ${email} already exists.`);
   }
 
+  const ctx = await auth.$context;
   const hashedPassword = await ctx.password.hash(password);
   const user = await ctx.internalAdapter.createUser(
     { email, name, emailVerified: true },
