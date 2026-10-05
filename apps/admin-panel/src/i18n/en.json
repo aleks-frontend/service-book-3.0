@@ -1,0 +1,21 @@
+{
+  "Services": "Services",
+  "Customers": "Customers",
+  "Devices": "Devices",
+  "Actions": "Actions",
+  "Statistics": "Statistics",
+  "Settings": "Settings",
+  "Log in": "Log in",
+  "Log out": "Log out",
+  "Email": "Email",
+  "Password": "Password",
+  "Language": "Language",
+  "Menu": "Menu",
+  "Main navigation": "Main navigation",
+  "This section is coming soon.": "This section is coming soon.",
+  "Enter a valid email address": "Enter a valid email address",
+  "Enter your password": "Enter your password",
+  "Invalid email or password": "Invalid email or password",
+  "Could not reach the server. Please try again.": "Could not reach the server. Please try again.",
+  "Too many login attempts. Wait a few seconds and try again.": "Too many login attempts. Wait a few seconds and try again."
+}

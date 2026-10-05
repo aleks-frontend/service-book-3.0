@@ -1,0 +1,21 @@
+{
+  "Services": "Servisi",
+  "Customers": "Mušterije",
+  "Devices": "Uređaji",
+  "Actions": "Usluge",
+  "Statistics": "Statistika",
+  "Settings": "Podešavanja",
+  "Log in": "Prijavi se",
+  "Log out": "Odjavi se",
+  "Email": "E-mail",
+  "Password": "Lozinka",
+  "Language": "Jezik",
+  "Menu": "Meni",
+  "Main navigation": "Glavna navigacija",
+  "This section is coming soon.": "Ovaj odeljak uskoro stiže.",
+  "Enter a valid email address": "Unesite ispravnu e-mail adresu",
+  "Enter your password": "Unesite lozinku",
+  "Invalid email or password": "Pogrešan e-mail ili lozinka",
+  "Could not reach the server. Please try again.": "Server nije dostupan. Pokušajte ponovo.",
+  "Too many login attempts. Wait a few seconds and try again.": "Previše pokušaja prijave. Sačekajte nekoliko sekundi i pokušajte ponovo."
+}

@@ -1,0 +1,21 @@
+{
+  "Services": "Szervizek",
+  "Customers": "Ügyfelek",
+  "Devices": "Eszközök",
+  "Actions": "Műveletek",
+  "Statistics": "Statisztika",
+  "Settings": "Beállítások",
+  "Log in": "Bejelentkezés",
+  "Log out": "Kijelentkezés",
+  "Email": "E-mail",
+  "Password": "Jelszó",
+  "Language": "Nyelv",
+  "Menu": "Menü",
+  "Main navigation": "Fő navigáció",
+  "This section is coming soon.": "Ez a rész hamarosan elkészül.",
+  "Enter a valid email address": "Adjon meg egy érvényes e-mail-címet",
+  "Enter your password": "Adja meg a jelszavát",
+  "Invalid email or password": "Hibás e-mail-cím vagy jelszó",
+  "Could not reach the server. Please try again.": "A szerver nem érhető el. Próbálja újra.",
+  "Too many login attempts. Wait a few seconds and try again.": "Túl sok bejelentkezési kísérlet. Várjon néhány másodpercet, és próbálja újra."
+}

@@ -1,0 +1,11 @@
+node_modules
+dist
+dist-ssr
+build
+coverage
+package-lock.json
+*.tsbuildinfo
+test-results
+playwright-report
+.agents
+.claude
