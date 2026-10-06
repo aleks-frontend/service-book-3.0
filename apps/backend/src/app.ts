@@ -3,6 +3,7 @@ import express from "express";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./lib/auth.js";
 import { requireAuth } from "./middleware/requireAuth.js";
+import { debugRouter } from "./routes/debug.js";
 import { meRouter } from "./routes/me.js";
 
 export type AppOptions = {
@@ -22,6 +23,7 @@ export function createApp({ adminPanelDir }: AppOptions = {}) {
   // Every /api route other than /api/auth requires a logged-in staff member.
   app.use("/api", requireAuth);
   app.use("/api/me", meRouter);
+  app.use("/api/debug", debugRouter);
 
   // Unknown API paths must never fall through to the admin panel's index.html.
   app.use("/api", (_req, res) => {
