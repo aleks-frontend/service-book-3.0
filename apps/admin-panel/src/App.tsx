@@ -1,8 +1,10 @@
+import type { ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout, NAV_ITEMS } from "./components/AppLayout";
 import { RequireAuth } from "./components/RequireAuth";
 import { LoginPage } from "./app/LoginPage";
+import { CustomersPage } from "./app/CustomersPage";
 import { PlaceholderPage } from "./app/PlaceholderPage";
 
 const queryClient = new QueryClient({
@@ -14,6 +16,11 @@ const queryClient = new QueryClient({
   },
 });
 
+/** Sections built so far; the rest show a placeholder until their ticket lands. */
+const PAGES: Partial<Record<(typeof NAV_ITEMS)[number]["to"], ReactNode>> = {
+  "/customers": <CustomersPage />,
+};
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -24,7 +31,11 @@ function App() {
             <Route element={<AppLayout />}>
               <Route index element={<Navigate to="/services" replace />} />
               {NAV_ITEMS.map(({ to, labelKey }) => (
-                <Route key={to} path={to} element={<PlaceholderPage titleKey={labelKey} />} />
+                <Route
+                  key={to}
+                  path={to}
+                  element={PAGES[to] ?? <PlaceholderPage titleKey={labelKey} />}
+                />
               ))}
             </Route>
           </Route>

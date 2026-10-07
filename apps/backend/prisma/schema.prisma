@@ -72,3 +72,22 @@ model Verification {
   @@index([identifier])
   @@map("verification")
 }
+
+// --- Domain ---
+
+/// A person or business that brings devices in for service (see GLOSSARY.md).
+model Customer {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  phone     String
+  email     String?
+  address   String?
+  facebook  String?
+  /// The record's ID in the old Firebase app; makes re-imports idempotent.
+  legacyId  String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+  @@map("customer")
+}
