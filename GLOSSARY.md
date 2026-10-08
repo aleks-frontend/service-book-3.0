@@ -7,7 +7,7 @@ Back-office tool for a repair shop: it records devices brought in by customers, 
 ### Core
 
 **Service**:
-One customer's visit with one or more devices on a given date, together with the work and sales recorded against it.
+One customer's visit with one or more devices on a given date, together with the work and sales recorded against it (Serbian: servis).
 _Avoid_: Job, ticket, order, repair
 
 **Service number**:
@@ -31,7 +31,7 @@ A device with no owner, used for common models and for devices sold, or for lega
 _Avoid_: Shared device, template device
 
 **Action**:
-An entry in the shop's price list: a type of work with a default price.
+An entry in the shop's price list: a type of work with a default price (Serbian: usluga).
 _Avoid_: Task, operation, price item
 
 ### Money
