@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Loader2 } from "lucide-react";
 import { Button } from "./ui/button";
@@ -29,13 +30,20 @@ export function ConfirmDeleteDialog({
 }: ConfirmDeleteDialogProps) {
   const { t } = useTranslation();
 
+  // The parent clears what it was deleting as soon as the dialog closes; keep
+  // showing the last text so it doesn't go blank while the dialog animates out.
+  const [shown, setShown] = useState({ title, description });
+  if (open && (shown.title !== title || shown.description !== description)) {
+    setShown({ title, description });
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+          <DialogTitle>{shown.title}</DialogTitle>
           <DialogDescription>
-            {description} {t("This cannot be undone.")}
+            {shown.description} {t("This cannot be undone.")}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-2">
