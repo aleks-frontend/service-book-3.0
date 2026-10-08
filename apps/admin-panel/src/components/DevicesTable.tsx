@@ -12,9 +12,13 @@ import {
 import { ArrowDown, ArrowUp, Pencil, Trash2 } from "lucide-react";
 import { deviceLabel, type Device, type SortDir } from "@servicebook/schemas";
 import { formatDate } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
 import { Checkbox } from "./ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
+
+/** Shrinks the checkbox column to the checkbox; the next column's padding spaces it. */
+const SELECT_COLUMN_CLASS = "w-px pr-0";
 
 type DevicesTableProps = {
   devices: Device[];
@@ -167,6 +171,7 @@ export function DevicesTable({
               {headerGroup.headers.map((header) => (
                 <TableHead
                   key={header.id}
+                  className={cn(header.column.id === "select" && SELECT_COLUMN_CLASS)}
                   aria-sort={
                     header.column.getIsSorted()
                       ? header.column.getIsSorted() === "desc"
@@ -206,7 +211,10 @@ export function DevicesTable({
                 }}
               >
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id} className="py-3">
+                  <TableCell
+                    key={cell.id}
+                    className={cn("py-3", cell.column.id === "select" && SELECT_COLUMN_CLASS)}
+                  >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}
