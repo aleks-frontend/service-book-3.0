@@ -4,6 +4,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout, NAV_ITEMS } from "./components/AppLayout";
 import { RequireAuth } from "./components/RequireAuth";
 import { LoginPage } from "./app/LoginPage";
+import { ActionsPage } from "./app/ActionsPage";
 import { CustomersPage } from "./app/CustomersPage";
 import { PlaceholderPage } from "./app/PlaceholderPage";
 
@@ -19,6 +20,7 @@ const queryClient = new QueryClient({
 /** Sections built so far; the rest show a placeholder until their ticket lands. */
 const PAGES: Partial<Record<(typeof NAV_ITEMS)[number]["to"], ReactNode>> = {
   "/customers": <CustomersPage />,
+  "/actions": <ActionsPage />,
 };
 
 function App() {

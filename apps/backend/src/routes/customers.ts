@@ -1,5 +1,4 @@
-import { Router, type Request, type Response } from "express";
-import { z } from "zod";
+import { Router } from "express";
 import {
   customerInputSchema,
   customerListQuerySchema,
@@ -8,38 +7,11 @@ import {
 } from "@servicebook/schemas";
 import { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma.js";
+import { hideLegacyId, idParam, isNotFound, parseBody, sendNotFound } from "../lib/routeHelpers.js";
 
 export const customersRouter = Router();
 
-// The legacy ID is for the import only; staff members never see it.
-const hideLegacyId = { legacyId: true } as const;
-
-function sendNotFound(res: Response) {
-  res.status(404).json({ error: "Customer not found" });
-}
-
-/**
- * The customer id from the path, or null after sending a 404. A malformed id
- * names no customer, so it is a 404 like any unknown id, not a 400.
- */
-function customerId(req: Request, res: Response): string | null {
-  const id = z.string().uuid().safeParse(req.params.id);
-  if (!id.success) sendNotFound(res);
-  return id.success ? id.data : null;
-}
-
-/** The parsed body, or null after sending a 400 with the issue details. */
-function customerInput(req: Request, res: Response) {
-  const parsed = customerInputSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Invalid customer", details: parsed.error.flatten() });
-  }
-  return parsed.success ? parsed.data : null;
-}
-
-function isNotFound(error: unknown) {
-  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025";
-}
+const LABEL = "Customer";
 
 customersRouter.get("/", async (req, res) => {
   const parsed = customerListQuerySchema.safeParse(req.query);
@@ -74,7 +46,7 @@ customersRouter.get("/", async (req, res) => {
 });
 
 customersRouter.post("/", async (req, res) => {
-  const input = customerInput(req, res);
+  const input = parseBody(customerInputSchema, req, res, LABEL);
   if (!input) return;
 
   const customer: Customer = await prisma.customer.create({ data: input, omit: hideLegacyId });
@@ -82,7 +54,7 @@ customersRouter.post("/", async (req, res) => {
 });
 
 customersRouter.get("/:id", async (req, res) => {
-  const id = customerId(req, res);
+  const id = idParam(req, res, LABEL);
   if (!id) return;
 
   const customer: Customer | null = await prisma.customer.findUnique({
@@ -90,7 +62,7 @@ customersRouter.get("/:id", async (req, res) => {
     omit: hideLegacyId,
   });
   if (!customer) {
-    sendNotFound(res);
+    sendNotFound(res, LABEL);
     return;
   }
   res.json(customer);
@@ -98,9 +70,9 @@ customersRouter.get("/:id", async (req, res) => {
 
 // The edit dialog always sends every field, so an update replaces them all.
 customersRouter.put("/:id", async (req, res) => {
-  const id = customerId(req, res);
+  const id = idParam(req, res, LABEL);
   if (!id) return;
-  const input = customerInput(req, res);
+  const input = parseBody(customerInputSchema, req, res, LABEL);
   if (!input) return;
 
   try {
@@ -112,12 +84,12 @@ customersRouter.put("/:id", async (req, res) => {
     res.json(customer);
   } catch (error) {
     if (!isNotFound(error)) throw error;
-    sendNotFound(res);
+    sendNotFound(res, LABEL);
   }
 });
 
 customersRouter.delete("/:id", async (req, res) => {
-  const id = customerId(req, res);
+  const id = idParam(req, res, LABEL);
   if (!id) return;
 
   try {
@@ -125,6 +97,6 @@ customersRouter.delete("/:id", async (req, res) => {
     res.status(204).send();
   } catch (error) {
     if (!isNotFound(error)) throw error;
-    sendNotFound(res);
+    sendNotFound(res, LABEL);
   }
 });
