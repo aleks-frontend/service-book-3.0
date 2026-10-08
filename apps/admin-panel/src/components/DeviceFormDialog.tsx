@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { CustomerPicker } from "./CustomerPicker";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import { Textarea } from "./ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -53,7 +54,13 @@ export function DeviceFormDialog({ open, onOpenChange, device }: DeviceFormDialo
 
   useEffect(() => {
     if (!open) return;
-    reset({ name: device?.name ?? "", ownerId: device?.owner?.id ?? null });
+    reset({
+      manufacturer: device?.manufacturer ?? "",
+      model: device?.model ?? "",
+      serialNumber: device?.serialNumber ?? "",
+      description: device?.description ?? "",
+      ownerId: device?.owner?.id ?? null,
+    });
     setOwner(device?.owner ?? null);
   }, [open, device, reset]);
 
@@ -77,16 +84,40 @@ export function DeviceFormDialog({ open, onOpenChange, device }: DeviceFormDialo
           className="space-y-4"
         >
           <div className="space-y-1.5">
-            <label htmlFor="device-name" className="text-sm font-medium">
-              {t("Name", { context: "device" })} *
+            <label htmlFor="device-manufacturer" className="text-sm font-medium">
+              {t("Manufacturer")}
+            </label>
+            <Input id="device-manufacturer" {...register("manufacturer")} />
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="device-model" className="text-sm font-medium">
+              {t("Model")} *
             </label>
             <Input
-              id="device-name"
-              aria-invalid={!!errors.name}
-              className={cn(errors.name && "border-destructive focus-visible:ring-destructive")}
-              {...register("name")}
+              id="device-model"
+              aria-invalid={!!errors.model}
+              className={cn(errors.model && "border-destructive focus-visible:ring-destructive")}
+              {...register("model")}
             />
-            {errors.name && <p className="text-sm text-destructive">{t("Enter a name")}</p>}
+            {errors.model && <p className="text-sm text-destructive">{t("Enter a model")}</p>}
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="device-serial-number" className="text-sm font-medium">
+              {t("Serial number")}
+            </label>
+            <Input id="device-serial-number" {...register("serialNumber")} />
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="device-description" className="text-sm font-medium">
+              {t("Description")}
+            </label>
+            <Textarea id="device-description" rows={3} {...register("description")} />
+            <p className="text-sm text-muted-foreground">
+              {t("Facts about the device itself, e.g. colour or capacity.")}
+            </p>
           </div>
 
           <div className="space-y-1.5">

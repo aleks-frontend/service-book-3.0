@@ -5,29 +5,40 @@ import {
   getCoreRowModel,
   useReactTable,
   type ColumnDef,
+  type OnChangeFn,
+  type RowSelectionState,
   type SortingState,
 } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp, Pencil, Trash2 } from "lucide-react";
-import type { Device, SortDir } from "@servicebook/schemas";
+import { deviceLabel, type Device, type SortDir } from "@servicebook/schemas";
 import { formatDate } from "@/lib/format";
 import { Button } from "./ui/button";
+import { Checkbox } from "./ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 
 type DevicesTableProps = {
   devices: Device[];
   sortDir: SortDir;
   onSortDirChange: (sortDir: SortDir) => void;
+  /** The checked rows, keyed by device id. */
+  rowSelection: RowSelectionState;
+  onRowSelectionChange: OnChangeFn<RowSelectionState>;
   onOpen: (device: Device) => void;
   onEdit: (device: Device) => void;
   onDelete: (device: Device) => void;
   emptyMessage: string;
 };
 
-/** One page of devices. Paging, search, filters and sorting happen on the server. */
+/**
+ * One page of devices. Paging, search, filters and sorting happen on the
+ * server; the header checkbox selects the rows on this page only.
+ */
 export function DevicesTable({
   devices,
   sortDir,
   onSortDirChange,
+  rowSelection,
+  onRowSelectionChange,
   onOpen,
   onEdit,
   onDelete,
@@ -38,7 +49,29 @@ export function DevicesTable({
   const columns = useMemo<ColumnDef<Device>[]>(
     () => [
       {
-        accessorKey: "name",
+        id: "select",
+        header: ({ table }) => (
+          <Checkbox
+            checked={table.getIsAllPageRowsSelected()}
+            indeterminate={table.getIsSomePageRowsSelected()}
+            onChange={table.getToggleAllPageRowsSelectedHandler()}
+            aria-label={t("Select all on this page")}
+          />
+        ),
+        cell: ({ row }) => (
+          // Keep the row's own click (open the drawer) from firing as well.
+          <div onClick={(event) => event.stopPropagation()}>
+            <Checkbox
+              checked={row.getIsSelected()}
+              onChange={row.getToggleSelectedHandler()}
+              aria-label={t("Select {{name}}", { name: deviceLabel(row.original) })}
+            />
+          </div>
+        ),
+      },
+      {
+        id: "device",
+        accessorFn: deviceLabel,
         header: ({ column }) => {
           const SortIcon = column.getIsSorted() === "desc" ? ArrowDown : ArrowUp;
           return (
@@ -47,7 +80,7 @@ export function DevicesTable({
               className="inline-flex items-center gap-1 hover:text-foreground"
               onClick={() => column.toggleSorting()}
             >
-              {t("Name", { context: "device" })}
+              {t("Device")}
               <SortIcon className="h-3.5 w-3.5" aria-hidden />
             </button>
           );
@@ -107,7 +140,7 @@ export function DevicesTable({
     [t, i18n.language, onEdit, onDelete],
   );
 
-  const sorting: SortingState = [{ id: "name", desc: sortDir === "desc" }];
+  const sorting: SortingState = [{ id: "device", desc: sortDir === "desc" }];
 
   const table = useReactTable({
     data: devices,
@@ -117,7 +150,8 @@ export function DevicesTable({
     manualSorting: true,
     manualPagination: true,
     enableSortingRemoval: false,
-    state: { sorting },
+    state: { sorting, rowSelection },
+    onRowSelectionChange,
     onSortingChange: (updater) => {
       const next = typeof updater === "function" ? updater(sorting) : updater;
       onSortDirChange(next[0]?.desc ? "desc" : "asc");
@@ -161,6 +195,7 @@ export function DevicesTable({
             table.getRowModel().rows.map((row) => (
               <TableRow
                 key={row.id}
+                data-state={row.getIsSelected() ? "selected" : undefined}
                 className="cursor-pointer"
                 tabIndex={0}
                 onClick={() => onOpen(row.original)}

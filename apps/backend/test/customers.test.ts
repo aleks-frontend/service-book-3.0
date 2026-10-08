@@ -155,7 +155,7 @@ describe("customers: update and delete", () => {
     const { body: marko } = await agent.post("/api/customers").send(MARKO);
     const { body: device } = await agent
       .post("/api/devices")
-      .send({ name: "iPhone 12", ownerId: marko.id });
+      .send({ manufacturer: "Apple", model: "iPhone 12", ownerId: marko.id });
 
     const response = await agent.delete(`/api/customers/${marko.id}`);
 

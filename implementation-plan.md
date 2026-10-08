@@ -18,7 +18,7 @@ Vocabulary is in [`GLOSSARY.md`](./GLOSSARY.md), the stack is in [`techstack.md`
   - Fix the device in-use check.
 - A modernised UI built from bakery-mono components:
   - **Services list:** infinite scroll, a table/cards toggle, an "Add" modal, and a `?service=` drawer with Details, Customer report and Log tabs.
-  - **Customers and Devices:** paged tables with history drawers.
+  - **Customers and Devices:** paged tables with history drawers. Devices also support bulk delete.
 
 ### Tickets
 
@@ -58,7 +58,7 @@ This is a summary; the authoritative rules are in #17.
 | Firebase | New model |
 |---|---|
 | `customers/*` | Customer, keeping the legacy ID. Placeholder phones are imported as they are. |
-| `devices/*` | Device. It is owned when used by exactly one customer's services and generic when used by several. `isNewDevice` is kept as a legacy "new device" flag. |
+| `devices/*` | Device. `manufacturer`, `model` and `serialNumber` are copied; `title` becomes the description; the stored `name` is dropped (the label is derived), and names that differ from manufacturer + model are reported. Placeholder manufacturers (e.g. "N/A", "-") are reported. It is owned when used by exactly one customer's services and generic when used by several. `isNewDevice` is kept as imported. |
 | `actions/*` | Action. Numeric names are stringified. |
 | `services/*.customers[0]` / `devices[]` | The service's customer / its attached devices |
 | `services/*.status` | `shipped` → Delivered, `completed` → Completed, `received` → Received; anything else is reported |
@@ -89,7 +89,7 @@ These are roughly in order. Each will get its own spec and tickets.
 2. **Public status page:** a read-only `/s/<publicToken>` page showing status, service lines and the customer report. The QR codes on dispatch notes printed in phase 1 already point here.
 3. **Service photos:** photos on services and log entries, stored in Cloudflare R2, with thumbnails and a lightbox. Photos of damage at intake are the priority.
 4. **Device photos.**
-5. **Device serial numbers** and related extras (still to be discussed).
+5. **Device extras** beyond the serial number, which phase 1 already stores (still to be discussed).
 6. **Barcode/QR camera scanning**.
 7. **Richer status workflows.**
 

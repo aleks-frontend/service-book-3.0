@@ -6,6 +6,7 @@ import {
   type Page,
 } from "@servicebook/schemas";
 import { Prisma } from "../generated/prisma/client.js";
+import { bulkDeleteHandler } from "../lib/bulkDelete.js";
 import { prisma } from "../lib/prisma.js";
 import {
   idParam,
@@ -23,11 +24,26 @@ const LABEL = "Device";
 // What the API shows of a device: the owner's name and phone, never the legacy fields.
 const deviceSelect = {
   id: true,
-  name: true,
+  manufacturer: true,
+  model: true,
+  serialNumber: true,
+  description: true,
   owner: { select: { id: true, name: true, phone: true } },
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.DeviceSelect;
+
+/** Every word must appear in the manufacturer, model or serial number. */
+function searchWhere(search: string): Prisma.DeviceWhereInput[] {
+  return search
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => ({
+      OR: (["manufacturer", "model", "serialNumber"] as const).map((field) => ({
+        [field]: { contains: word, mode: "insensitive" },
+      })),
+    }));
+}
 
 /** The owner id named no customer; reported like any other field error. */
 function sendUnknownOwner(res: Response) {
@@ -43,7 +59,7 @@ devicesRouter.get("/", async (req, res) => {
 
   const { page, pageSize, search, sortDir, ownerId, generic } = parsed.data;
   const where: Prisma.DeviceWhereInput = {
-    ...(search && { name: { contains: search, mode: "insensitive" } }),
+    ...(search && { AND: searchWhere(search) }),
     ...(ownerId && { ownerId }),
     ...(generic && { ownerId: null }),
   };
@@ -51,8 +67,8 @@ devicesRouter.get("/", async (req, res) => {
   const [items, total] = await Promise.all([
     prisma.device.findMany({
       where,
-      // The id tie-break keeps pages stable when names repeat.
-      orderBy: [{ name: sortDir }, { id: "asc" }],
+      // Sorted as the label reads; the id tie-break keeps pages stable when labels repeat.
+      orderBy: [{ manufacturer: sortDir }, { model: sortDir }, { id: "asc" }],
       skip: (page - 1) * pageSize,
       take: pageSize,
       select: deviceSelect,
@@ -76,6 +92,11 @@ devicesRouter.post("/", async (req, res) => {
     sendUnknownOwner(res);
   }
 });
+
+devicesRouter.post(
+  "/bulk-delete",
+  bulkDeleteHandler(LABEL, (id) => prisma.device.delete({ where: { id } })),
+);
 
 devicesRouter.get("/:id", async (req, res) => {
   const id = idParam(req, res, LABEL);

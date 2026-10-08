@@ -1,10 +1,18 @@
 import { z } from "zod";
-import { customerSummarySchema, sortDirSchema } from "./customer.js";
+import { customerSummarySchema } from "./customer.js";
+import { optionalText, sortDirSchema } from "./fields.js";
 import { pageQuerySchema } from "./pagination.js";
 
-/** What staff members enter when creating or editing a device; no owner makes it generic. */
+/**
+ * What staff members enter when creating or editing a device. Only the model
+ * is required: accessories such as cables often have no manufacturer. No owner
+ * makes the device generic.
+ */
 export const deviceInputSchema = z.object({
-  name: z.string().trim().min(1),
+  manufacturer: optionalText,
+  model: z.string().trim().min(1),
+  serialNumber: optionalText,
+  description: optionalText,
   ownerId: z
     .string()
     .uuid()
@@ -17,7 +25,10 @@ export type DeviceInput = z.output<typeof deviceInputSchema>;
 
 export const deviceSchema = z.object({
   id: z.string(),
-  name: z.string(),
+  manufacturer: z.string().nullable(),
+  model: z.string(),
+  serialNumber: z.string().nullable(),
+  description: z.string().nullable(),
   /** Null for a generic device. */
   owner: customerSummarySchema.nullable(),
   createdAt: z.coerce.date(),
@@ -26,9 +37,16 @@ export const deviceSchema = z.object({
 
 export type Device = z.infer<typeof deviceSchema>;
 
+/** How a device is named everywhere, e.g. "Samsung Galaxy S21", or just "USB cable". */
+export function deviceLabel({ manufacturer, model }: Pick<Device, "manufacturer" | "model">) {
+  return manufacturer ? `${manufacturer} ${model}` : model;
+}
+
 /**
- * `GET /api/devices`: search matches the name; `ownerId` keeps one customer's
- * devices and `generic=true` keeps only generic ones. The list is sorted by name.
+ * `GET /api/devices`: every word of the search must match the manufacturer,
+ * model or serial number; `ownerId` keeps one customer's devices and
+ * `generic=true` keeps only generic ones. The list is sorted by manufacturer,
+ * then model.
  */
 export const deviceListQuerySchema = pageQuerySchema
   .extend({

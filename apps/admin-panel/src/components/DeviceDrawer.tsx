@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Loader2, Pencil, Trash2 } from "lucide-react";
-import type { Device } from "@servicebook/schemas";
+import { deviceLabel, type Device } from "@servicebook/schemas";
 import { useDeviceQuery } from "@/lib/devices";
 import { formatDate } from "@/lib/format";
 import { Button } from "./ui/button";
@@ -18,7 +18,7 @@ function Detail({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="space-y-0.5">
       <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</dt>
-      <dd className="break-words text-sm">{children}</dd>
+      <dd className="break-words text-sm">{children ?? "—"}</dd>
     </div>
   );
 }
@@ -31,7 +31,7 @@ export function DeviceDrawer({ deviceId, onClose, onEdit, onDelete }: DeviceDraw
     <Sheet open={deviceId !== null} onOpenChange={(open) => !open && onClose()}>
       <SheetContent>
         <SheetHeader>
-          <SheetTitle>{device?.name ?? t("Device")}</SheetTitle>
+          <SheetTitle>{device ? deviceLabel(device) : t("Device")}</SheetTitle>
           <SheetDescription>{t("Device details")}</SheetDescription>
         </SheetHeader>
 
@@ -42,6 +42,14 @@ export function DeviceDrawer({ deviceId, onClose, onEdit, onDelete }: DeviceDraw
         ) : (
           <>
             <dl className="space-y-4">
+              <Detail label={t("Manufacturer")}>{device.manufacturer}</Detail>
+              <Detail label={t("Model")}>{device.model}</Detail>
+              <Detail label={t("Serial number")}>{device.serialNumber}</Detail>
+              <Detail label={t("Description")}>
+                {device.description && (
+                  <span className="whitespace-pre-line">{device.description}</span>
+                )}
+              </Detail>
               <Detail label={t("Owner")}>
                 {device.owner ? (
                   <>

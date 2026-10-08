@@ -1,7 +1,13 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
-import type { Device, DeviceInput, DeviceListQuery, Page } from "@servicebook/schemas";
+import type {
+  BulkDeleteResult,
+  Device,
+  DeviceInput,
+  DeviceListQuery,
+  Page,
+} from "@servicebook/schemas";
 import { request, toSearchParams } from "./http";
 
 export const deviceKeys = {
@@ -56,5 +62,31 @@ export function useDeleteDeviceMutation() {
       return queryClient.invalidateQueries({ queryKey: deviceKeys.all });
     },
     onError: () => toast.error(t("Could not delete the device. Please try again.")),
+  });
+}
+
+/** Deletes up to `BULK_DELETE_MAX` devices at once; devices still in use are kept and counted. */
+export function useBulkDeleteDevicesMutation() {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
+
+  return useMutation({
+    mutationFn: (ids: string[]) =>
+      request<BulkDeleteResult>("/devices/bulk-delete", { method: "POST", body: { ids } }),
+    onSuccess: ({ deletedIds, inUseIds }) => {
+      if (inUseIds.length > 0) {
+        toast(
+          t("Devices deleted: {{deleted}}. Kept because they are in use: {{inUse}}.", {
+            deleted: deletedIds.length,
+            inUse: inUseIds.length,
+          }),
+        );
+      } else {
+        toast.success(t("Devices deleted: {{count}}", { count: deletedIds.length }));
+      }
+      for (const id of deletedIds) queryClient.removeQueries({ queryKey: deviceKeys.detail(id) });
+      return queryClient.invalidateQueries({ queryKey: deviceKeys.all });
+    },
+    onError: () => toast.error(t("Could not delete the devices. Please try again.")),
   });
 }

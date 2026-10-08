@@ -23,8 +23,12 @@ A person or business that brings devices in for service; always has a phone numb
 _Avoid_: Client, user, buyer
 
 **Device**:
-A physical item that can be serviced or sold, either owned by one customer or generic.
-_Avoid_: Item, product, equipment
+A physical item that can be serviced or sold, either owned by one customer or generic. It is named by its manufacturer and model, e.g. "Samsung Galaxy S21"; accessories such as cables may have only a model. It may also have a serial number, which is not unique.
+_Avoid_: Item, product, equipment, device name
+
+**Device description**:
+Optional facts about the device itself, such as colour or capacity (Serbian: opis). The device's condition at intake belongs in the service's log, not here.
+_Avoid_: Title, note, remark
 
 **Generic device**:
 A device with no owner, used for common models and for devices sold, or for legacy devices that appeared under several customers.
