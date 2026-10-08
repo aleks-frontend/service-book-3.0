@@ -1,5 +1,7 @@
 export interface HttpError extends Error {
   status: number;
+  /** The API's translatable error code, e.g. "CUSTOMER_IN_USE" on a 409. */
+  code?: string;
   details?: unknown;
 }
 
@@ -52,9 +54,21 @@ export async function request<T>(
         : `Request failed: ${response.status}`;
     const error = new Error(message) as HttpError;
     error.status = response.status;
+    if (data && typeof data === "object" && "code" in data && typeof data.code === "string") {
+      error.code = data.code;
+    }
     error.details = data && typeof data === "object" && "details" in data ? data.details : data;
     throw error;
   }
 
   return data as T;
+}
+
+/** A list query as a query string, leaving out unset and blank values. */
+export function toSearchParams(query: Record<string, unknown>) {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (value !== undefined && value !== "") params.set(key, String(value));
+  }
+  return params.toString();
 }

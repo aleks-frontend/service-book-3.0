@@ -87,6 +87,7 @@ model Customer {
   legacyId  String?  @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  devices   Device[]
 
   @@index([name])
   @@map("customer")
@@ -105,4 +106,23 @@ model Action {
 
   @@index([name])
   @@map("action")
+}
+
+/// A physical item that can be serviced or sold, owned by one customer or generic (see GLOSSARY.md, ADR-0004).
+model Device {
+  id          String    @id @default(uuid()) @db.Uuid
+  name        String
+  /// Null for a generic device. A customer who still owns devices cannot be deleted.
+  ownerId     String?   @db.Uuid
+  owner       Customer? @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  /// The record's ID in the old Firebase app; makes re-imports idempotent.
+  legacyId    String?   @unique
+  /// Whether the old Firebase app listed this among a service's sold items (now sale lines).
+  legacyIsNew Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([name])
+  @@index([ownerId])
+  @@map("device")
 }

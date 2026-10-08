@@ -7,7 +7,15 @@ import {
 } from "@servicebook/schemas";
 import { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma.js";
-import { hideLegacyId, idParam, isNotFound, parseBody, sendNotFound } from "../lib/routeHelpers.js";
+import {
+  hideLegacyId,
+  idParam,
+  isForeignKeyViolation,
+  isNotFound,
+  parseBody,
+  sendInUse,
+  sendNotFound,
+} from "../lib/routeHelpers.js";
 
 export const customersRouter = Router();
 
@@ -96,6 +104,11 @@ customersRouter.delete("/:id", async (req, res) => {
     await prisma.customer.delete({ where: { id } });
     res.status(204).send();
   } catch (error) {
+    // A customer who still owns devices keeps them, so the delete is refused.
+    if (isForeignKeyViolation(error)) {
+      sendInUse(res, LABEL, "CUSTOMER_IN_USE");
+      return;
+    }
     if (!isNotFound(error)) throw error;
     sendNotFound(res, LABEL);
   }

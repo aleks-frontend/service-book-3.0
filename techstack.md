@@ -28,7 +28,7 @@ Domain vocabulary is in [`GLOSSARY.md`](./GLOSSARY.md), and architectural decisi
   - A `requireAuth` middleware (`auth.api.getSession` with `fromNodeHeaders`) guards every other `/api` route.
   - There are no roles: all staff members are equal.
 - **Zod** validates every route boundary, using the schemas from `packages/schemas`. Validation errors return 400 with issue details.
-- **Error mapping:** a Postgres foreign-key violation (`DriverAdapterError`, code `23503`) on delete maps to 409 with a translatable error code.
+- **Error mapping:** a foreign-key violation on delete (Prisma `P2003`, wrapping the `DriverAdapterError`) maps to 409 with a translatable error code, e.g. `CUSTOMER_IN_USE`.
 - **Single origin:** in production, Express serves the admin panel's static build and falls back to `index.html` for non-`/api` paths. See [ADR-0001](./docs/adr/0001-single-origin.md).
 - **Sentry** (`@sentry/node`) for error reporting.
 

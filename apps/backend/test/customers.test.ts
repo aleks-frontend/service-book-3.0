@@ -150,6 +150,23 @@ describe("customers: update and delete", () => {
     expect((await agent.get(`/api/customers/${marko.id}`)).status).toBe(404);
   });
 
+  it("refuses with 409 to delete a customer who still owns a device", async () => {
+    const { agent } = await authenticatedAgent();
+    const { body: marko } = await agent.post("/api/customers").send(MARKO);
+    const { body: device } = await agent
+      .post("/api/devices")
+      .send({ name: "iPhone 12", ownerId: marko.id });
+
+    const response = await agent.delete(`/api/customers/${marko.id}`);
+
+    expect(response.status).toBe(409);
+    expect(response.body.code).toBe("CUSTOMER_IN_USE");
+    expect((await agent.get(`/api/customers/${marko.id}`)).status).toBe(200);
+    expect((await agent.get(`/api/devices/${device.id}`)).body).toMatchObject({
+      owner: { id: marko.id },
+    });
+  });
+
   it("returns 404 when deleting an unknown customer", async () => {
     const { agent } = await authenticatedAgent();
 

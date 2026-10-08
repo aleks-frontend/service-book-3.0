@@ -38,6 +38,11 @@ export const customerSchema = z.object({
 
 export type Customer = z.infer<typeof customerSchema>;
 
+/** Just enough of a customer to name and call them, e.g. as a device's owner. */
+export const customerSummarySchema = customerSchema.pick({ id: true, name: true, phone: true });
+
+export type CustomerSummary = z.infer<typeof customerSummarySchema>;
+
 export const sortDirSchema = z.enum(["asc", "desc"]);
 export type SortDir = z.infer<typeof sortDirSchema>;
 

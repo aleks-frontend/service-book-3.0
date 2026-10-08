@@ -20,6 +20,14 @@ export function idParam(req: Request, res: Response, label: string): string | nu
   return id.success ? id.data : null;
 }
 
+/** A 400 for one field, in the same shape as a failed body parse. */
+export function sendFieldError(res: Response, label: string, field: string, message: string) {
+  res.status(400).json({
+    error: `Invalid ${label.toLowerCase()}`,
+    details: { formErrors: [], fieldErrors: { [field]: [message] } },
+  });
+}
+
 /** The parsed body, or null after sending a 400 with the issue details. */
 export function parseBody<T extends z.ZodTypeAny>(
   schema: T,
@@ -39,4 +47,20 @@ export function parseBody<T extends z.ZodTypeAny>(
 /** Whether Prisma failed because the record to update or delete does not exist. */
 export function isNotFound(error: unknown) {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025";
+}
+
+/**
+ * Whether Postgres refused a write over a foreign key: deleting a record that
+ * others still refer to, or referring to one that does not exist.
+ */
+export function isForeignKeyViolation(error: unknown) {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003";
+}
+
+/**
+ * 409 for a record that cannot be deleted while others refer to it. The admin
+ * panel translates the message from `code`, e.g. "CUSTOMER_IN_USE".
+ */
+export function sendInUse(res: Response, label: string, code: string) {
+  res.status(409).json({ error: `${label} is in use`, code });
 }
