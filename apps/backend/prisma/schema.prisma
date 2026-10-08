@@ -123,8 +123,6 @@ model Device {
   owner        Customer? @relation(fields: [ownerId], references: [id], onDelete: Restrict)
   /// The record's ID in the old Firebase app; makes re-imports idempotent.
   legacyId     String?   @unique
-  /// The old Firebase app's `isNewDevice` flag, kept as imported.
-  isNewDevice  Boolean   @default(false)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 

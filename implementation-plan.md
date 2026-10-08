@@ -58,7 +58,7 @@ This is a summary; the authoritative rules are in #17.
 | Firebase | New model |
 |---|---|
 | `customers/*` | Customer, keeping the legacy ID. Placeholder phones are imported as they are. |
-| `devices/*` | Device. `manufacturer`, `model` and `serialNumber` are copied; `title` becomes the description; the stored `name` is dropped (the label is derived), and names that differ from manufacturer + model are reported. Placeholder manufacturers (e.g. "N/A", "-") are reported. It is owned when used by exactly one customer's services and generic when used by several. `isNewDevice` is kept as imported. |
+| `devices/*` | Device. `manufacturer`, `model` and `serialNumber` are copied; `title` becomes the description; the stored `name` is dropped (the label is derived), and names that differ from manufacturer + model are reported. Placeholder manufacturers (e.g. "N/A", "-") are reported. It is owned when used by exactly one customer's services and generic when used by several. `isNewDevice` is not stored: it only tells the import which references become sale lines, and "sold by us" is later derived from sale lines. |
 | `actions/*` | Action. Numeric names are stringified. |
 | `services/*.customers[0]` / `devices[]` | The service's customer / its attached devices |
 | `services/*.status` | `shipped` → Delivered, `completed` → Completed, `received` → Received; anything else is reported |

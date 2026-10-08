@@ -68,7 +68,6 @@ describe("devices: create and read", () => {
     expect(created.body.id).toEqual(expect.any(String));
     expect(created.body).not.toHaveProperty("name");
     expect(created.body).not.toHaveProperty("legacyId");
-    expect(created.body).not.toHaveProperty("isNewDevice");
 
     const read = await agent.get(`/api/devices/${created.body.id}`);
 
