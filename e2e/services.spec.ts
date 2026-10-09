@@ -63,7 +63,7 @@ test("a staff member registers a service for a new customer and opens it via ?se
   await expect(details).toContainText("Ne puni bateriju");
 
   // The details are changed in the edit modal, and the drawer shows the change.
-  await details.getByRole("button", { name: "Izmena servisa" }).click();
+  await drawer.getByRole("button", { name: "Izmena servisa" }).click();
   const editDialog = page.getByRole("dialog", { name: "Izmena servisa" });
   await expect(editDialog.getByLabel("Opis")).toHaveValue("Ne puni bateriju");
   await editDialog.getByLabel("Opis").fill("Ne puni bateriju, pukao ekran");

@@ -174,5 +174,6 @@
   "This action is used on a service, so it cannot be deleted.": "Ova usluga je korišćena na servisu, pa ne može da se obriše.",
   "Edit service": "Izmena servisa",
   "Delete service": "Obriši servis",
-  "Work from the price list, or a device sold to the customer.": "Usluga iz cenovnika ili uređaj prodat mušteriji."
+  "Work from the price list, or a device sold to the customer.": "Usluga iz cenovnika ili uređaj prodat mušteriji.",
+  "Close": "Zatvori"
 }

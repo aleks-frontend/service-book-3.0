@@ -174,5 +174,6 @@
   "This action is used on a service, so it cannot be deleted.": "Ezt a műveletet egy szerviz használja, ezért nem törölhető.",
   "Edit service": "Szerviz szerkesztése",
   "Delete service": "Szerviz törlése",
-  "Work from the price list, or a device sold to the customer.": "Művelet az árlistából, vagy az ügyfélnek eladott eszköz."
+  "Work from the price list, or a device sold to the customer.": "Művelet az árlistából, vagy az ügyfélnek eladott eszköz.",
+  "Close": "Bezárás"
 }

@@ -143,15 +143,9 @@ export function ServiceLines({ service }: ServiceLinesProps) {
 
   return (
     <section className="space-y-3" aria-labelledby="service-lines-heading">
-      <div className="flex items-center justify-between gap-2">
-        <h3 id="service-lines-heading" className="text-sm font-medium">
-          {t("Work and sales")}
-        </h3>
-        <Button size="sm" onClick={() => setAdding(true)}>
-          <Plus className="mr-1 h-4 w-4" aria-hidden />
-          {t("Add line")}
-        </Button>
-      </div>
+      <h3 id="service-lines-heading" className="text-sm font-medium">
+        {t("Work and sales")}
+      </h3>
 
       {service.lines.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("No work or sales recorded yet.")}</p>
@@ -247,6 +241,12 @@ export function ServiceLines({ service }: ServiceLinesProps) {
           })}
         </ul>
       )}
+
+      {/* New lines go last, so they are added from below the list. */}
+      <Button variant="outline" className="w-full border-dashed" onClick={() => setAdding(true)}>
+        <Plus className="mr-1 h-4 w-4" aria-hidden />
+        {t("Add line")}
+      </Button>
 
       <div className="flex items-baseline justify-between border-t pt-3">
         <span className="font-medium">{t("Total")}</span>
