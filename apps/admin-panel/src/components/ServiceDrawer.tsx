@@ -47,7 +47,8 @@ export function ServiceDrawer({ serviceId, onClose }: ServiceDrawerProps) {
   return (
     <Sheet open={serviceId !== null} onOpenChange={(open) => !open && onClose()}>
       <SheetContent className="gap-0 p-0 sm:max-w-xl" showClose={false}>
-        <div className="sticky top-0 z-10 flex h-12 shrink-0 items-center bg-primary/10 px-4">
+        {/* The tint is painted over a solid background, so content scrolling under the strip stays hidden. */}
+        <div className="sticky top-0 z-10 flex h-12 shrink-0 items-center bg-background bg-[linear-gradient(hsl(var(--primary)/0.1),hsl(var(--primary)/0.1))] px-4">
           <SheetClose asChild>
             <Button variant="ghost" size="icon" className="h-8 w-8">
               <X className="h-5 w-5" aria-hidden />

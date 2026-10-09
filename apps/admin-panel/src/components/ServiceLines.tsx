@@ -243,17 +243,20 @@ export function ServiceLines({ service }: ServiceLinesProps) {
         </ul>
       )}
 
-      {/* New lines go last, so they are added from below the list. */}
-      <Button variant="outline" className="w-full border-dashed" onClick={() => setAdding(true)}>
-        <Plus className="mr-1 h-4 w-4" aria-hidden />
-        {t("Add line")}
-      </Button>
+      {/* Stays at the bottom of the drawer while a long list scrolls under it. New
+          lines go last, so they are added from below the list. */}
+      <div className="sticky bottom-0 z-10 -mx-6 flex items-center justify-between gap-4 border-t bg-background px-6 py-3">
+        <Button onClick={() => setAdding(true)}>
+          <Plus className="mr-2 h-4 w-4" aria-hidden />
+          {t("Add line")}
+        </Button>
 
-      <div className="flex items-baseline justify-between border-t pt-3">
-        <span className="font-medium">{t("Total")}</span>
-        <span className="text-lg font-semibold tabular-nums" data-testid="service-total">
-          {formatRsd(total, i18n.language)}
-        </span>
+        <div className="flex items-baseline gap-3">
+          <span className="font-medium">{t("Total")}</span>
+          <span className="text-lg font-semibold tabular-nums" data-testid="service-total">
+            {formatRsd(total, i18n.language)}
+          </span>
+        </div>
       </div>
 
       <AddLineDialog
