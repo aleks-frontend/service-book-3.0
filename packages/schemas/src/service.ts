@@ -2,6 +2,7 @@ import { z } from "zod";
 import { customerSummarySchema } from "./customer.js";
 import { deviceSummarySchema } from "./device.js";
 import { optionalText } from "./fields.js";
+import { serviceLineSchema } from "./serviceLine.js";
 
 /** Where a service is in its lifecycle; a new service is Received (see GLOSSARY.md). */
 export const STATUSES = ["RECEIVED", "IN_PROGRESS", "COMPLETED", "DELIVERED", "CANCELLED"] as const;
@@ -54,11 +55,21 @@ export const serviceSchema = z.object({
   customer: customerSummarySchema,
   /** In the order they were attached. */
   devices: z.array(deviceSummarySchema),
+  /** Σ quantity × unit price over all its lines, in whole RSD. */
+  total: z.number().int(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
 });
 
+/** A service as listed: its total, but not its lines. */
 export type Service = z.infer<typeof serviceSchema>;
+
+/** One service as the drawer shows it, with its lines in order. */
+export const serviceDetailSchema = serviceSchema.extend({
+  lines: z.array(serviceLineSchema),
+});
+
+export type ServiceDetail = z.infer<typeof serviceDetailSchema>;
 
 /** The service number as staff members see it, e.g. `2026-0042`. */
 export function formatServiceNumber(year: number, sequence: number) {

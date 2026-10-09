@@ -149,6 +149,7 @@ export function ServiceForm({ id, service, onSubmit }: ServiceFormProps) {
             name="deviceIds"
             render={() => (
               <DevicePicker
+                multiple
                 id={`${id}-devices`}
                 customerId={customer?.id ?? null}
                 value={devices}

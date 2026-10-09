@@ -112,3 +112,57 @@ test("the table/cards toggle switches the list view and is remembered", async ({
   await expect(tableButton).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("table")).toBeVisible();
 });
+
+test("a work line starts at the action's price, and the total follows quantity and price as they are typed", async ({
+  page,
+}) => {
+  await logIn(page);
+  await expect(page).toHaveURL("/services");
+
+  const post = async (path: string, data: object) =>
+    (await page.request.post(path, { data })).json();
+  const customer = await post("/api/customers", { name: "Milan Milić", phone: "0634" });
+  const device = await post("/api/devices", { model: "Pixel 7", ownerId: customer.id });
+  await post("/api/actions", { name: "Zamena ekrana", price: 4500 });
+  const service = await post("/api/services", {
+    customerId: customer.id,
+    deviceIds: [device.id],
+    date: today(),
+  });
+
+  await page.goto(`/services?service=${service.id}`);
+  const drawer = page.getByRole("dialog", { name: `Servis ${service.number}` });
+  const total = drawer.getByTestId("service-total");
+  await expect(total).toHaveText("0 RSD");
+
+  // Picking the action fills in its price.
+  const addForm = drawer.getByRole("form", { name: "Dodavanje stavke" });
+  await addForm.getByLabel("Usluga").fill("ekran");
+  await page.getByRole("option", { name: /Zamena ekrana/ }).click();
+  await expect(addForm.getByLabel("Jedinična cena (RSD)")).toHaveValue("4500");
+  await addForm.getByLabel("Količina").fill("2");
+  await addForm.getByRole("button", { name: "Dodaj stavku" }).click();
+
+  const line = drawer.getByTestId("service-line");
+  await expect(line).toContainText("Zamena ekrana");
+  await expect(total).toHaveText("9.000 RSD");
+
+  // The total changes with every keystroke, before anything is saved.
+  await line.getByLabel("Količina").fill("3");
+  await expect(total).toHaveText("13.500 RSD");
+  await line.getByLabel("Jedinična cena (RSD)").fill("4000");
+  await expect(total).toHaveText("12.000 RSD");
+
+  // Leaving the field saves the line; the list shows the new total.
+  const saved = page.waitForResponse(
+    (response) => response.request().method() === "PATCH" && response.url().includes("/lines/"),
+  );
+  await line.getByLabel("Jedinična cena (RSD)").press("Enter");
+  expect((await saved).status()).toBe(200);
+  await page.reload();
+  await expect(total).toHaveText("12.000 RSD");
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("row", { name: new RegExp(service.number) })).toContainText(
+    "12.000 RSD",
+  );
+});

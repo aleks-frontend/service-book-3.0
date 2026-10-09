@@ -1,8 +1,16 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
-import type { CursorPage, Service, ServiceInput } from "@servicebook/schemas";
-import { request, toSearchParams } from "./http";
+import type {
+  CursorPage,
+  Service,
+  ServiceDetail,
+  ServiceInput,
+  ServiceLine,
+  ServiceLineInput,
+  ServiceLineUpdate,
+} from "@servicebook/schemas";
+import { request, toSearchParams, type HttpError } from "./http";
 
 export const serviceKeys = {
   all: ["services"] as const,
@@ -24,7 +32,7 @@ export function useServicesInfiniteQuery() {
 export function useServiceQuery(id: string | null) {
   return useQuery({
     queryKey: serviceKeys.detail(id ?? ""),
-    queryFn: () => request<Service>(`/services/${id}`),
+    queryFn: () => request<ServiceDetail>(`/services/${id}`),
     enabled: id !== null,
   });
 }
@@ -36,8 +44,8 @@ export function useSaveServiceMutation() {
   return useMutation({
     mutationFn: ({ id, input }: { id?: string; input: ServiceInput }) =>
       id
-        ? request<Service>(`/services/${id}`, { method: "PUT", body: input })
-        : request<Service>("/services", { method: "POST", body: input }),
+        ? request<ServiceDetail>(`/services/${id}`, { method: "PUT", body: input })
+        : request<ServiceDetail>("/services", { method: "POST", body: input }),
     onSuccess: (service, { id }) => {
       toast.success(
         id
@@ -64,4 +72,59 @@ export function useDeleteServiceMutation() {
     },
     onError: () => toast.error(t("Could not delete the service. Please try again.")),
   });
+}
+
+/**
+ * Adds, edits, removes or reorders one service's lines. Each change refetches
+ * the service (for its lines and total) and the list (for its total).
+ */
+export function useServiceLineMutations(serviceId: string) {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
+  const lines = `/services/${serviceId}/lines`;
+
+  function refetch() {
+    return Promise.all([
+      queryClient.invalidateQueries({ queryKey: serviceKeys.detail(serviceId) }),
+      queryClient.invalidateQueries({ queryKey: serviceKeys.list }),
+    ]);
+  }
+
+  const add = useMutation({
+    mutationFn: (input: ServiceLineInput) =>
+      request<ServiceLine>(lines, { method: "POST", body: input }),
+    onSuccess: refetch,
+    onError: () => toast.error(t("Could not add the line. Please try again.")),
+  });
+
+  const update = useMutation({
+    mutationFn: ({ lineId, input }: { lineId: string; input: ServiceLineUpdate }) =>
+      request<ServiceLine>(`${lines}/${lineId}`, { method: "PATCH", body: input }),
+    onSuccess: refetch,
+    onError: () => toast.error(t("Could not save the line. Please try again.")),
+  });
+
+  const remove = useMutation({
+    mutationFn: (lineId: string) => request<void>(`${lines}/${lineId}`, { method: "DELETE" }),
+    onSuccess: refetch,
+    onError: (error: HttpError) =>
+      toast.error(
+        error.status === 404
+          ? t("This line was already removed.")
+          : t("Could not remove the line. Please try again."),
+      ),
+  });
+
+  const reorder = useMutation({
+    mutationFn: (lineIds: string[]) =>
+      request<ServiceLine[]>(`${lines}/order`, { method: "PUT", body: { lineIds } }),
+    onSuccess: refetch,
+    // Someone else may have added or removed a line meanwhile; show the current ones.
+    onError: () => {
+      toast.error(t("Could not reorder the lines. Please try again."));
+      return refetch();
+    },
+  });
+
+  return { add, update, remove, reorder };
 }

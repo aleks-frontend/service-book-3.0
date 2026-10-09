@@ -2,12 +2,14 @@ import { randomBytes } from "node:crypto";
 import { Router, type Response } from "express";
 import {
   formatServiceNumber,
+  linesTotal,
   plainDateSchema,
   plainDateToUtc,
   serviceInputSchema,
   serviceListQuerySchema,
   type CursorPage,
   type Service,
+  type ServiceDetail,
   type ServiceInput,
 } from "@servicebook/schemas";
 import { Prisma } from "../generated/prisma/client.js";
@@ -19,8 +21,11 @@ import {
   sendFieldError,
   sendNotFound,
 } from "../lib/routeHelpers.js";
+import { lineOrder, lineSelect, serviceLinesRouter } from "./serviceLines.js";
 
 export const servicesRouter = Router();
+
+servicesRouter.use("/:id/lines", serviceLinesRouter);
 
 const LABEL = "Service";
 
@@ -42,25 +47,39 @@ const serviceSelect = {
   status: true,
   customer: { select: { id: true, name: true, phone: true } },
   devices: { orderBy: { position: "asc" }, select: { device: { select: deviceSummarySelect } } },
+  // Only what the total needs; the list does not show the lines.
+  lines: { select: { quantity: true, unitPrice: true } },
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.ServiceSelect;
 
+const serviceDetailSelect = {
+  ...serviceSelect,
+  lines: { orderBy: lineOrder, select: lineSelect },
+} satisfies Prisma.ServiceSelect;
+
 type ServiceRow = Prisma.ServiceGetPayload<{ select: typeof serviceSelect }>;
+type ServiceDetailRow = Prisma.ServiceGetPayload<{ select: typeof serviceDetailSelect }>;
 
 /** A `@db.Date` column holds midnight UTC; the API speaks `YYYY-MM-DD`. */
 function toPlainDate(date: Date) {
   return date.toISOString().slice(0, 10);
 }
 
-/** What the API shows of a service: its number, never the legacy fields. */
-function toService({ year, sequence, date, devices, ...rest }: ServiceRow): Service {
+/** What the API shows of a service: its number and total, never the legacy fields. */
+function toService({ year, sequence, date, devices, lines, ...rest }: ServiceRow): Service {
   return {
     ...rest,
     number: formatServiceNumber(year, sequence),
     date: toPlainDate(date),
     devices: devices.map(({ device }) => device),
+    total: linesTotal(lines),
   };
+}
+
+/** One service with its lines, as the drawer shows it. */
+function toServiceDetail(row: ServiceDetailRow): ServiceDetail {
+  return { ...toService(row), lines: row.lines };
 }
 
 /** 12 URL-safe characters from 72 random bits: hard to guess, never sequential (ADR-0003). */
@@ -192,22 +211,22 @@ servicesRouter.post("/", async (req, res) => {
         customerId: input.customerId,
         devices: { create: deviceRows(input.deviceIds) },
       },
-      select: serviceSelect,
+      select: serviceDetailSelect,
     });
   });
-  res.status(201).json(toService(row));
+  res.status(201).json(toServiceDetail(row));
 });
 
 servicesRouter.get("/:id", async (req, res) => {
   const id = idParam(req, res, LABEL);
   if (!id) return;
 
-  const row = await prisma.service.findUnique({ where: { id }, select: serviceSelect });
+  const row = await prisma.service.findUnique({ where: { id }, select: serviceDetailSelect });
   if (!row) {
     sendNotFound(res, LABEL);
     return;
   }
-  res.json(toService(row));
+  res.json(toServiceDetail(row));
 });
 
 // The Details tab always sends every field, so an update replaces them all,
@@ -228,16 +247,16 @@ servicesRouter.put("/:id", async (req, res) => {
         customerId: input.customerId,
         devices: { deleteMany: {}, create: deviceRows(input.deviceIds) },
       },
-      select: serviceSelect,
+      select: serviceDetailSelect,
     });
-    res.json(toService(row));
+    res.json(toServiceDetail(row));
   } catch (error) {
     if (!isNotFound(error)) throw error;
     sendNotFound(res, LABEL);
   }
 });
 
-// The service's attached devices go with it; the devices and customer stay.
+// The service's attached devices and lines go with it; the devices and customer stay.
 servicesRouter.delete("/:id", async (req, res) => {
   const id = idParam(req, res, LABEL);
   if (!id) return;

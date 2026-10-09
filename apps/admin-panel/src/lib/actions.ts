@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import type { Action, ActionInput } from "@servicebook/schemas";
-import { request } from "./http";
+import { request, type HttpError } from "./http";
 
 const actionKeys = {
   all: ["actions"] as const,
@@ -43,6 +43,11 @@ export function useDeleteActionMutation() {
       toast.success(t("Action deleted"));
       return queryClient.invalidateQueries({ queryKey: actionKeys.all });
     },
-    onError: () => toast.error(t("Could not delete the action. Please try again.")),
+    onError: (error: HttpError) =>
+      toast.error(
+        error.code === "ACTION_IN_USE"
+          ? t("This action is used on a service, so it cannot be deleted.")
+          : t("Could not delete the action. Please try again."),
+      ),
   });
 }

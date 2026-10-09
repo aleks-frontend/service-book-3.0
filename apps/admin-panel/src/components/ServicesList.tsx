@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { flexRender, getCoreRowModel, useReactTable, type ColumnDef } from "@tanstack/react-table";
 import { deviceLabel, type Service } from "@servicebook/schemas";
-import { formatPlainDate } from "@/lib/format";
+import { formatPlainDate, formatRsd } from "@/lib/format";
 import { StatusBadge } from "./StatusBadge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 
@@ -88,6 +88,15 @@ function ServicesTable({ services, onOpen }: Pick<ServicesListProps, "services" 
         header: t("Status"),
         cell: ({ row }) => <StatusBadge status={row.original.status} />,
       },
+      {
+        accessorKey: "total",
+        header: () => <div className="text-right">{t("Total")}</div>,
+        cell: ({ getValue }) => (
+          <div className="whitespace-nowrap text-right tabular-nums">
+            {formatRsd(getValue<number>(), i18n.language)}
+          </div>
+        ),
+      },
     ],
     [t, i18n.language],
   );
@@ -153,7 +162,12 @@ function ServiceCards({ services, onOpen }: Pick<ServicesListProps, "services" |
             <span className="font-medium">{service.customer.name}</span>{" "}
             <span className="text-muted-foreground">{service.customer.phone}</span>
           </div>
-          <div className="text-sm text-muted-foreground">{devicesText(service)}</div>
+          <div className="flex items-baseline justify-between gap-2 text-sm">
+            <span className="text-muted-foreground">{devicesText(service)}</span>
+            <span className="shrink-0 font-medium tabular-nums">
+              {formatRsd(service.total, i18n.language)}
+            </span>
+          </div>
         </li>
       ))}
     </ul>

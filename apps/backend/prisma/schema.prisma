@@ -96,14 +96,16 @@ model Customer {
 
 /// An entry in the shop's price list: a type of work with a default price (see GLOSSARY.md).
 model Action {
-  id        String   @id @default(uuid()) @db.Uuid
+  id        String        @id @default(uuid()) @db.Uuid
   name      String
   /// Default price in whole RSD.
   price     Int
   /// The record's ID in the old Firebase app; makes re-imports idempotent.
-  legacyId  String?  @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  legacyId  String?       @unique
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  /// A referenced action cannot be deleted.
+  lines     ServiceLine[]
 
   @@index([name])
   @@map("action")
@@ -127,6 +129,8 @@ model Device {
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
   services     ServiceDevice[]
+  /// A device sold on a service cannot be deleted.
+  saleLines    ServiceLine[]
 
   @@index([manufacturer, model])
   @@index([ownerId])
@@ -158,6 +162,7 @@ model Service {
   customerId  String          @db.Uuid
   customer    Customer        @relation(fields: [customerId], references: [id], onDelete: Restrict)
   devices     ServiceDevice[]
+  lines       ServiceLine[]
   /// The record's ID in the old Firebase app (its timestamp); makes re-imports idempotent.
   legacyId    String?         @unique
   createdAt   DateTime        @default(now())
@@ -189,4 +194,38 @@ model ServiceNumberCounter {
   last Int
 
   @@map("service_number_counter")
+}
+
+/// Whether a service line is work performed or a device sold (ADR-0004).
+enum LineType {
+  WORK
+  SALE
+}
+
+/// One priced row on a service: a work line refers to an action, a sale line to a device (see GLOSSARY.md, ADR-0004).
+model ServiceLine {
+  id        String   @id @default(uuid()) @db.Uuid
+  serviceId String   @db.Uuid
+  service   Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  type      LineType
+  /// Set on work lines only (enforced by a check constraint).
+  actionId  String?  @db.Uuid
+  action    Action?  @relation(fields: [actionId], references: [id], onDelete: Restrict)
+  /// Set on sale lines only (enforced by a check constraint).
+  deviceId  String?  @db.Uuid
+  device    Device?  @relation(fields: [deviceId], references: [id], onDelete: Restrict)
+  /// The action's or device's name when the line was added, so later renames leave old lines alone.
+  label     String
+  quantity  Int
+  /// In whole RSD; starts as the action's price on a work line, but may differ.
+  unitPrice Int
+  /// Orders the lines within their service.
+  position  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([serviceId, position])
+  @@index([actionId])
+  @@index([deviceId])
+  @@map("service_line")
 }

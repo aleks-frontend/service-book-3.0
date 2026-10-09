@@ -11,11 +11,12 @@ export function sendNotFound(res: Response, label: string) {
 }
 
 /**
- * The record id from the path, or null after sending a 404. A malformed id
- * names no record, so it is a 404 like any unknown id, not a 400.
+ * The record id from the path (the `:id` param unless `param` names another),
+ * or null after sending a 404. A malformed id names no record, so it is a 404
+ * like any unknown id, not a 400.
  */
-export function idParam(req: Request, res: Response, label: string): string | null {
-  const id = z.string().uuid().safeParse(req.params.id);
+export function idParam(req: Request, res: Response, label: string, param = "id"): string | null {
+  const id = z.string().uuid().safeParse(req.params[param]);
   if (!id.success) sendNotFound(res, label);
   return id.success ? id.data : null;
 }

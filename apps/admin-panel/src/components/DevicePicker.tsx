@@ -12,28 +12,33 @@ type DevicePickerProps = {
   id?: string;
   /** Offers this customer's devices and generic ones. */
   customerId: string | null;
-  value: DeviceSummary[];
-  onChange: (devices: DeviceSummary[]) => void;
   placeholder: string;
+  "aria-label"?: string;
   invalid?: boolean;
   disabled?: boolean;
-};
+} & (
+  | {
+      /** Picks several devices, e.g. those a customer brings in. */
+      multiple: true;
+      value: DeviceSummary[];
+      onChange: (devices: DeviceSummary[]) => void;
+    }
+  | {
+      /** Picks one device, e.g. one sold on a sale line. */
+      multiple?: false;
+      value: DeviceSummary | null;
+      onChange: (device: DeviceSummary | null) => void;
+    }
+);
 
 /**
- * Picks the devices a customer brings in, by typing part of the manufacturer,
+ * Picks devices available to a customer by typing part of the manufacturer,
  * model or serial number; the search runs on the server.
  *
  * Like `CustomerPicker`, the menu renders inline so it works inside a dialog.
  */
-export function DevicePicker({
-  id,
-  customerId,
-  value,
-  onChange,
-  placeholder,
-  invalid,
-  disabled,
-}: DevicePickerProps) {
+export function DevicePicker(props: DevicePickerProps) {
+  const { id, customerId, placeholder, "aria-label": ariaLabel, invalid, disabled } = props;
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
@@ -59,12 +64,16 @@ export function DevicePicker({
   );
 
   return (
-    <Select<DeviceSummary, true>
+    <Select<DeviceSummary, boolean>
       inputId={id}
+      aria-label={ariaLabel}
       aria-invalid={invalid}
-      isMulti
-      value={value}
-      onChange={(devices) => onChange([...devices])}
+      isMulti={props.multiple}
+      value={props.value}
+      onChange={(picked) => {
+        if (props.multiple) props.onChange([...(picked as readonly DeviceSummary[])]);
+        else props.onChange(picked as DeviceSummary | null);
+      }}
       options={options}
       getOptionValue={(device) => device.id}
       getOptionLabel={deviceLabel}
@@ -91,16 +100,16 @@ export function DevicePicker({
       }}
       onMenuOpen={() => setOpen(true)}
       onMenuClose={() => setOpen(false)}
-      closeMenuOnSelect={false}
+      closeMenuOnSelect={!props.multiple}
       isLoading={isFetching}
-      isClearable={false}
+      isClearable={!props.multiple}
       isDisabled={disabled}
       placeholder={placeholder}
       menuPlacement="auto"
       noOptionsMessage={() => t("No devices match your search.")}
       loadingMessage={() => t("Loading…")}
       unstyled
-      classNames={selectClassNames<DeviceSummary, true>(invalid)}
+      classNames={selectClassNames<DeviceSummary, boolean>(invalid)}
     />
   );
 }

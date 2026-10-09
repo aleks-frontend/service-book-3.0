@@ -1,7 +1,15 @@
 import { Router } from "express";
 import { actionInputSchema, type Action } from "@servicebook/schemas";
 import { prisma } from "../lib/prisma.js";
-import { hideLegacyId, idParam, isNotFound, parseBody, sendNotFound } from "../lib/routeHelpers.js";
+import {
+  hideLegacyId,
+  idParam,
+  isForeignKeyViolation,
+  isNotFound,
+  parseBody,
+  sendInUse,
+  sendNotFound,
+} from "../lib/routeHelpers.js";
 
 export const actionsRouter = Router();
 
@@ -67,6 +75,11 @@ actionsRouter.delete("/:id", async (req, res) => {
     await prisma.action.delete({ where: { id } });
     res.status(204).send();
   } catch (error) {
+    // An action used on a work line stays, so old bills stay intact.
+    if (isForeignKeyViolation(error)) {
+      sendInUse(res, LABEL, "ACTION_IN_USE");
+      return;
+    }
     if (!isNotFound(error)) throw error;
     sendNotFound(res, LABEL);
   }

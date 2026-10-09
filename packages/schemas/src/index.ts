@@ -7,3 +7,4 @@ export * from "./fields.js";
 export * from "./money.js";
 export * from "./pagination.js";
 export * from "./service.js";
+export * from "./serviceLine.js";

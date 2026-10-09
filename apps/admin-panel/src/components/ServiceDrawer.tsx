@@ -5,6 +5,7 @@ import { useDeleteServiceMutation, useSaveServiceMutation, useServiceQuery } fro
 import { formatDate } from "@/lib/format";
 import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog";
 import { ServiceForm } from "./ServiceForm";
+import { ServiceLines } from "./ServiceLines";
 import { StatusBadge } from "./StatusBadge";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "./ui/sheet";
@@ -35,7 +36,7 @@ export function ServiceDrawer({ serviceId, onClose }: ServiceDrawerProps) {
 
   return (
     <Sheet open={serviceId !== null} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent className="sm:max-w-lg">
+      <SheetContent className="sm:max-w-xl">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-3">
             <span className="tabular-nums">
@@ -76,6 +77,9 @@ export function ServiceDrawer({ serviceId, onClose }: ServiceDrawerProps) {
                   <Trash2 className="mr-2 h-4 w-4 text-destructive" aria-hidden />
                   {t("Delete")}
                 </Button>
+              </div>
+              <div className="border-t pt-4">
+                <ServiceLines service={service} />
               </div>
             </TabsContent>
           </Tabs>
