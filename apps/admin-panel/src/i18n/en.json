@@ -177,5 +177,18 @@
   "Edit service": "Edit service",
   "Delete service": "Delete service",
   "Work from the price list, or a device sold to the customer.": "Work from the price list, or a device sold to the customer.",
-  "Close": "Close"
+  "Close": "Close",
+  "Details": "Details",
+  "Log": "Log",
+  "Change status": "Change status",
+  "Could not change the status. Please try again.": "Could not change the status. Please try again.",
+  "Could not load the log.": "Could not load the log.",
+  "No log entries yet.": "No log entries yet.",
+  "Former staff member": "Former staff member",
+  "Imported from the old app": "Imported from the old app",
+  "Status changed": "Status changed",
+  "Note": "Note",
+  "Add an internal note…": "Add an internal note…",
+  "Add note": "Add note",
+  "Could not add the note. Please try again.": "Could not add the note. Please try again."
 }

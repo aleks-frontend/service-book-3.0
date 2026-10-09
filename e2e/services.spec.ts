@@ -239,3 +239,52 @@ test("an action or device missing from the pickers is created from the add-line 
     expect.objectContaining({ name: "Čišćenje tastature", price: 1200 }),
   );
 });
+
+test("a one-click status change from the list shows in the badge and in the Log tab", async ({
+  page,
+}) => {
+  await logIn(page);
+  await expect(page).toHaveURL("/services");
+
+  const post = async (path: string, data: object) =>
+    (await page.request.post(path, { data })).json();
+  const customer = await post("/api/customers", { name: "Sara Sarić", phone: "0656" });
+  const device = await post("/api/devices", { model: "Galaxy Tab", ownerId: customer.id });
+  const service = await post("/api/services", {
+    customerId: customer.id,
+    deviceIds: [device.id],
+    date: today(),
+  });
+  await page.reload();
+
+  // Choosing a status in the row saves it without opening the service.
+  const row = page.getByRole("row", { name: new RegExp(service.number) });
+  await row.getByRole("button", { name: /Promeni status/ }).click();
+  await page.getByRole("menuitemradio", { name: "U radu" }).click();
+  await expect(row.getByRole("button", { name: /Promeni status/ })).toHaveText("U radu");
+  await expect(page).toHaveURL("/services");
+  await page.reload();
+  await expect(row.getByRole("button", { name: /Promeni status/ })).toHaveText("U radu");
+
+  // The change is in the service's log, and a note joins it below.
+  await row.click();
+  const drawer = page.getByRole("dialog", { name: `Servis ${service.number}` });
+  await drawer.getByRole("tab", { name: "Dnevnik" }).click();
+  const entries = drawer.getByTestId("log-entry");
+  await expect(entries).toHaveCount(1);
+  await expect(entries.first()).toContainText("Status promenjen");
+  await expect(entries.first()).toContainText("Primljen");
+  await expect(entries.first()).toContainText("U radu");
+
+  await drawer.getByLabel("Beleška").fill("Naručen novi ekran");
+  await drawer.getByRole("button", { name: "Dodaj belešku" }).click();
+  await expect(entries).toHaveCount(2);
+  await expect(entries.nth(1)).toContainText("Naručen novi ekran");
+  await expect(drawer.getByLabel("Beleška")).toHaveValue("");
+
+  // Changing it in the drawer logs it too.
+  await drawer.getByRole("button", { name: /Promeni status/ }).click();
+  await page.getByRole("menuitemradio", { name: "Završen" }).click();
+  await expect(entries).toHaveCount(3);
+  await expect(entries.nth(2)).toContainText("Završen");
+});

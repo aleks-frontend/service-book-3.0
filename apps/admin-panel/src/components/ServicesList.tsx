@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { flexRender, getCoreRowModel, useReactTable, type ColumnDef } from "@tanstack/react-table";
 import { deviceLabel, type Service } from "@servicebook/schemas";
 import { formatPlainDate, formatRsd } from "@/lib/format";
-import { StatusBadge } from "./StatusBadge";
+import { StatusSelect } from "./StatusSelect";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 
 /** How the Services page shows its list; staff members pick one and it is remembered. */
@@ -86,7 +86,9 @@ function ServicesTable({ services, onOpen }: Pick<ServicesListProps, "services" 
       {
         accessorKey: "status",
         header: t("Status"),
-        cell: ({ row }) => <StatusBadge status={row.original.status} />,
+        cell: ({ row }) => (
+          <StatusSelect serviceId={row.original.id} status={row.original.status} />
+        ),
       },
       {
         accessorKey: "total",
@@ -156,7 +158,7 @@ function ServiceCards({ services, onOpen }: Pick<ServicesListProps, "services" |
                 {formatPlainDate(service.date, i18n.language)}
               </div>
             </div>
-            <StatusBadge status={service.status} />
+            <StatusSelect serviceId={service.id} status={service.status} />
           </div>
           <div className="text-sm">
             <span className="font-medium">{service.customer.name}</span>{" "}

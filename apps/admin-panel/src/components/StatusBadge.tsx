@@ -1,15 +1,7 @@
 import { useTranslation } from "react-i18next";
 import type { Status } from "@servicebook/schemas";
+import { STATUS_LABELS } from "@/lib/statuses";
 import { cn } from "@/lib/utils";
-
-/** The translation key of each status's name. */
-const STATUS_LABELS: Record<Status, string> = {
-  RECEIVED: "Received",
-  IN_PROGRESS: "In progress",
-  COMPLETED: "Completed",
-  DELIVERED: "Delivered",
-  CANCELLED: "Cancelled",
-};
 
 const STATUS_CLASSES: Record<Status, string> = {
   RECEIVED: "bg-sky-100 text-sky-800",
@@ -19,7 +11,14 @@ const STATUS_CLASSES: Record<Status, string> = {
   CANCELLED: "bg-red-100 text-red-800",
 };
 
-export function StatusBadge({ status, className }: { status: Status; className?: string }) {
+type StatusBadgeProps = {
+  status: Status;
+  className?: string;
+  /** Shown after the status's name, e.g. a dropdown chevron. */
+  children?: React.ReactNode;
+};
+
+export function StatusBadge({ status, className, children }: StatusBadgeProps) {
   const { t } = useTranslation();
   return (
     <span
@@ -30,6 +29,7 @@ export function StatusBadge({ status, className }: { status: Status; className?:
       )}
     >
       {t(STATUS_LABELS[status])}
+      {children}
     </span>
   );
 }

@@ -7,10 +7,12 @@ import {
   plainDateToUtc,
   serviceInputSchema,
   serviceListQuerySchema,
+  statusChangeInputSchema,
   type CursorPage,
   type Service,
   type ServiceDetail,
   type ServiceInput,
+  type Status,
 } from "@servicebook/schemas";
 import { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma.js";
@@ -22,10 +24,12 @@ import {
   sendNotFound,
 } from "../lib/routeHelpers.js";
 import { lineOrder, lineSelect, serviceLinesRouter } from "./serviceLines.js";
+import { serviceLogRouter } from "./serviceLog.js";
 
 export const servicesRouter = Router();
 
 servicesRouter.use("/:id/lines", serviceLinesRouter);
+servicesRouter.use("/:id/log", serviceLogRouter);
 
 const LABEL = "Service";
 
@@ -256,7 +260,42 @@ servicesRouter.put("/:id", async (req, res) => {
   }
 });
 
-// The service's attached devices and lines go with it; the devices and customer stay.
+// A change of status is logged with its author in the same transaction; setting
+// the status the service already has changes and logs nothing.
+servicesRouter.put("/:id/status", async (req, res) => {
+  const id = idParam(req, res, LABEL);
+  if (!id) return;
+  const input = parseBody(statusChangeInputSchema, req, res, LABEL);
+  if (!input) return;
+
+  const row = await prisma.$transaction(async (tx) => {
+    // Locks the service, so concurrent changes each log the status they really changed from.
+    const [current] = await tx.$queryRaw<{ status: Status }[]>`
+      SELECT "status" FROM "service" WHERE "id" = ${id}::uuid FOR UPDATE
+    `;
+    if (!current) return null;
+    if (current.status !== input.status) {
+      await tx.service.update({ where: { id }, data: { status: input.status } });
+      await tx.serviceLogEntry.create({
+        data: {
+          serviceId: id,
+          type: "STATUS_CHANGE",
+          fromStatus: current.status,
+          toStatus: input.status,
+          authorId: req.user!.id,
+        },
+      });
+    }
+    return tx.service.findUniqueOrThrow({ where: { id }, select: serviceDetailSelect });
+  });
+  if (!row) {
+    sendNotFound(res, LABEL);
+    return;
+  }
+  res.json(toServiceDetail(row));
+});
+
+// The service's attached devices, lines and log go with it; the devices and customer stay.
 servicesRouter.delete("/:id", async (req, res) => {
   const id = idParam(req, res, LABEL);
   if (!id) return;

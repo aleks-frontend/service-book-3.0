@@ -11,15 +11,16 @@ datasource db {
 // A User is a staff member (see GLOSSARY.md); the table keeps Better Auth's name.
 
 model User {
-  id            String    @id
+  id            String            @id
   name          String
   email         String
-  emailVerified Boolean   @default(false)
+  emailVerified Boolean           @default(false)
   image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
   sessions      Session[]
   accounts      Account[]
+  logEntries    ServiceLogEntry[]
 
   @@unique([email])
   @@map("user")
@@ -148,25 +149,26 @@ enum Status {
 
 /// One customer's visit with one or more devices on a given date (see GLOSSARY.md, ADR-0003).
 model Service {
-  id          String          @id @default(uuid()) @db.Uuid
+  id          String            @id @default(uuid()) @db.Uuid
   /// With `sequence`, the service number `YYYY-NNNN`: the year of the service's date when it was created.
   year        Int
   /// Allocated from `ServiceNumberCounter` inside the creation transaction; never reused.
   sequence    Int
   /// Identifies the service on its public link; never the UUID or the service number.
-  publicToken String          @unique
-  date        DateTime        @db.Date
+  publicToken String            @unique
+  date        DateTime          @db.Date
   description String?
-  status      Status          @default(RECEIVED)
+  status      Status            @default(RECEIVED)
   /// A customer with services cannot be deleted.
-  customerId  String          @db.Uuid
-  customer    Customer        @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  customerId  String            @db.Uuid
+  customer    Customer          @relation(fields: [customerId], references: [id], onDelete: Restrict)
   devices     ServiceDevice[]
   lines       ServiceLine[]
+  log         ServiceLogEntry[]
   /// The record's ID in the old Firebase app (its timestamp); makes re-imports idempotent.
-  legacyId    String?         @unique
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  legacyId    String?           @unique
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 
   @@unique([year, sequence])
   @@index([date, year, sequence])
@@ -228,4 +230,32 @@ model ServiceLine {
   @@index([actionId])
   @@index([deviceId])
   @@map("service_line")
+}
+
+/// What a log entry records (see GLOSSARY.md: Log entry).
+enum LogEntryType {
+  NOTE
+  STATUS_CHANGE
+  LEGACY_REMARK
+}
+
+/// One item in a service's internal log; never shown to the customer (see GLOSSARY.md).
+model ServiceLogEntry {
+  id         String       @id @default(uuid()) @db.Uuid
+  serviceId  String       @db.Uuid
+  service    Service      @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  type       LogEntryType
+  /// A note's or legacy remark's text; null on a status change (enforced by a check constraint).
+  text       String?
+  /// Set on status changes only (enforced by a check constraint).
+  fromStatus Status?
+  toStatus   Status?
+  /// The staff member who wrote the note or changed the status; null on a legacy remark.
+  authorId   String?
+  author     User?        @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  createdAt  DateTime     @default(now())
+
+  @@index([serviceId, createdAt])
+  @@index([authorId])
+  @@map("service_log_entry")
 }

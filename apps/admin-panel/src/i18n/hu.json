@@ -177,5 +177,18 @@
   "Edit service": "Szerviz szerkesztése",
   "Delete service": "Szerviz törlése",
   "Work from the price list, or a device sold to the customer.": "Művelet az árlistából, vagy az ügyfélnek eladott eszköz.",
-  "Close": "Bezárás"
+  "Close": "Bezárás",
+  "Details": "Részletek",
+  "Log": "Napló",
+  "Change status": "Állapot módosítása",
+  "Could not change the status. Please try again.": "Az állapot módosítása nem sikerült. Próbálja újra.",
+  "Could not load the log.": "A napló betöltése nem sikerült.",
+  "No log entries yet.": "A naplóban még nincs bejegyzés.",
+  "Former staff member": "Korábbi munkatárs",
+  "Imported from the old app": "A régi programból importálva",
+  "Status changed": "Állapot módosítva",
+  "Note": "Jegyzet",
+  "Add an internal note…": "Belső jegyzet hozzáadása…",
+  "Add note": "Jegyzet hozzáadása",
+  "Could not add the note. Please try again.": "A jegyzet hozzáadása nem sikerült. Próbálja újra."
 }

@@ -177,5 +177,18 @@
   "Edit service": "Izmena servisa",
   "Delete service": "Obriši servis",
   "Work from the price list, or a device sold to the customer.": "Usluga iz cenovnika ili uređaj prodat mušteriji.",
-  "Close": "Zatvori"
+  "Close": "Zatvori",
+  "Details": "Detalji",
+  "Log": "Dnevnik",
+  "Change status": "Promeni status",
+  "Could not change the status. Please try again.": "Promena statusa nije uspela. Pokušajte ponovo.",
+  "Could not load the log.": "Učitavanje dnevnika nije uspelo.",
+  "No log entries yet.": "U dnevniku još nema zapisa.",
+  "Former staff member": "Bivši zaposleni",
+  "Imported from the old app": "Uvezeno iz starog programa",
+  "Status changed": "Status promenjen",
+  "Note": "Beleška",
+  "Add an internal note…": "Dodajte internu belešku…",
+  "Add note": "Dodaj belešku",
+  "Could not add the note. Please try again.": "Dodavanje beleške nije uspelo. Pokušajte ponovo."
 }

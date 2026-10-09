@@ -3,12 +3,14 @@ import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import type {
   CursorPage,
+  LogEntry,
   Service,
   ServiceDetail,
   ServiceInput,
   ServiceLine,
   ServiceLineInput,
   ServiceLineUpdate,
+  Status,
 } from "@servicebook/schemas";
 import { request, toSearchParams, type HttpError } from "./http";
 
@@ -16,6 +18,7 @@ export const serviceKeys = {
   all: ["services"] as const,
   list: ["services", "list"] as const,
   detail: (id: string) => ["services", "detail", id] as const,
+  log: (id: string) => ["services", "log", id] as const,
 };
 
 /** Newest first, one cursor page at a time, for infinite scrolling. */
@@ -127,4 +130,47 @@ export function useServiceLineMutations(serviceId: string) {
   });
 
   return { add, update, remove, reorder };
+}
+
+/**
+ * Moves a service to another status. The server logs the change, so the
+ * service's log is refetched along with the list.
+ */
+export function useChangeStatusMutation() {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
+
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: Status }) =>
+      request<ServiceDetail>(`/services/${id}/status`, { method: "PUT", body: { status } }),
+    onSuccess: (service) => {
+      queryClient.setQueryData(serviceKeys.detail(service.id), service);
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: serviceKeys.list }),
+        queryClient.invalidateQueries({ queryKey: serviceKeys.log(service.id) }),
+      ]);
+    },
+    onError: () => toast.error(t("Could not change the status. Please try again.")),
+  });
+}
+
+/** A service's log, oldest entry first. */
+export function useServiceLogQuery(serviceId: string) {
+  return useQuery({
+    queryKey: serviceKeys.log(serviceId),
+    queryFn: () => request<LogEntry[]>(`/services/${serviceId}/log`),
+  });
+}
+
+/** Adds a staff member's note to the end of a service's log. */
+export function useAddNoteMutation(serviceId: string) {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
+
+  return useMutation({
+    mutationFn: (text: string) =>
+      request<LogEntry>(`/services/${serviceId}/log`, { method: "POST", body: { text } }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: serviceKeys.log(serviceId) }),
+    onError: () => toast.error(t("Could not add the note. Please try again.")),
+  });
 }

@@ -34,3 +34,14 @@ export function formatPlainDate(date: string, language: string) {
   const [year, month, day] = date.split("-").map(Number);
   return formatDate(new Date(year, month - 1, day), language);
 }
+
+/** A moment with its time of day, e.g. "9. oktobar 2026. 14:05" in Serbian. */
+export function formatDateTime(date: Date, language: string) {
+  return date.toLocaleString(toLocale(language), {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}

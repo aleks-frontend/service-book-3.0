@@ -7,7 +7,8 @@ import { formatDate, formatPlainDate } from "@/lib/format";
 import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog";
 import { ServiceFormDialog } from "./ServiceFormDialog";
 import { ServiceLines } from "./ServiceLines";
-import { StatusBadge } from "./StatusBadge";
+import { ServiceLog } from "./ServiceLog";
+import { StatusSelect } from "./StatusSelect";
 import { Button } from "./ui/button";
 import { Separator } from "./ui/separator";
 import {
@@ -18,6 +19,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "./ui/sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 
 type ServiceDrawerProps = {
   serviceId: string | null;
@@ -71,7 +73,7 @@ export function ServiceDrawer({ serviceId, onClose }: ServiceDrawerProps) {
             </div>
             {service && (
               <div className="flex shrink-0 items-center gap-2">
-                <StatusBadge status={service.status} />
+                <StatusSelect serviceId={service.id} status={service.status} />
                 <Separator orientation="vertical" className="h-5" />
                 <Button
                   variant="ghost"
@@ -105,7 +107,18 @@ export function ServiceDrawer({ serviceId, onClose }: ServiceDrawerProps) {
           ) : (
             <>
               <ServiceSummary service={service} />
-              <ServiceLines service={service} />
+              <Tabs defaultValue="details">
+                <TabsList>
+                  <TabsTrigger value="details">{t("Details")}</TabsTrigger>
+                  <TabsTrigger value="log">{t("Log")}</TabsTrigger>
+                </TabsList>
+                <TabsContent value="details">
+                  <ServiceLines service={service} />
+                </TabsContent>
+                <TabsContent value="log">
+                  <ServiceLog serviceId={service.id} />
+                </TabsContent>
+              </Tabs>
               <ServiceFormDialog open={editing} onOpenChange={setEditing} service={service} />
             </>
           )}
