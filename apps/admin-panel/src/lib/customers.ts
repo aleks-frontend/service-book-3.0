@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import type { Customer, CustomerInput, CustomerListQuery, Page } from "@servicebook/schemas";
 import { deviceKeys } from "./devices";
+import { serviceKeys } from "./services";
 import { request, toSearchParams, type HttpError } from "./http";
 
 const customerKeys = {
@@ -40,10 +41,11 @@ export function useSaveCustomerMutation() {
         : request<Customer>("/customers", { method: "POST", body: input }),
     onSuccess: (_customer, { id }) => {
       toast.success(id ? t("Customer updated") : t("Customer created"));
-      // Devices show their owner's name and phone.
+      // Devices and services show the customer's name and phone.
       return Promise.all([
         queryClient.invalidateQueries({ queryKey: customerKeys.all }),
         queryClient.invalidateQueries({ queryKey: deviceKeys.all }),
+        queryClient.invalidateQueries({ queryKey: serviceKeys.all }),
       ]);
     },
     onError: () => toast.error(t("Could not save the customer. Please try again.")),
@@ -64,7 +66,7 @@ export function useDeleteCustomerMutation() {
     onError: (error: HttpError) =>
       toast.error(
         error.code === "CUSTOMER_IN_USE"
-          ? t("This customer still owns devices, so they cannot be deleted.")
+          ? t("This customer still owns devices or has services, so they cannot be deleted.")
           : t("Could not delete the customer. Please try again."),
       ),
   });

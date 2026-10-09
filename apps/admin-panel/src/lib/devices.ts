@@ -8,7 +8,8 @@ import type {
   DeviceListQuery,
   Page,
 } from "@servicebook/schemas";
-import { request, toSearchParams } from "./http";
+import { serviceKeys } from "./services";
+import { request, toSearchParams, type HttpError } from "./http";
 
 export const deviceKeys = {
   all: ["devices"] as const,
@@ -17,11 +18,12 @@ export const deviceKeys = {
 };
 
 /** One page of devices; keeps showing the previous page while the next one loads. */
-export function useDevicesQuery(query: DeviceListQuery) {
+export function useDevicesQuery(query: DeviceListQuery, { enabled = true } = {}) {
   return useQuery({
     queryKey: deviceKeys.list(query),
     queryFn: () => request<Page<Device>>(`/devices?${toSearchParams(query)}`),
     placeholderData: keepPreviousData,
+    enabled,
   });
 }
 
@@ -44,7 +46,11 @@ export function useSaveDeviceMutation() {
         : request<Device>("/devices", { method: "POST", body: input }),
     onSuccess: (_device, { id }) => {
       toast.success(id ? t("Device updated") : t("Device created"));
-      return queryClient.invalidateQueries({ queryKey: deviceKeys.all });
+      // Services show their devices' labels.
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: deviceKeys.all }),
+        queryClient.invalidateQueries({ queryKey: serviceKeys.all }),
+      ]);
     },
     onError: () => toast.error(t("Could not save the device. Please try again.")),
   });
@@ -61,7 +67,12 @@ export function useDeleteDeviceMutation() {
       queryClient.removeQueries({ queryKey: deviceKeys.detail(id) });
       return queryClient.invalidateQueries({ queryKey: deviceKeys.all });
     },
-    onError: () => toast.error(t("Could not delete the device. Please try again.")),
+    onError: (error: HttpError) =>
+      toast.error(
+        error.code === "DEVICE_IN_USE"
+          ? t("This device is attached to a service, so it cannot be deleted.")
+          : t("Could not delete the device. Please try again."),
+      ),
   });
 }
 

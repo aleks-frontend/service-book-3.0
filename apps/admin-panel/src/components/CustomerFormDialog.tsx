@@ -27,6 +27,8 @@ type CustomerFormDialogProps = {
   onOpenChange: (open: boolean) => void;
   /** The customer to edit; omitted when creating one. */
   customer?: Customer;
+  /** Called with the saved customer, e.g. to pick a customer created inline. */
+  onSaved?: (customer: Customer) => void;
 };
 
 const FIELDS = [
@@ -67,7 +69,12 @@ function toFormValues(customer?: Customer): CustomerInputValues {
   };
 }
 
-export function CustomerFormDialog({ open, onOpenChange, customer }: CustomerFormDialogProps) {
+export function CustomerFormDialog({
+  open,
+  onOpenChange,
+  customer,
+  onSaved,
+}: CustomerFormDialogProps) {
   const { t } = useTranslation();
   const saveCustomer = useSaveCustomerMutation();
   const isEdit = customer !== undefined;
@@ -92,7 +99,15 @@ export function CustomerFormDialog({ open, onOpenChange, customer }: CustomerFor
   }, [open, customer, reset]);
 
   function onSubmit(input: CustomerInput) {
-    saveCustomer.mutate({ id: customer?.id, input }, { onSuccess: () => onOpenChange(false) });
+    saveCustomer.mutate(
+      { id: customer?.id, input },
+      {
+        onSuccess: (saved) => {
+          onSaved?.(saved);
+          onOpenChange(false);
+        },
+      },
+    );
   }
 
   return (

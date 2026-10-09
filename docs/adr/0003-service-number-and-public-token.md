@@ -16,6 +16,6 @@ The Firebase timestamp is kept only as the legacy ID.
 
 ## Consequences
 
-- Service numbers are allocated from a per-year counter row, updated inside the service-creation transaction, so concurrent creates never collide. The legacy import assigns numbers in date order and advances the counters past them.
+- Service numbers are allocated from a per-year counter row, updated inside the service-creation transaction, so concurrent creates never collide. The year is the year of the service's date when it is created; moving the date later keeps the number. The legacy import assigns numbers in date order and advances the counters past them.
 - The public link must never expose the UUID or the service number, so a customer cannot enumerate other customers' services.
 - Old QR codes and URLs from the Firebase app are not supported.

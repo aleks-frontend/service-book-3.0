@@ -1,13 +1,6 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { STAFF } from "./env.js";
-
-// The UI defaults to Serbian (sr).
-async function logIn(page: Page, password = STAFF.password) {
-  await page.goto("/login");
-  await page.getByLabel("E-mail").fill(STAFF.email);
-  await page.getByLabel("Lozinka").fill(password);
-  await page.getByRole("button", { name: "Prijavi se" }).click();
-}
+import { logIn } from "./logIn.js";
 
 test("a staff member logs in, sees the shell, logs out and is kept out of protected pages", async ({
   page,

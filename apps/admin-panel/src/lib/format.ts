@@ -21,3 +21,16 @@ export function formatRsd(amount: number, language: string) {
   const number = amount.toLocaleString(toLocale(language), { maximumFractionDigits: 0 });
   return `${number} RSD`;
 }
+
+/** Today in the browser's time zone, as `YYYY-MM-DD`. */
+export function todayPlainDate() {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
+/** A `YYYY-MM-DD` date (no time of day), formatted like `formatDate`. */
+export function formatPlainDate(date: string, language: string) {
+  const [year, month, day] = date.split("-").map(Number);
+  return formatDate(new Date(year, month - 1, day), language);
+}

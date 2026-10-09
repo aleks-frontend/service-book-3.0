@@ -8,6 +8,7 @@ import { ActionsPage } from "./app/ActionsPage";
 import { CustomersPage } from "./app/CustomersPage";
 import { DevicesPage } from "./app/DevicesPage";
 import { PlaceholderPage } from "./app/PlaceholderPage";
+import { ServicesPage } from "./app/ServicesPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -20,6 +21,7 @@ const queryClient = new QueryClient({
 
 /** Sections built so far; the rest show a placeholder until their ticket lands. */
 const PAGES: Partial<Record<(typeof NAV_ITEMS)[number]["to"], ReactNode>> = {
+  "/services": <ServicesPage />,
   "/customers": <CustomersPage />,
   "/devices": <DevicesPage />,
   "/actions": <ActionsPage />,

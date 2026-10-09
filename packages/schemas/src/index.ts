@@ -6,3 +6,4 @@ export * from "./device.js";
 export * from "./fields.js";
 export * from "./money.js";
 export * from "./pagination.js";
+export * from "./service.js";

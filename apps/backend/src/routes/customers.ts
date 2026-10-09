@@ -104,7 +104,7 @@ customersRouter.delete("/:id", async (req, res) => {
     await prisma.customer.delete({ where: { id } });
     res.status(204).send();
   } catch (error) {
-    // A customer who still owns devices keeps them, so the delete is refused.
+    // A customer who still owns devices or has services keeps them, so the delete is refused.
     if (isForeignKeyViolation(error)) {
       sendInUse(res, LABEL, "CUSTOMER_IN_USE");
       return;

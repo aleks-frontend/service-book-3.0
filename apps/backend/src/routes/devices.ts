@@ -14,6 +14,7 @@ import {
   isNotFound,
   parseBody,
   sendFieldError,
+  sendInUse,
   sendNotFound,
 } from "../lib/routeHelpers.js";
 
@@ -57,11 +58,12 @@ devicesRouter.get("/", async (req, res) => {
     return;
   }
 
-  const { page, pageSize, search, sortDir, ownerId, generic } = parsed.data;
+  const { page, pageSize, search, sortDir, ownerId, generic, availableTo } = parsed.data;
   const where: Prisma.DeviceWhereInput = {
     ...(search && { AND: searchWhere(search) }),
     ...(ownerId && { ownerId }),
     ...(generic && { ownerId: null }),
+    ...(availableTo && { OR: [{ ownerId: availableTo }, { ownerId: null }] }),
   };
 
   const [items, total] = await Promise.all([
@@ -146,6 +148,11 @@ devicesRouter.delete("/:id", async (req, res) => {
     await prisma.device.delete({ where: { id } });
     res.status(204).send();
   } catch (error) {
+    // A device attached to a service stays with it.
+    if (isForeignKeyViolation(error)) {
+      sendInUse(res, LABEL, "DEVICE_IN_USE");
+      return;
+    }
     if (!isNotFound(error)) throw error;
     sendNotFound(res, LABEL);
   }

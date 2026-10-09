@@ -8,6 +8,7 @@ import { customersRouter } from "./routes/customers.js";
 import { debugRouter } from "./routes/debug.js";
 import { devicesRouter } from "./routes/devices.js";
 import { meRouter } from "./routes/me.js";
+import { servicesRouter } from "./routes/services.js";
 
 export type AppOptions = {
   /** The admin panel's built `dist` directory. When set, it is served from `/` (ADR-0001). */
@@ -30,6 +31,7 @@ export function createApp({ adminPanelDir }: AppOptions = {}) {
   app.use("/api/customers", customersRouter);
   app.use("/api/devices", devicesRouter);
   app.use("/api/actions", actionsRouter);
+  app.use("/api/services", servicesRouter);
 
   // Unknown API paths must never fall through to the admin panel's index.html.
   app.use("/api", (_req, res) => {

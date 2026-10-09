@@ -30,9 +30,19 @@ type DeviceFormDialogProps = {
   onOpenChange: (open: boolean) => void;
   /** The device to edit; omitted when creating one. */
   device?: Device;
+  /** The owner a new device starts with, e.g. the customer of the service it is created for. */
+  defaultOwner?: CustomerSummary | null;
+  /** Called with the saved device, e.g. to attach a device created inline. */
+  onSaved?: (device: Device) => void;
 };
 
-export function DeviceFormDialog({ open, onOpenChange, device }: DeviceFormDialogProps) {
+export function DeviceFormDialog({
+  open,
+  onOpenChange,
+  device,
+  defaultOwner = null,
+  onSaved,
+}: DeviceFormDialogProps) {
   const { t } = useTranslation();
   const saveDevice = useSaveDeviceMutation();
   const isEdit = device !== undefined;
@@ -59,13 +69,21 @@ export function DeviceFormDialog({ open, onOpenChange, device }: DeviceFormDialo
       model: device?.model ?? "",
       serialNumber: device?.serialNumber ?? "",
       description: device?.description ?? "",
-      ownerId: device?.owner?.id ?? null,
+      ownerId: device ? (device.owner?.id ?? null) : (defaultOwner?.id ?? null),
     });
-    setOwner(device?.owner ?? null);
-  }, [open, device, reset]);
+    setOwner(device ? device.owner : defaultOwner);
+  }, [open, device, defaultOwner, reset]);
 
   function onSubmit(input: DeviceInput) {
-    saveDevice.mutate({ id: device?.id, input }, { onSuccess: () => onOpenChange(false) });
+    saveDevice.mutate(
+      { id: device?.id, input },
+      {
+        onSuccess: (saved) => {
+          onSaved?.(saved);
+          onOpenChange(false);
+        },
+      },
+    );
   }
 
   return (

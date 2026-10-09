@@ -77,17 +77,18 @@ model Verification {
 
 /// A person or business that brings devices in for service (see GLOSSARY.md).
 model Customer {
-  id        String   @id @default(uuid()) @db.Uuid
+  id        String    @id @default(uuid()) @db.Uuid
   name      String
   phone     String
   email     String?
   address   String?
   facebook  String?
   /// The record's ID in the old Firebase app; makes re-imports idempotent.
-  legacyId  String?  @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  legacyId  String?   @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   devices   Device[]
+  services  Service[]
 
   @@index([name])
   @@map("customer")
@@ -110,7 +111,7 @@ model Action {
 
 /// A physical item that can be serviced or sold, owned by one customer or generic (see GLOSSARY.md, ADR-0004).
 model Device {
-  id           String    @id @default(uuid()) @db.Uuid
+  id           String          @id @default(uuid()) @db.Uuid
   /// Optional: cables and other accessories often have none. Shown before the model (see GLOSSARY.md).
   manufacturer String?
   model        String
@@ -119,14 +120,73 @@ model Device {
   /// Facts about the device itself, not its condition at intake (that belongs in the service Log).
   description  String?
   /// Null for a generic device. A customer who still owns devices cannot be deleted.
-  ownerId      String?   @db.Uuid
-  owner        Customer? @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  ownerId      String?         @db.Uuid
+  owner        Customer?       @relation(fields: [ownerId], references: [id], onDelete: Restrict)
   /// The record's ID in the old Firebase app; makes re-imports idempotent.
-  legacyId     String?   @unique
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  legacyId     String?         @unique
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  services     ServiceDevice[]
 
   @@index([manufacturer, model])
   @@index([ownerId])
   @@map("device")
+}
+
+/// Where a service is in its lifecycle (see GLOSSARY.md).
+enum Status {
+  RECEIVED
+  IN_PROGRESS
+  COMPLETED
+  DELIVERED
+  CANCELLED
+}
+
+/// One customer's visit with one or more devices on a given date (see GLOSSARY.md, ADR-0003).
+model Service {
+  id          String          @id @default(uuid()) @db.Uuid
+  /// With `sequence`, the service number `YYYY-NNNN`: the year of the service's date when it was created.
+  year        Int
+  /// Allocated from `ServiceNumberCounter` inside the creation transaction; never reused.
+  sequence    Int
+  /// Identifies the service on its public link; never the UUID or the service number.
+  publicToken String          @unique
+  date        DateTime        @db.Date
+  description String?
+  status      Status          @default(RECEIVED)
+  /// A customer with services cannot be deleted.
+  customerId  String          @db.Uuid
+  customer    Customer        @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  devices     ServiceDevice[]
+  /// The record's ID in the old Firebase app (its timestamp); makes re-imports idempotent.
+  legacyId    String?         @unique
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@unique([year, sequence])
+  @@index([date, year, sequence])
+  @@index([customerId])
+  @@map("service")
+}
+
+/// A device attached to a service. A device attached to any service cannot be deleted.
+model ServiceDevice {
+  serviceId String  @db.Uuid
+  service   Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  deviceId  String  @db.Uuid
+  device    Device  @relation(fields: [deviceId], references: [id], onDelete: Restrict)
+  /// Keeps the devices in the order they were attached.
+  position  Int
+
+  @@id([serviceId, deviceId])
+  @@index([deviceId])
+  @@map("service_device")
+}
+
+/// The last sequence number handed out per year (ADR-0003).
+model ServiceNumberCounter {
+  year Int @id
+  last Int
+
+  @@map("service_number_counter")
 }

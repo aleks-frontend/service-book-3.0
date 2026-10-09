@@ -415,6 +415,26 @@ describe("devices: paged list", () => {
     expect(all.body.total).toBe(15);
   });
 
+  it("lists the devices a customer can bring in: theirs and generic ones", async () => {
+    const { agent } = await authenticatedAgent();
+    const marko = await createCustomer(agent, "Marko");
+    const ana = await createCustomer(agent, "Ana");
+    await createDevice(agent, { model: "Marko's phone", ownerId: marko.id });
+    await createDevice(agent, { model: "Ana's phone", ownerId: ana.id });
+    await createDevice(agent, { model: "Generic phone" });
+    await createDevice(agent, { model: "Generic laptop" });
+
+    const available = await agent.get(`/api/devices?availableTo=${marko.id}`);
+    const phones = await agent.get(`/api/devices?availableTo=${marko.id}&search=phone`);
+
+    expect(labels(available)).toEqual(["Generic laptop", "Generic phone", "Marko's phone"]);
+    expect(labels(phones)).toEqual(["Generic phone", "Marko's phone"]);
+    expect((await agent.get("/api/devices?availableTo=nope")).status).toBe(400);
+    expect(
+      (await agent.get(`/api/devices?availableTo=${marko.id}&ownerId=${marko.id}`)).status,
+    ).toBe(400);
+  });
+
   it("rejects an invalid owner filter, or asking for an owner and generic at once, with 400", async () => {
     const { agent } = await authenticatedAgent();
     const marko = await createCustomer(agent);
