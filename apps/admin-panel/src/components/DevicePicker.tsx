@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import Select from "react-select";
+import CreatableSelect from "react-select/creatable";
 import { deviceLabel, type DeviceSummary } from "@servicebook/schemas";
 import { useDevicesQuery } from "@/lib/devices";
+import { isCreateOption, toCreateOption, type CreateOption } from "@/lib/createOption";
+import { CreateOptionLabel } from "./CreateOptionLabel";
 import { selectClassNames } from "./selectClassNames";
 
 const SEARCH_DEBOUNCE_MS = 300;
@@ -16,6 +18,8 @@ type DevicePickerProps = {
   "aria-label"?: string;
   invalid?: boolean;
   disabled?: boolean;
+  /** Offers a "New device" row under the matches once something is typed. */
+  onCreate?: () => void;
 } & (
   | {
       /** Picks several devices, e.g. those a customer brings in. */
@@ -31,6 +35,8 @@ type DevicePickerProps = {
     }
 );
 
+type Option = DeviceSummary | CreateOption;
+
 /**
  * Picks devices available to a customer by typing part of the manufacturer,
  * model or serial number; the search runs on the server.
@@ -38,7 +44,15 @@ type DevicePickerProps = {
  * Like `CustomerPicker`, the menu renders inline so it works inside a dialog.
  */
 export function DevicePicker(props: DevicePickerProps) {
-  const { id, customerId, placeholder, "aria-label": ariaLabel, invalid, disabled } = props;
+  const {
+    id,
+    customerId,
+    placeholder,
+    "aria-label": ariaLabel,
+    invalid,
+    disabled,
+    onCreate,
+  } = props;
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
@@ -64,21 +78,25 @@ export function DevicePicker(props: DevicePickerProps) {
   );
 
   return (
-    <Select<DeviceSummary, boolean>
+    <CreatableSelect<Option, boolean>
       inputId={id}
       aria-label={ariaLabel}
       aria-invalid={invalid}
       isMulti={props.multiple}
       value={props.value}
+      // The create row never reaches onChange; it goes to onCreateOption.
       onChange={(picked) => {
         if (props.multiple) props.onChange([...(picked as readonly DeviceSummary[])]);
         else props.onChange(picked as DeviceSummary | null);
       }}
       options={options}
-      getOptionValue={(device) => device.id}
-      getOptionLabel={deviceLabel}
+      getOptionValue={(option) => (isCreateOption(option) ? option.input : option.id)}
+      getOptionLabel={(option) => (isCreateOption(option) ? option.input : deviceLabel(option))}
       formatOptionLabel={(device, { context }) =>
-        context === "value" ? (
+        // A device has several fields, so what was typed is not carried over.
+        isCreateOption(device) ? (
+          <CreateOptionLabel>{t("New device")}</CreateOptionLabel>
+        ) : context === "value" ? (
           deviceLabel(device)
         ) : (
           <div className="flex items-baseline justify-between gap-3">
@@ -93,6 +111,10 @@ export function DevicePicker(props: DevicePickerProps) {
       }
       // The server already filtered the options by the search.
       filterOption={null}
+      isValidNewOption={(input) => onCreate !== undefined && input.trim() !== ""}
+      getNewOptionData={toCreateOption}
+      onCreateOption={() => onCreate?.()}
+      createOptionPosition="last"
       inputValue={inputValue}
       onInputChange={(next, { action }) => {
         if (action === "input-change") setInputValue(next);
@@ -109,7 +131,7 @@ export function DevicePicker(props: DevicePickerProps) {
       noOptionsMessage={() => t("No devices match your search.")}
       loadingMessage={() => t("Loading…")}
       unstyled
-      classNames={selectClassNames<DeviceSummary, boolean>(invalid)}
+      classNames={selectClassNames<Option, boolean>(invalid)}
     />
   );
 }

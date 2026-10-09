@@ -180,3 +180,57 @@ test("a work line starts at the action's price, and the total follows quantity a
     "12.000 RSD",
   );
 });
+
+test("an action or device missing from the pickers is created from the add-line dialog and picked", async ({
+  page,
+}) => {
+  await logIn(page);
+  await expect(page).toHaveURL("/services");
+
+  const post = async (path: string, data: object) =>
+    (await page.request.post(path, { data })).json();
+  const customer = await post("/api/customers", { name: "Nada Nadić", phone: "0645" });
+  const device = await post("/api/devices", { model: "Aspire 5", ownerId: customer.id });
+  const service = await post("/api/services", {
+    customerId: customer.id,
+    deviceIds: [device.id],
+    date: today(),
+  });
+
+  await page.goto(`/services?service=${service.id}`);
+  const drawer = page.getByRole("dialog", { name: `Servis ${service.number}` });
+  await drawer.getByRole("button", { name: "Dodaj stavku" }).click();
+  const addDialog = page.getByRole("dialog", { name: "Dodavanje stavke" });
+
+  // The search becomes the new action's name; only its price is left to type.
+  await addDialog.getByLabel("Usluga").fill("Čišćenje tastature");
+  await page.getByRole("option", { name: "Dodaj uslugu „Čišćenje tastature“" }).click();
+  const actionDialog = page.getByRole("dialog", { name: "Nova usluga" });
+  await expect(actionDialog.getByLabel("Naziv")).toHaveValue("Čišćenje tastature");
+  await page.keyboard.type("1200");
+  await actionDialog.getByRole("button", { name: "Dodaj uslugu" }).click();
+  await expect(actionDialog).toBeHidden();
+  await expect(addDialog).toContainText("Čišćenje tastature");
+  await expect(addDialog.getByLabel("Jedinična cena (RSD)")).toHaveValue("1200");
+
+  // Sale: a device is created from the picker's "New device" row.
+  await addDialog.getByRole("button", { name: "Prodaja" }).click();
+  await addDialog.getByLabel("Prodati uređaj").fill("Punjač");
+  await page.getByRole("option", { name: "Novi uređaj" }).click();
+  const deviceDialog = page.getByRole("dialog", { name: "Novi uređaj" });
+  await deviceDialog.getByLabel("Model *").fill("USB-C punjač");
+  await deviceDialog.getByRole("button", { name: "Dodaj uređaj" }).click();
+  await expect(deviceDialog).toBeHidden();
+  await expect(addDialog).toContainText("USB-C punjač");
+  await addDialog.getByLabel("Jedinična cena (RSD)").fill("900");
+  await addDialog.getByRole("button", { name: "Dodaj stavku" }).click();
+  await expect(addDialog).toBeHidden();
+
+  await expect(drawer.getByTestId("service-line")).toContainText("USB-C punjač");
+  await expect(drawer.getByTestId("service-total")).toHaveText("900 RSD");
+  // The action is in the price list for the next service.
+  const actions = await (await page.request.get("/api/actions")).json();
+  expect(actions).toContainEqual(
+    expect.objectContaining({ name: "Čišćenje tastature", price: 1200 }),
+  );
+});

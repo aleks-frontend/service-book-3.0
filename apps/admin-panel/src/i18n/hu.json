@@ -67,6 +67,7 @@
   "Enter a whole amount in dinars": "Adjon meg egy egész összeget dinárban",
   "New action": "Új művelet",
   "No actions match your search.": "Egy művelet sem felel meg a keresésnek.",
+  "Create action \"{{name}}\"": "„{{name}}” művelet létrehozása",
   "No actions yet.": "Még nincsenek műveletek.",
   "Price": "Ár",
   "Price (RSD)": "Ár (RSD)",

@@ -67,6 +67,7 @@
   "Enter a whole amount in dinars": "Unesite ceo iznos u dinarima",
   "New action": "Nova usluga",
   "No actions match your search.": "Nijedna usluga ne odgovara pretrazi.",
+  "Create action \"{{name}}\"": "Dodaj uslugu „{{name}}“",
   "No actions yet.": "Još nema usluga.",
   "Price": "Cena",
   "Price (RSD)": "Cena (RSD)",

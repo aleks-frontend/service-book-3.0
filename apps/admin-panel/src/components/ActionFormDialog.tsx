@@ -22,16 +22,26 @@ type ActionFormDialogProps = {
   onOpenChange: (open: boolean) => void;
   /** The action to edit; omitted when creating one. */
   action?: Action;
+  /** The name a new action starts with, e.g. what was searched for in a picker. */
+  defaultName?: string;
+  /** Called with the saved action, e.g. to pick an action created inline. */
+  onSaved?: (action: Action) => void;
 };
 
 /** The price field starts empty when creating; the schema then rejects it. */
 type ActionFormValues = { name: string; price: number | "" };
 
-function toFormValues(action?: Action): ActionFormValues {
-  return { name: action?.name ?? "", price: action?.price ?? "" };
+function toFormValues(action?: Action, defaultName = ""): ActionFormValues {
+  return { name: action?.name ?? defaultName, price: action?.price ?? "" };
 }
 
-export function ActionFormDialog({ open, onOpenChange, action }: ActionFormDialogProps) {
+export function ActionFormDialog({
+  open,
+  onOpenChange,
+  action,
+  defaultName,
+  onSaved,
+}: ActionFormDialogProps) {
   const { t } = useTranslation();
   const saveAction = useSaveActionMutation();
   const isEdit = action !== undefined;
@@ -40,6 +50,7 @@ export function ActionFormDialog({ open, onOpenChange, action }: ActionFormDialo
     register,
     handleSubmit,
     reset,
+    setFocus,
     formState: { errors },
   } = useForm<ActionFormValues, unknown, ActionInput>({
     // zodResolver submits the schema's parsed output, but @hookform/resolvers
@@ -48,16 +59,32 @@ export function ActionFormDialog({ open, onOpenChange, action }: ActionFormDialo
   });
 
   useEffect(() => {
-    if (open) reset(toFormValues(action));
-  }, [open, action, reset]);
+    if (open) reset(toFormValues(action, defaultName));
+  }, [open, action, defaultName, reset]);
 
   function onSubmit(input: ActionInput) {
-    saveAction.mutate({ id: action?.id, input }, { onSuccess: () => onOpenChange(false) });
+    saveAction.mutate(
+      { id: action?.id, input },
+      {
+        onSuccess: (saved) => {
+          onSaved?.(saved);
+          onOpenChange(false);
+        },
+      },
+    );
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent
+        className="max-w-md"
+        onOpenAutoFocus={(event) => {
+          // With the name given, the price is what is left to fill in.
+          if (!defaultName) return;
+          event.preventDefault();
+          setFocus("price");
+        }}
+      >
         <DialogHeader className="pr-8">
           <DialogTitle>{isEdit ? t("Edit action") : t("New action")}</DialogTitle>
           <DialogDescription>{t("Fields marked with * are required.")}</DialogDescription>

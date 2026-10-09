@@ -154,6 +154,7 @@ export function ServiceForm({ id, service, onSubmit }: ServiceFormProps) {
                 customerId={customer?.id ?? null}
                 value={devices}
                 onChange={changeDevices}
+                onCreate={() => setCreatingDevice(true)}
                 placeholder={
                   customer ? t("The customer's or generic devices") : t("Choose a customer first")
                 }

@@ -17,6 +17,7 @@ import {
 import { formatRsd } from "@/lib/format";
 import { useServiceLineMutations } from "@/lib/services";
 import { cn } from "@/lib/utils";
+import { ActionFormDialog } from "./ActionFormDialog";
 import { ActionPicker } from "./ActionPicker";
 import { DeviceFormDialog } from "./DeviceFormDialog";
 import { DevicePicker } from "./DevicePicker";
@@ -302,6 +303,8 @@ function AddLineForm({ service, isAdding, onAdd, onDone }: AddLineFormProps) {
   const [action, setAction] = useState<Action | null>(null);
   const [device, setDevice] = useState<DeviceSummary | null>(null);
   const [creatingDevice, setCreatingDevice] = useState(false);
+  // The name the new action starts with; null while its dialog is closed.
+  const [newActionName, setNewActionName] = useState<string | null>(null);
 
   const { register, handleSubmit, setValue, watch, formState } = useForm<
     AddLineValues,
@@ -394,23 +397,22 @@ function AddLineForm({ service, isAdding, onAdd, onDone }: AddLineFormProps) {
             <label htmlFor="add-line-reference" className="text-sm font-medium">
               {type === "WORK" ? t("Action") : t("Device sold")} *
             </label>
-            {type === "SALE" && (
-              <Button
-                type="button"
-                variant="link"
-                size="xs"
-                onClick={() => setCreatingDevice(true)}
-              >
-                <Plus className="mr-1 h-3.5 w-3.5" aria-hidden />
-                {t("New device")}
-              </Button>
-            )}
+            <Button
+              type="button"
+              variant="link"
+              size="xs"
+              onClick={() => (type === "WORK" ? setNewActionName("") : setCreatingDevice(true))}
+            >
+              <Plus className="mr-1 h-3.5 w-3.5" aria-hidden />
+              {type === "WORK" ? t("New action") : t("New device")}
+            </Button>
           </div>
           {type === "WORK" ? (
             <ActionPicker
               id="add-line-reference"
               value={action}
               onChange={pickAction}
+              onCreate={setNewActionName}
               placeholder={t("Search the price list")}
             />
           ) : (
@@ -419,6 +421,7 @@ function AddLineForm({ service, isAdding, onAdd, onDone }: AddLineFormProps) {
               customerId={service.customer.id}
               value={device}
               onChange={setDevice}
+              onCreate={() => setCreatingDevice(true)}
               placeholder={t("The customer's or generic devices")}
             />
           )}
@@ -478,6 +481,12 @@ function AddLineForm({ service, isAdding, onAdd, onDone }: AddLineFormProps) {
       </DialogFooter>
 
       {/* Outside the form: a nested dialog's submit would otherwise bubble up to it through the React tree. */}
+      <ActionFormDialog
+        open={newActionName !== null}
+        onOpenChange={(open) => !open && setNewActionName(null)}
+        defaultName={newActionName ?? undefined}
+        onSaved={pickAction}
+      />
       <DeviceFormDialog
         open={creatingDevice}
         onOpenChange={setCreatingDevice}
