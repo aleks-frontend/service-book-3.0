@@ -40,7 +40,8 @@ export function ServiceForm({ id, service, onSubmit }: ServiceFormProps) {
   const [customer, setCustomer] = useState<CustomerSummary | null>(null);
   const [devices, setDevices] = useState<DeviceSummary[]>([]);
   const [creatingCustomer, setCreatingCustomer] = useState(false);
-  const [creatingDevice, setCreatingDevice] = useState(false);
+  // The model the new device starts with; null while its dialog is closed.
+  const [newDeviceModel, setNewDeviceModel] = useState<string | null>(null);
 
   const {
     register,
@@ -137,7 +138,7 @@ export function ServiceForm({ id, service, onSubmit }: ServiceFormProps) {
               type="button"
               variant="link"
               size="xs"
-              onClick={() => setCreatingDevice(true)}
+              onClick={() => setNewDeviceModel("")}
               disabled={!customer}
             >
               <Plus className="mr-1 h-3.5 w-3.5" aria-hidden />
@@ -154,7 +155,7 @@ export function ServiceForm({ id, service, onSubmit }: ServiceFormProps) {
                 customerId={customer?.id ?? null}
                 value={devices}
                 onChange={changeDevices}
-                onCreate={() => setCreatingDevice(true)}
+                onCreate={setNewDeviceModel}
                 placeholder={
                   customer ? t("The customer's or generic devices") : t("Choose a customer first")
                 }
@@ -200,8 +201,9 @@ export function ServiceForm({ id, service, onSubmit }: ServiceFormProps) {
         onSaved={({ id, name, phone }) => changeCustomer({ id, name, phone })}
       />
       <DeviceFormDialog
-        open={creatingDevice}
-        onOpenChange={setCreatingDevice}
+        open={newDeviceModel !== null}
+        onOpenChange={(open) => !open && setNewDeviceModel(null)}
+        defaultModel={newDeviceModel ?? undefined}
         defaultOwner={customer}
         onSaved={({ id, manufacturer, model, serialNumber, owner }) => {
           // The owner may have been changed to someone else in the dialog.

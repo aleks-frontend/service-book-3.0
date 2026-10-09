@@ -213,12 +213,17 @@ test("an action or device missing from the pickers is created from the add-line 
   await expect(addDialog).toContainText("Čišćenje tastature");
   await expect(addDialog.getByLabel("Jedinična cena (RSD)")).toHaveValue("1200");
 
-  // Sale: a device is created from the picker's "New device" row.
+  // Sale: the search becomes the new device's model, selected in case it belongs elsewhere.
   await addDialog.getByRole("button", { name: "Prodaja" }).click();
-  await addDialog.getByLabel("Prodati uređaj").fill("Punjač");
-  await page.getByRole("option", { name: "Novi uređaj" }).click();
+  await addDialog.getByLabel("Prodati uređaj").fill("USB-C punjač");
+  await page.getByRole("option", { name: "Novi uređaj „USB-C punjač“" }).click();
   const deviceDialog = page.getByRole("dialog", { name: "Novi uređaj" });
-  await deviceDialog.getByLabel("Model *").fill("USB-C punjač");
+  const model = deviceDialog.getByLabel("Model *");
+  await expect(model).toBeFocused();
+  await expect(model).toHaveValue("USB-C punjač");
+  expect(
+    await model.evaluate((input: HTMLInputElement) => [input.selectionStart, input.selectionEnd]),
+  ).toEqual([0, "USB-C punjač".length]);
   await deviceDialog.getByRole("button", { name: "Dodaj uređaj" }).click();
   await expect(deviceDialog).toBeHidden();
   await expect(addDialog).toContainText("USB-C punjač");

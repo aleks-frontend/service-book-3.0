@@ -83,6 +83,7 @@
   "Clear": "Eltávolítás",
   "Leave empty for a generic device.": "Általános eszköz esetén hagyja üresen.",
   "New device": "Új eszköz",
+  "New device \"{{model}}\"": "Új eszköz: „{{model}}”",
   "Edit device": "Eszköz szerkesztése",
   "Create device": "Eszköz létrehozása",
   "Device created": "Eszköz létrehozva",

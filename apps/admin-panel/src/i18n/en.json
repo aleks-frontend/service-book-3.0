@@ -83,6 +83,7 @@
   "Clear": "Clear",
   "Leave empty for a generic device.": "Leave empty for a generic device.",
   "New device": "New device",
+  "New device \"{{model}}\"": "New device \"{{model}}\"",
   "Edit device": "Edit device",
   "Create device": "Create device",
   "Device created": "Device created",

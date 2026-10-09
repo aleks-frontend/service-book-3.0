@@ -83,6 +83,7 @@
   "Clear": "Ukloni",
   "Leave empty for a generic device.": "Ostavite prazno za opšti uređaj.",
   "New device": "Novi uređaj",
+  "New device \"{{model}}\"": "Novi uređaj „{{model}}“",
   "Edit device": "Izmena uređaja",
   "Create device": "Dodaj uređaj",
   "Device created": "Uređaj je dodat",

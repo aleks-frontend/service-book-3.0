@@ -18,8 +18,8 @@ type DevicePickerProps = {
   "aria-label"?: string;
   invalid?: boolean;
   disabled?: boolean;
-  /** Offers a "New device" row under the matches once something is typed. */
-  onCreate?: () => void;
+  /** Offers a new device with what was typed as its model, under the matches. */
+  onCreate?: (model: string) => void;
 } & (
   | {
       /** Picks several devices, e.g. those a customer brings in. */
@@ -93,9 +93,10 @@ export function DevicePicker(props: DevicePickerProps) {
       getOptionValue={(option) => (isCreateOption(option) ? option.input : option.id)}
       getOptionLabel={(option) => (isCreateOption(option) ? option.input : deviceLabel(option))}
       formatOptionLabel={(device, { context }) =>
-        // A device has several fields, so what was typed is not carried over.
         isCreateOption(device) ? (
-          <CreateOptionLabel>{t("New device")}</CreateOptionLabel>
+          <CreateOptionLabel>
+            {t('New device "{{model}}"', { model: device.input })}
+          </CreateOptionLabel>
         ) : context === "value" ? (
           deviceLabel(device)
         ) : (
@@ -112,8 +113,8 @@ export function DevicePicker(props: DevicePickerProps) {
       // The server already filtered the options by the search.
       filterOption={null}
       isValidNewOption={(input) => onCreate !== undefined && input.trim() !== ""}
-      getNewOptionData={toCreateOption}
-      onCreateOption={() => onCreate?.()}
+      getNewOptionData={(input) => toCreateOption(input.trim())}
+      onCreateOption={(input) => onCreate?.(input.trim())}
       createOptionPosition="last"
       inputValue={inputValue}
       onInputChange={(next, { action }) => {

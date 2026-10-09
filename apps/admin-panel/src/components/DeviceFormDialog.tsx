@@ -32,6 +32,8 @@ type DeviceFormDialogProps = {
   device?: Device;
   /** The owner a new device starts with, e.g. the customer of the service it is created for. */
   defaultOwner?: CustomerSummary | null;
+  /** The model a new device starts with, e.g. what was searched for in a picker. */
+  defaultModel?: string;
   /** Called with the saved device, e.g. to attach a device created inline. */
   onSaved?: (device: Device) => void;
 };
@@ -41,6 +43,7 @@ export function DeviceFormDialog({
   onOpenChange,
   device,
   defaultOwner = null,
+  defaultModel,
   onSaved,
 }: DeviceFormDialogProps) {
   const { t } = useTranslation();
@@ -55,6 +58,7 @@ export function DeviceFormDialog({
     control,
     handleSubmit,
     reset,
+    setFocus,
     formState: { errors },
   } = useForm<DeviceInputValues, unknown, DeviceInput>({
     // zodResolver submits the schema's parsed output, but @hookform/resolvers
@@ -66,13 +70,13 @@ export function DeviceFormDialog({
     if (!open) return;
     reset({
       manufacturer: device?.manufacturer ?? "",
-      model: device?.model ?? "",
+      model: device?.model ?? defaultModel ?? "",
       serialNumber: device?.serialNumber ?? "",
       description: device?.description ?? "",
       ownerId: device ? (device.owner?.id ?? null) : (defaultOwner?.id ?? null),
     });
     setOwner(device ? device.owner : defaultOwner);
-  }, [open, device, defaultOwner, reset]);
+  }, [open, device, defaultOwner, defaultModel, reset]);
 
   function onSubmit(input: DeviceInput) {
     saveDevice.mutate(
@@ -88,7 +92,15 @@ export function DeviceFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent
+        className="max-w-md"
+        onOpenAutoFocus={(event) => {
+          // The search may hold the manufacturer too, so it is selected for moving or retyping.
+          if (!defaultModel) return;
+          event.preventDefault();
+          setFocus("model", { shouldSelect: true });
+        }}
+      >
         <DialogHeader className="pr-8">
           <DialogTitle>{isEdit ? t("Edit device") : t("New device")}</DialogTitle>
           <DialogDescription>{t("Fields marked with * are required.")}</DialogDescription>

@@ -302,7 +302,8 @@ function AddLineForm({ service, isAdding, onAdd, onDone }: AddLineFormProps) {
   // The form only holds the amounts; the pickers hold what the line refers to.
   const [action, setAction] = useState<Action | null>(null);
   const [device, setDevice] = useState<DeviceSummary | null>(null);
-  const [creatingDevice, setCreatingDevice] = useState(false);
+  // The model the new device starts with; null while its dialog is closed.
+  const [newDeviceModel, setNewDeviceModel] = useState<string | null>(null);
   // The name the new action starts with; null while its dialog is closed.
   const [newActionName, setNewActionName] = useState<string | null>(null);
 
@@ -401,7 +402,7 @@ function AddLineForm({ service, isAdding, onAdd, onDone }: AddLineFormProps) {
               type="button"
               variant="link"
               size="xs"
-              onClick={() => (type === "WORK" ? setNewActionName("") : setCreatingDevice(true))}
+              onClick={() => (type === "WORK" ? setNewActionName("") : setNewDeviceModel(""))}
             >
               <Plus className="mr-1 h-3.5 w-3.5" aria-hidden />
               {type === "WORK" ? t("New action") : t("New device")}
@@ -421,7 +422,7 @@ function AddLineForm({ service, isAdding, onAdd, onDone }: AddLineFormProps) {
               customerId={service.customer.id}
               value={device}
               onChange={setDevice}
-              onCreate={() => setCreatingDevice(true)}
+              onCreate={setNewDeviceModel}
               placeholder={t("The customer's or generic devices")}
             />
           )}
@@ -488,8 +489,9 @@ function AddLineForm({ service, isAdding, onAdd, onDone }: AddLineFormProps) {
         onSaved={pickAction}
       />
       <DeviceFormDialog
-        open={creatingDevice}
-        onOpenChange={setCreatingDevice}
+        open={newDeviceModel !== null}
+        onOpenChange={(open) => !open && setNewDeviceModel(null)}
+        defaultModel={newDeviceModel ?? undefined}
         // Devices sold are usually generic (see GLOSSARY.md), but may be made the customer's.
         defaultOwner={null}
         onSaved={({ id, manufacturer, model, serialNumber, owner }) => {
