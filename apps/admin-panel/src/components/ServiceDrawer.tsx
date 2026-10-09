@@ -10,7 +10,6 @@ import { ServiceLines } from "./ServiceLines";
 import { StatusBadge } from "./StatusBadge";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "./ui/sheet";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 
 type ServiceDrawerProps = {
   serviceId: string | null;
@@ -65,14 +64,7 @@ export function ServiceDrawer({ serviceId, onClose }: ServiceDrawerProps) {
               onEdit={() => setEditing(true)}
               onDelete={() => setConfirmingDelete(true)}
             />
-            <Tabs defaultValue="details">
-              <TabsList>
-                <TabsTrigger value="details">{t("Details")}</TabsTrigger>
-              </TabsList>
-              <TabsContent value="details">
-                <ServiceLines service={service} />
-              </TabsContent>
-            </Tabs>
+            <ServiceLines service={service} />
             <ServiceFormDialog open={editing} onOpenChange={setEditing} service={service} />
           </>
         )}
