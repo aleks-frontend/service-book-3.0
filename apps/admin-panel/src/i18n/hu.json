@@ -172,5 +172,8 @@
   "Could not remove the line. Please try again.": "A tétel eltávolítása nem sikerült. Próbálja újra.",
   "Could not reorder the lines. Please try again.": "A tételek átrendezése nem sikerült. Próbálja újra.",
   "This line was already removed.": "Ezt a tételt már eltávolították.",
-  "This action is used on a service, so it cannot be deleted.": "Ezt a műveletet egy szerviz használja, ezért nem törölhető."
+  "This action is used on a service, so it cannot be deleted.": "Ezt a műveletet egy szerviz használja, ezért nem törölhető.",
+  "Edit service": "Szerviz szerkesztése",
+  "Delete service": "Szerviz törlése",
+  "Work from the price list, or a device sold to the customer.": "Művelet az árlistából, vagy az ügyfélnek eladott eszköz."
 }

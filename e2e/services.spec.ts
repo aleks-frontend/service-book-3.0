@@ -57,7 +57,19 @@ test("a staff member registers a service for a new customer and opens it via ?se
   await expect(page).toHaveURL(/\/services\?service=[0-9a-f-]{36}$/);
   const drawer = page.getByRole("dialog", { name: `Servis ${number}` });
   await expect(drawer).toBeVisible();
-  await expect(drawer.getByLabel("Opis")).toHaveValue("Ne puni bateriju");
+  const details = drawer.getByRole("region", { name: "Detalji servisa" });
+  await expect(details).toContainText("Petar Petrović");
+  await expect(details).toContainText("Apple iPhone 13");
+  await expect(details).toContainText("Ne puni bateriju");
+
+  // The details are changed in the edit modal, and the drawer shows the change.
+  await details.getByRole("button", { name: "Izmena servisa" }).click();
+  const editDialog = page.getByRole("dialog", { name: "Izmena servisa" });
+  await expect(editDialog.getByLabel("Opis")).toHaveValue("Ne puni bateriju");
+  await editDialog.getByLabel("Opis").fill("Ne puni bateriju, pukao ekran");
+  await editDialog.getByRole("button", { name: "Sačuvaj izmene" }).click();
+  await expect(editDialog).toBeHidden();
+  await expect(details).toContainText("Ne puni bateriju, pukao ekran");
 
   // A reload keeps it open, and the back button closes it.
   await page.reload();
@@ -136,12 +148,14 @@ test("a work line starts at the action's price, and the total follows quantity a
   await expect(total).toHaveText("0 RSD");
 
   // Picking the action fills in its price.
-  const addForm = drawer.getByRole("form", { name: "Dodavanje stavke" });
-  await addForm.getByLabel("Usluga").fill("ekran");
+  await drawer.getByRole("button", { name: "Dodaj stavku" }).click();
+  const addDialog = page.getByRole("dialog", { name: "Dodavanje stavke" });
+  await addDialog.getByLabel("Usluga").fill("ekran");
   await page.getByRole("option", { name: /Zamena ekrana/ }).click();
-  await expect(addForm.getByLabel("Jedinična cena (RSD)")).toHaveValue("4500");
-  await addForm.getByLabel("Količina").fill("2");
-  await addForm.getByRole("button", { name: "Dodaj stavku" }).click();
+  await expect(addDialog.getByLabel("Jedinična cena (RSD)")).toHaveValue("4500");
+  await addDialog.getByLabel("Količina").fill("2");
+  await addDialog.getByRole("button", { name: "Dodaj stavku" }).click();
+  await expect(addDialog).toBeHidden();
 
   const line = drawer.getByTestId("service-line");
   await expect(line).toContainText("Zamena ekrana");

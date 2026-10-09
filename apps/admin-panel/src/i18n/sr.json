@@ -172,5 +172,8 @@
   "Could not remove the line. Please try again.": "Uklanjanje stavke nije uspelo. Pokušajte ponovo.",
   "Could not reorder the lines. Please try again.": "Promena redosleda stavki nije uspela. Pokušajte ponovo.",
   "This line was already removed.": "Ova stavka je već uklonjena.",
-  "This action is used on a service, so it cannot be deleted.": "Ova usluga je korišćena na servisu, pa ne može da se obriše."
+  "This action is used on a service, so it cannot be deleted.": "Ova usluga je korišćena na servisu, pa ne može da se obriše.",
+  "Edit service": "Izmena servisa",
+  "Delete service": "Obriši servis",
+  "Work from the price list, or a device sold to the customer.": "Usluga iz cenovnika ili uređaj prodat mušteriji."
 }

@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Loader2 } from "lucide-react";
+import type { Service } from "@servicebook/schemas";
 import { useSaveServiceMutation } from "@/lib/services";
 import { ServiceForm } from "./ServiceForm";
 import { Button } from "./ui/button";
@@ -15,25 +16,32 @@ import {
 type ServiceFormDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** The service to edit; omitted when registering a new one. */
+  service?: Service;
 };
 
-/** The "Add" modal: registers a new service, which starts as Received. */
-export function ServiceFormDialog({ open, onOpenChange }: ServiceFormDialogProps) {
+/**
+ * The "Add" modal, which registers a new service (it starts as Received), and
+ * the drawer's "Edit service" modal for its customer, devices, date and description.
+ */
+export function ServiceFormDialog({ open, onOpenChange, service }: ServiceFormDialogProps) {
   const { t } = useTranslation();
   const saveService = useSaveServiceMutation();
+  const formId = service ? "service-edit-form" : "service-create-form";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader className="pr-8">
-          <DialogTitle>{t("New service")}</DialogTitle>
+          <DialogTitle>{service ? t("Edit service") : t("New service")}</DialogTitle>
           <DialogDescription>{t("Fields marked with * are required.")}</DialogDescription>
         </DialogHeader>
 
         <ServiceForm
-          id="service-create-form"
+          id={formId}
+          service={service}
           onSubmit={(input) =>
-            saveService.mutate({ input }, { onSuccess: () => onOpenChange(false) })
+            saveService.mutate({ id: service?.id, input }, { onSuccess: () => onOpenChange(false) })
           }
         />
 
@@ -41,9 +49,9 @@ export function ServiceFormDialog({ open, onOpenChange }: ServiceFormDialogProps
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t("Cancel")}
           </Button>
-          <Button type="submit" form="service-create-form" disabled={saveService.isPending}>
+          <Button type="submit" form={formId} disabled={saveService.isPending}>
             {saveService.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {t("Create service")}
+            {service ? t("Save changes") : t("Create service")}
           </Button>
         </DialogFooter>
       </DialogContent>

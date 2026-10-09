@@ -172,5 +172,8 @@
   "Could not remove the line. Please try again.": "Could not remove the line. Please try again.",
   "Could not reorder the lines. Please try again.": "Could not reorder the lines. Please try again.",
   "This line was already removed.": "This line was already removed.",
-  "This action is used on a service, so it cannot be deleted.": "This action is used on a service, so it cannot be deleted."
+  "This action is used on a service, so it cannot be deleted.": "This action is used on a service, so it cannot be deleted.",
+  "Edit service": "Edit service",
+  "Delete service": "Delete service",
+  "Work from the price list, or a device sold to the customer.": "Work from the price list, or a device sold to the customer."
 }

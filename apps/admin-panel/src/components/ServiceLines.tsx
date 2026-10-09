@@ -21,6 +21,14 @@ import { ActionPicker } from "./ActionPicker";
 import { DeviceFormDialog } from "./DeviceFormDialog";
 import { DevicePicker } from "./DevicePicker";
 import { Button } from "./ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog";
 import { Input } from "./ui/input";
 
 /** A quantity or unit price as typed, or null while it is not a valid one. */
@@ -64,6 +72,7 @@ export function ServiceLines({ service }: ServiceLinesProps) {
   const { t, i18n } = useTranslation();
   const { add, update, remove, reorder } = useServiceLineMutations(service.id);
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
+  const [adding, setAdding] = useState(false);
 
   /** The line as it would be saved now: valid drafts count, invalid ones do not. */
   function current(line: ServiceLine) {
@@ -134,9 +143,15 @@ export function ServiceLines({ service }: ServiceLinesProps) {
 
   return (
     <section className="space-y-3" aria-labelledby="service-lines-heading">
-      <h3 id="service-lines-heading" className="text-sm font-medium">
-        {t("Work and sales")}
-      </h3>
+      <div className="flex items-center justify-between gap-2">
+        <h3 id="service-lines-heading" className="text-sm font-medium">
+          {t("Work and sales")}
+        </h3>
+        <Button size="sm" onClick={() => setAdding(true)}>
+          <Plus className="mr-1 h-4 w-4" aria-hidden />
+          {t("Add line")}
+        </Button>
+      </div>
 
       {service.lines.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("No work or sales recorded yet.")}</p>
@@ -240,19 +255,47 @@ export function ServiceLines({ service }: ServiceLinesProps) {
         </span>
       </div>
 
-      <AddLineForm service={service} isAdding={add.isPending} onAdd={add.mutateAsync} />
+      <AddLineDialog
+        open={adding}
+        onOpenChange={setAdding}
+        service={service}
+        isAdding={add.isPending}
+        onAdd={add.mutateAsync}
+      />
     </section>
   );
 }
 
-type AddLineFormProps = {
+type AddLineDialogProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   service: ServiceDetail;
   isAdding: boolean;
   onAdd: ReturnType<typeof useServiceLineMutations>["add"]["mutateAsync"];
 };
 
 /** Adds a work line (an action, at its price unless changed) or a sale line (a device). */
-function AddLineForm({ service, isAdding, onAdd }: AddLineFormProps) {
+function AddLineDialog({ open, onOpenChange, service, isAdding, onAdd }: AddLineDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        {/* Mounted with the dialog, so every line starts from a blank form. */}
+        <AddLineForm
+          service={service}
+          isAdding={isAdding}
+          onAdd={onAdd}
+          onDone={() => onOpenChange(false)}
+        />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+type AddLineFormProps = Omit<AddLineDialogProps, "open" | "onOpenChange"> & {
+  onDone: () => void;
+};
+
+function AddLineForm({ service, isAdding, onAdd, onDone }: AddLineFormProps) {
   const { t, i18n } = useTranslation();
   const [type, setType] = useState<LineType>("WORK");
   // The form only holds the amounts; the pickers hold what the line refers to.
@@ -260,7 +303,7 @@ function AddLineForm({ service, isAdding, onAdd }: AddLineFormProps) {
   const [device, setDevice] = useState<DeviceSummary | null>(null);
   const [creatingDevice, setCreatingDevice] = useState(false);
 
-  const { register, handleSubmit, reset, setValue, watch, formState } = useForm<
+  const { register, handleSubmit, setValue, watch, formState } = useForm<
     AddLineValues,
     unknown,
     AddLineAmounts
@@ -299,9 +342,7 @@ function AddLineForm({ service, isAdding, onAdd }: AddLineFormProps) {
     if (!input) return;
     try {
       await onAdd(input);
-      setAction(null);
-      setDevice(null);
-      reset(EMPTY_LINE);
+      onDone();
     } catch {
       // The mutation already showed the error; keep what was typed.
     }
@@ -315,97 +356,126 @@ function AddLineForm({ service, isAdding, onAdd }: AddLineFormProps) {
 
   return (
     <>
+      <DialogHeader className="pr-8">
+        <DialogTitle>{t("Add a line")}</DialogTitle>
+        <DialogDescription>
+          {t("Work from the price list, or a device sold to the customer.")}
+        </DialogDescription>
+      </DialogHeader>
+
       <form
+        id="add-line-form"
         onSubmit={handleSubmit(submit)}
         noValidate
         autoComplete="off"
-        className="space-y-3 rounded-md border bg-muted/30 p-3"
-        aria-label={t("Add a line")}
+        className="space-y-4"
       >
-        <div className="flex items-center justify-between gap-2">
-          <div className="inline-flex rounded-md bg-muted p-1" role="group">
-            <button
-              type="button"
-              className={typeButtonClass("WORK")}
-              aria-pressed={type === "WORK"}
-              onClick={() => changeType("WORK")}
-            >
-              {t("Work")}
-            </button>
-            <button
-              type="button"
-              className={typeButtonClass("SALE")}
-              aria-pressed={type === "SALE"}
-              onClick={() => changeType("SALE")}
-            >
-              {t("Sale")}
-            </button>
+        <div className="inline-flex rounded-md bg-muted p-1" role="group">
+          <button
+            type="button"
+            className={typeButtonClass("WORK")}
+            aria-pressed={type === "WORK"}
+            onClick={() => changeType("WORK")}
+          >
+            {t("Work")}
+          </button>
+          <button
+            type="button"
+            className={typeButtonClass("SALE")}
+            aria-pressed={type === "SALE"}
+            onClick={() => changeType("SALE")}
+          >
+            {t("Sale")}
+          </button>
+        </div>
+
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between gap-2">
+            <label htmlFor="add-line-reference" className="text-sm font-medium">
+              {type === "WORK" ? t("Action") : t("Device sold")} *
+            </label>
+            {type === "SALE" && (
+              <Button
+                type="button"
+                variant="link"
+                size="xs"
+                onClick={() => setCreatingDevice(true)}
+              >
+                <Plus className="mr-1 h-3.5 w-3.5" aria-hidden />
+                {t("New device")}
+              </Button>
+            )}
           </div>
-          {type === "SALE" && (
-            <Button type="button" variant="link" size="xs" onClick={() => setCreatingDevice(true)}>
-              <Plus className="mr-1 h-3.5 w-3.5" aria-hidden />
-              {t("New device")}
-            </Button>
+          {type === "WORK" ? (
+            <ActionPicker
+              id="add-line-reference"
+              value={action}
+              onChange={pickAction}
+              placeholder={t("Search the price list")}
+            />
+          ) : (
+            <DevicePicker
+              id="add-line-reference"
+              customerId={service.customer.id}
+              value={device}
+              onChange={setDevice}
+              placeholder={t("The customer's or generic devices")}
+            />
           )}
         </div>
 
-        {type === "WORK" ? (
-          <ActionPicker
-            aria-label={t("Action")}
-            value={action}
-            onChange={pickAction}
-            placeholder={t("Search the price list")}
-          />
-        ) : (
-          <DevicePicker
-            aria-label={t("Device sold")}
-            customerId={service.customer.id}
-            value={device}
-            onChange={setDevice}
-            placeholder={t("The customer's or generic devices")}
-          />
-        )}
-
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          <Input
-            type="number"
-            inputMode="numeric"
-            min={1}
-            step={1}
-            aria-label={t("Quantity")}
-            aria-invalid={!!formState.errors.quantity}
-            className={cn("h-9 w-20", formState.errors.quantity && "border-destructive")}
-            {...register("quantity")}
-          />
-          <span className="text-muted-foreground">×</span>
-          <Input
-            type="number"
-            inputMode="numeric"
-            min={0}
-            step={1}
-            aria-label={t("Unit price (RSD)")}
-            placeholder={t("Price")}
-            className="h-9 w-28"
-            {...register("unitPrice")}
-          />
-          <span className="tabular-nums text-muted-foreground">
-            = {formatRsd((quantity ?? 0) * (unitPrice ?? 0), i18n.language)}
-          </span>
-          <Button
-            type="submit"
-            size="sm"
-            className="ml-auto"
-            disabled={!picked || !formState.isValid || isAdding}
-          >
-            {isAdding ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Plus className="mr-1 h-4 w-4" aria-hidden />
-            )}
-            {t("Add line")}
-          </Button>
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="space-y-1.5">
+            <label htmlFor="add-line-quantity" className="text-sm font-medium">
+              {t("Quantity")} *
+            </label>
+            <Input
+              id="add-line-quantity"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              step={1}
+              aria-invalid={!!formState.errors.quantity}
+              className={cn("w-24", formState.errors.quantity && "border-destructive")}
+              {...register("quantity")}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="add-line-price" className="text-sm font-medium">
+              {t("Unit price (RSD)")} *
+            </label>
+            <Input
+              id="add-line-price"
+              type="number"
+              inputMode="numeric"
+              min={0}
+              step={1}
+              className="w-32"
+              {...register("unitPrice")}
+            />
+          </div>
+          <p className="ml-auto pb-2 text-sm">
+            <span className="text-muted-foreground">{t("Total")}: </span>
+            <span className="font-medium tabular-nums">
+              {formatRsd((quantity ?? 0) * (unitPrice ?? 0), i18n.language)}
+            </span>
+          </p>
         </div>
       </form>
+
+      <DialogFooter className="gap-2">
+        <Button variant="outline" onClick={onDone}>
+          {t("Cancel")}
+        </Button>
+        <Button
+          type="submit"
+          form="add-line-form"
+          disabled={!picked || !formState.isValid || isAdding}
+        >
+          {isAdding && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {t("Add line")}
+        </Button>
+      </DialogFooter>
 
       {/* Outside the form: a nested dialog's submit would otherwise bubble up to it through the React tree. */}
       <DeviceFormDialog
