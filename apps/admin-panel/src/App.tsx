@@ -9,6 +9,7 @@ import { CustomersPage } from "./app/CustomersPage";
 import { DevicesPage } from "./app/DevicesPage";
 import { PlaceholderPage } from "./app/PlaceholderPage";
 import { ServicesPage } from "./app/ServicesPage";
+import { SettingsPage } from "./app/SettingsPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -25,6 +26,7 @@ const PAGES: Partial<Record<(typeof NAV_ITEMS)[number]["to"], ReactNode>> = {
   "/customers": <CustomersPage />,
   "/devices": <DevicesPage />,
   "/actions": <ActionsPage />,
+  "/settings": <SettingsPage />,
 };
 
 function App() {

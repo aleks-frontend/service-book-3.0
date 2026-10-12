@@ -259,3 +259,22 @@ model ServiceLogEntry {
   @@index([authorId])
   @@map("service_log_entry")
 }
+
+/// The company's identity used on documents; a single row (see GLOSSARY.md, ADR-0002).
+model Settings {
+  /// Always 1 (enforced by a check constraint), so there is only ever one row.
+  id            Int      @id @default(1)
+  name          String?
+  address       String?
+  phone         String?
+  email         String?
+  taxId         String?
+  /// Kept in the database for phase 1; PNG or JPEG, as the PDF documents can embed either.
+  logo          Bytes?
+  logoType      String?
+  signature     Bytes?
+  signatureType String?
+  updatedAt     DateTime @updatedAt
+
+  @@map("settings")
+}

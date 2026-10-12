@@ -1,17 +1,12 @@
 import { z } from "zod";
-import { blankAsNull, optionalText, sortDirSchema } from "./fields.js";
+import { optionalEmail, optionalText, sortDirSchema } from "./fields.js";
 import { pageQuerySchema } from "./pagination.js";
 
 /** What staff members enter when creating or editing a customer. */
 export const customerInputSchema = z.object({
   name: z.string().trim().min(1),
   phone: z.string().trim().min(1),
-  email: blankAsNull(
-    z
-      .string()
-      .trim()
-      .pipe(z.union([z.literal(""), z.string().email()])),
-  ),
+  email: optionalEmail,
   address: optionalText,
   facebook: optionalText,
 });

@@ -212,5 +212,21 @@
   "This customer has no services yet.": "This customer has no services yet.",
   "This device has not been on a service yet.": "This device has not been on a service yet.",
   "Sold": "Sold",
-  "This device is attached to another customer's services, so it cannot get this owner.": "This device is attached to another customer's services, so it cannot get this owner."
+  "This device is attached to another customer's services, so it cannot get this owner.": "This device is attached to another customer's services, so it cannot get this owner.",
+  "Company name": "Company name",
+  "Enter the company name": "Enter the company name",
+  "Tax ID": "Tax ID",
+  "Logo": "Logo",
+  "Signature": "Signature",
+  "Upload": "Upload",
+  "Replace": "Replace",
+  "Remove": "Remove",
+  "Remove {{label}}": "Remove {{label}}",
+  "PNG or JPEG, up to 1 MB.": "PNG or JPEG, up to 1 MB.",
+  "Must be a PNG or JPEG image": "Must be a PNG or JPEG image",
+  "Must be at most 1 MB": "Must be at most 1 MB",
+  "The company details printed on dispatch notes and service reports.": "The company details printed on dispatch notes and service reports.",
+  "Could not load the settings.": "Could not load the settings.",
+  "Settings saved": "Settings saved",
+  "Could not save the settings. Please try again.": "Could not save the settings. Please try again."
 }

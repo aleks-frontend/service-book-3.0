@@ -9,3 +9,4 @@ export * from "./pagination.js";
 export * from "./service.js";
 export * from "./serviceLine.js";
 export * from "./serviceLog.js";
+export * from "./settings.js";

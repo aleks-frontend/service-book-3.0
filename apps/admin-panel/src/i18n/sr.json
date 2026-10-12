@@ -212,5 +212,21 @@
   "This customer has no services yet.": "Ova mušterija još nema servisa.",
   "This device has not been on a service yet.": "Ovaj uređaj još nije bio na servisu.",
   "Sold": "Prodat",
-  "This device is attached to another customer's services, so it cannot get this owner.": "Ovaj uređaj je na servisima druge mušterije, pa ne može dobiti ovog vlasnika."
+  "This device is attached to another customer's services, so it cannot get this owner.": "Ovaj uređaj je na servisima druge mušterije, pa ne može dobiti ovog vlasnika.",
+  "Company name": "Naziv firme",
+  "Enter the company name": "Unesite naziv firme",
+  "Tax ID": "PIB",
+  "Logo": "Logo",
+  "Signature": "Potpis",
+  "Upload": "Otpremi",
+  "Replace": "Zameni",
+  "Remove": "Ukloni",
+  "Remove {{label}}": "Ukloni: {{label}}",
+  "PNG or JPEG, up to 1 MB.": "PNG ili JPEG, najviše 1 MB.",
+  "Must be a PNG or JPEG image": "Slika mora biti PNG ili JPEG",
+  "Must be at most 1 MB": "Slika može imati najviše 1 MB",
+  "The company details printed on dispatch notes and service reports.": "Podaci o firmi koji se štampaju na otpremnicama i izveštajima o servisu.",
+  "Could not load the settings.": "Učitavanje podešavanja nije uspelo.",
+  "Settings saved": "Podešavanja su sačuvana",
+  "Could not save the settings. Please try again.": "Čuvanje podešavanja nije uspelo. Pokušajte ponovo."
 }

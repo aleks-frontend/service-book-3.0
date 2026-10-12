@@ -9,6 +9,10 @@ import { debugRouter } from "./routes/debug.js";
 import { devicesRouter } from "./routes/devices.js";
 import { meRouter } from "./routes/me.js";
 import { servicesRouter } from "./routes/services.js";
+import { settingsRouter } from "./routes/settings.js";
+
+/** Room for both settings images at their size limit, base64-encoded, plus the text fields. */
+const SETTINGS_BODY_LIMIT = "4mb";
 
 export type AppOptions = {
   /** The admin panel's built `dist` directory. When set, it is served from `/` (ADR-0001). */
@@ -22,16 +26,21 @@ export function createApp({ adminPanelDir }: AppOptions = {}) {
   // before express.json() consumes it.
   app.all("/api/auth/*splat", toNodeHandler(auth));
 
+  // Every /api route other than /api/auth requires a logged-in staff member.
+  // Checked before any body is parsed, so no one else can send a large one.
+  app.use("/api", requireAuth);
+
+  // The settings carry the logo and signature images inline.
+  app.use("/api/settings", express.json({ limit: SETTINGS_BODY_LIMIT }));
   app.use(express.json());
 
-  // Every /api route other than /api/auth requires a logged-in staff member.
-  app.use("/api", requireAuth);
   app.use("/api/me", meRouter);
   app.use("/api/debug", debugRouter);
   app.use("/api/customers", customersRouter);
   app.use("/api/devices", devicesRouter);
   app.use("/api/actions", actionsRouter);
   app.use("/api/services", servicesRouter);
+  app.use("/api/settings", settingsRouter);
 
   // Unknown API paths must never fall through to the admin panel's index.html.
   app.use("/api", (_req, res) => {

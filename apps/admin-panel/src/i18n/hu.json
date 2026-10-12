@@ -212,5 +212,21 @@
   "This customer has no services yet.": "Ennek az ügyfélnek még nincs szervize.",
   "This device has not been on a service yet.": "Ez az eszköz még nem volt szervizen.",
   "Sold": "Eladva",
-  "This device is attached to another customer's services, so it cannot get this owner.": "Ez az eszköz egy másik ügyfél szervizeihez tartozik, ezért nem kaphatja meg ezt a tulajdonost."
+  "This device is attached to another customer's services, so it cannot get this owner.": "Ez az eszköz egy másik ügyfél szervizeihez tartozik, ezért nem kaphatja meg ezt a tulajdonost.",
+  "Company name": "Cégnév",
+  "Enter the company name": "Adja meg a cég nevét",
+  "Tax ID": "Adószám",
+  "Logo": "Logó",
+  "Signature": "Aláírás",
+  "Upload": "Feltöltés",
+  "Replace": "Csere",
+  "Remove": "Eltávolítás",
+  "Remove {{label}}": "Eltávolítás: {{label}}",
+  "PNG or JPEG, up to 1 MB.": "PNG vagy JPEG, legfeljebb 1 MB.",
+  "Must be a PNG or JPEG image": "A képnek PNG vagy JPEG formátumúnak kell lennie",
+  "Must be at most 1 MB": "A kép legfeljebb 1 MB lehet",
+  "The company details printed on dispatch notes and service reports.": "A szállítóleveleken és szervizjelentéseken megjelenő cégadatok.",
+  "Could not load the settings.": "A beállítások betöltése nem sikerült.",
+  "Settings saved": "Beállítások mentve",
+  "Could not save the settings. Please try again.": "A beállítások mentése nem sikerült. Próbálja újra."
 }
