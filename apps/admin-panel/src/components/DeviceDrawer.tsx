@@ -1,11 +1,8 @@
-import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Loader2, Pencil, Trash2 } from "lucide-react";
 import { deviceLabel, type Device } from "@servicebook/schemas";
 import { useDeviceQuery } from "@/lib/devices";
 import { formatDate } from "@/lib/format";
-import { Button } from "./ui/button";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "./ui/sheet";
+import { DrawerSummary, DrawerSummaryRow, EntityDrawer } from "./EntityDrawer";
 
 type DeviceDrawerProps = {
   deviceId: string | null;
@@ -14,71 +11,64 @@ type DeviceDrawerProps = {
   onDelete: (device: Device) => void;
 };
 
-function Detail({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="space-y-0.5">
-      <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</dt>
-      <dd className="break-words text-sm">{children ?? "—"}</dd>
-    </div>
-  );
-}
-
 export function DeviceDrawer({ deviceId, onClose, onEdit, onDelete }: DeviceDrawerProps) {
   const { t, i18n } = useTranslation();
   const { data: device, isError } = useDeviceQuery(deviceId);
 
   return (
-    <Sheet open={deviceId !== null} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent>
-        <SheetHeader>
-          <SheetTitle>{device ? deviceLabel(device) : t("Device")}</SheetTitle>
-          <SheetDescription>{t("Device details")}</SheetDescription>
-        </SheetHeader>
+    <EntityDrawer
+      open={deviceId !== null}
+      onClose={onClose}
+      entity={device}
+      isError={isError}
+      errorMessage={t("Could not load the device.")}
+      title={device ? deviceLabel(device) : t("Device")}
+      description={
+        device
+          ? t("Added on {{date}}", { date: formatDate(device.createdAt, i18n.language) })
+          : t("Device details")
+      }
+      editLabel={t("Edit device")}
+      deleteLabel={t("Delete device")}
+      onEdit={onEdit}
+      onDelete={onDelete}
+    >
+      {(device) => <DeviceSummary device={device} />}
+    </EntityDrawer>
+  );
+}
 
-        {isError ? (
-          <p className="text-sm text-destructive">{t("Could not load the device.")}</p>
-        ) : !device ? (
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-        ) : (
+/** The device and its owner at a glance; they are changed in the edit modal. */
+function DeviceSummary({ device }: { device: Device }) {
+  const { t } = useTranslation();
+
+  return (
+    <DrawerSummary label={t("Device details")}>
+      {device.manufacturer && (
+        <DrawerSummaryRow label={t("Manufacturer")}>{device.manufacturer}</DrawerSummaryRow>
+      )}
+      <DrawerSummaryRow label={t("Model")}>{device.model}</DrawerSummaryRow>
+      {device.serialNumber && (
+        <DrawerSummaryRow label={t("Serial number")}>{device.serialNumber}</DrawerSummaryRow>
+      )}
+      {device.description && (
+        <DrawerSummaryRow label={t("Description")}>
+          <span className="whitespace-pre-line">{device.description}</span>
+        </DrawerSummaryRow>
+      )}
+      <DrawerSummaryRow label={t("Owner")}>
+        {device.owner ? (
           <>
-            <dl className="space-y-4">
-              <Detail label={t("Manufacturer")}>{device.manufacturer}</Detail>
-              <Detail label={t("Model")}>{device.model}</Detail>
-              <Detail label={t("Serial number")}>{device.serialNumber}</Detail>
-              <Detail label={t("Description")}>
-                {device.description && (
-                  <span className="whitespace-pre-line">{device.description}</span>
-                )}
-              </Detail>
-              <Detail label={t("Owner")}>
-                {device.owner ? (
-                  <>
-                    <span className="font-medium">{device.owner.name}</span>
-                    <br />
-                    <a href={`tel:${device.owner.phone}`} className="text-primary hover:underline">
-                      {device.owner.phone}
-                    </a>
-                  </>
-                ) : (
-                  <span className="text-muted-foreground">{t("Generic device")}</span>
-                )}
-              </Detail>
-              <Detail label={t("Added on")}>{formatDate(device.createdAt, i18n.language)}</Detail>
-            </dl>
-
-            <div className="flex gap-2 border-t pt-4">
-              <Button variant="outline" onClick={() => onEdit(device)}>
-                <Pencil className="mr-2 h-4 w-4" aria-hidden />
-                {t("Edit")}
-              </Button>
-              <Button variant="outline" onClick={() => onDelete(device)}>
-                <Trash2 className="mr-2 h-4 w-4 text-destructive" aria-hidden />
-                {t("Delete")}
-              </Button>
-            </div>
+            <span className="font-medium">{device.owner.name}</span>
+            {" · "}
+            <a href={`tel:${device.owner.phone}`} className="text-primary hover:underline">
+              {device.owner.phone}
+            </a>
           </>
+        ) : (
+          <span className="text-muted-foreground">{t("Generic device")}</span>
         )}
-      </SheetContent>
-    </Sheet>
+      </DrawerSummaryRow>
+    </DrawerSummary>
   );
 }

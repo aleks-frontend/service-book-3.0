@@ -201,5 +201,8 @@
   "Oldest first": "Najstariji prvo",
   "Customer A–Z": "Mušterija A–Ž",
   "Customer Z–A": "Mušterija Ž–A",
-  "No services match your search.": "Nijedan servis ne odgovara pretrazi."
+  "No services match your search.": "Nijedan servis ne odgovara pretrazi.",
+  "Added on {{date}}": "Dodato {{date}}",
+  "Delete customer": "Obriši mušteriju",
+  "Delete device": "Obriši uređaj"
 }

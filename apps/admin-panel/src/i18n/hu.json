@@ -201,5 +201,8 @@
   "Oldest first": "Legrégebbi elöl",
   "Customer A–Z": "Ügyfél A–Z",
   "Customer Z–A": "Ügyfél Z–A",
-  "No services match your search.": "Egy szerviz sem felel meg a keresésnek."
+  "No services match your search.": "Egy szerviz sem felel meg a keresésnek.",
+  "Added on {{date}}": "Hozzáadva: {{date}}",
+  "Delete customer": "Ügyfél törlése",
+  "Delete device": "Eszköz törlése"
 }

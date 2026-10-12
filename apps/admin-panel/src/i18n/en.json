@@ -201,5 +201,8 @@
   "Oldest first": "Oldest first",
   "Customer A–Z": "Customer A–Z",
   "Customer Z–A": "Customer Z–A",
-  "No services match your search.": "No services match your search."
+  "No services match your search.": "No services match your search.",
+  "Added on {{date}}": "Added on {{date}}",
+  "Delete customer": "Delete customer",
+  "Delete device": "Delete device"
 }
