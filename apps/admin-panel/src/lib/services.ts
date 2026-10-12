@@ -1,4 +1,10 @@
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import type {
@@ -10,25 +16,31 @@ import type {
   ServiceLine,
   ServiceLineInput,
   ServiceLineUpdate,
+  ServiceListQuery,
   Status,
 } from "@servicebook/schemas";
 import { request, toSearchParams, type HttpError } from "./http";
 
 export const serviceKeys = {
   all: ["services"] as const,
-  list: ["services", "list"] as const,
+  lists: ["services", "list"] as const,
+  list: (query: ServiceListQuery) => ["services", "list", query] as const,
   detail: (id: string) => ["services", "detail", id] as const,
   log: (id: string) => ["services", "log", id] as const,
 };
 
-/** Newest first, one cursor page at a time, for infinite scrolling. */
-export function useServicesInfiniteQuery() {
+/**
+ * The services matching a search, status and sort, one cursor page at a time
+ * for infinite scrolling. Keeps showing the previous results while new ones load.
+ */
+export function useServicesInfiniteQuery(query: Omit<ServiceListQuery, "cursor">) {
   return useInfiniteQuery({
-    queryKey: serviceKeys.list,
+    queryKey: serviceKeys.list(query),
     queryFn: ({ pageParam }) =>
-      request<CursorPage<Service>>(`/services?${toSearchParams({ cursor: pageParam })}`),
+      request<CursorPage<Service>>(`/services?${toSearchParams({ ...query, cursor: pageParam })}`),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -56,7 +68,7 @@ export function useSaveServiceMutation() {
           : t("Service {{number}} created", { number: service.number }),
       );
       queryClient.setQueryData(serviceKeys.detail(service.id), service);
-      return queryClient.invalidateQueries({ queryKey: serviceKeys.list });
+      return queryClient.invalidateQueries({ queryKey: serviceKeys.lists });
     },
     onError: () => toast.error(t("Could not save the service. Please try again.")),
   });
@@ -71,7 +83,7 @@ export function useDeleteServiceMutation() {
     onSuccess: (_result, id) => {
       toast.success(t("Service deleted"));
       queryClient.removeQueries({ queryKey: serviceKeys.detail(id) });
-      return queryClient.invalidateQueries({ queryKey: serviceKeys.list });
+      return queryClient.invalidateQueries({ queryKey: serviceKeys.lists });
     },
     onError: () => toast.error(t("Could not delete the service. Please try again.")),
   });
@@ -89,7 +101,7 @@ export function useServiceLineMutations(serviceId: string) {
   function refetch() {
     return Promise.all([
       queryClient.invalidateQueries({ queryKey: serviceKeys.detail(serviceId) }),
-      queryClient.invalidateQueries({ queryKey: serviceKeys.list }),
+      queryClient.invalidateQueries({ queryKey: serviceKeys.lists }),
     ]);
   }
 
@@ -146,7 +158,7 @@ export function useChangeStatusMutation() {
     onSuccess: (service) => {
       queryClient.setQueryData(serviceKeys.detail(service.id), service);
       return Promise.all([
-        queryClient.invalidateQueries({ queryKey: serviceKeys.list }),
+        queryClient.invalidateQueries({ queryKey: serviceKeys.lists }),
         queryClient.invalidateQueries({ queryKey: serviceKeys.log(service.id) }),
       ]);
     },

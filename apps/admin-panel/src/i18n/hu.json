@@ -191,5 +191,15 @@
   "Note": "Jegyzet",
   "Add an internal note…": "Belső jegyzet hozzáadása…",
   "Add note": "Jegyzet hozzáadása",
-  "Could not add the note. Please try again.": "A jegyzet hozzáadása nem sikerült. Próbálja újra."
+  "Could not add the note. Please try again.": "A jegyzet hozzáadása nem sikerült. Próbálja újra.",
+  "Search services": "Szervizek keresése",
+  "Search by number, customer, phone, device or description": "Keresés szám, ügyfél, telefonszám, eszköz vagy leírás alapján",
+  "Filter by status": "Szűrés állapot szerint",
+  "All statuses": "Minden állapot",
+  "Sort": "Rendezés",
+  "Newest first": "Legújabb elöl",
+  "Oldest first": "Legrégebbi elöl",
+  "Customer A–Z": "Ügyfél A–Z",
+  "Customer Z–A": "Ügyfél Z–A",
+  "No services match your search.": "Egy szerviz sem felel meg a keresésnek."
 }

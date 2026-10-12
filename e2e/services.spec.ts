@@ -289,3 +289,47 @@ test("a one-click status change from the list shows in the badge and in the Log 
   await expect(entries).toHaveCount(3);
   await expect(entries.nth(2)).toContainText("Završen");
 });
+
+test("search, status filter and empty state narrow the services list", async ({ page }) => {
+  await logIn(page);
+  await expect(page).toHaveURL("/services");
+
+  const post = async (path: string, data: object) =>
+    (await page.request.post(path, { data })).json();
+  const customer = await post("/api/customers", { name: "Teodora Tešić", phone: "069 987 6543" });
+  const device = await post("/api/devices", { model: "Redmi Note 12", ownerId: customer.id });
+  const on = (date: string) => ({ customerId: customer.id, deviceIds: [device.id], date });
+  const received = await post("/api/services", on("2026-02-01"));
+  const inProgress = await post("/api/services", on("2026-02-02"));
+  await page.request.put(`/api/services/${inProgress.id}/status`, {
+    data: { status: "IN_PROGRESS" },
+  });
+  await page.reload();
+
+  // Typing the customer's phone finds both their services, and only theirs.
+  await page.getByRole("searchbox", { name: "Pretraga servisa" }).fill("987 6543");
+  const rows = page.getByRole("row").filter({ has: page.getByRole("cell") });
+  await expect(rows).toHaveCount(2);
+  await expect(rows.nth(0)).toContainText(inProgress.number);
+  await expect(rows.nth(1)).toContainText(received.number);
+
+  // Filtering to In progress keeps only those.
+  await page.getByRole("combobox", { name: "Filtriraj po statusu" }).click();
+  await page.getByRole("option", { name: "U radu" }).click();
+  await expect(rows).toHaveCount(1);
+  await expect(rows.first()).toContainText(inProgress.number);
+  await expect(rows.first().getByRole("button", { name: /Promeni status/ })).toHaveText("U radu");
+
+  // Sorting oldest first puts the earliest service on top.
+  await page.getByRole("combobox", { name: "Filtriraj po statusu" }).click();
+  await page.getByRole("option", { name: "Svi statusi" }).click();
+  await page.getByRole("searchbox", { name: "Pretraga servisa" }).fill("Teodora");
+  await page.getByRole("combobox", { name: "Sortiranje" }).click();
+  await page.getByRole("option", { name: "Najstariji prvo" }).click();
+  await expect(rows.first()).toContainText(received.number);
+
+  // Nothing matching shows the empty state.
+  await page.getByRole("searchbox", { name: "Pretraga servisa" }).fill("nema-takvog-servisa");
+  await expect(page.getByText("Nijedan servis ne odgovara pretrazi.")).toBeVisible();
+  await expect(rows).toHaveCount(0);
+});

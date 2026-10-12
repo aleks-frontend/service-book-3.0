@@ -191,5 +191,15 @@
   "Note": "Note",
   "Add an internal note…": "Add an internal note…",
   "Add note": "Add note",
-  "Could not add the note. Please try again.": "Could not add the note. Please try again."
+  "Could not add the note. Please try again.": "Could not add the note. Please try again.",
+  "Search services": "Search services",
+  "Search by number, customer, phone, device or description": "Search by number, customer, phone, device or description",
+  "Filter by status": "Filter by status",
+  "All statuses": "All statuses",
+  "Sort": "Sort",
+  "Newest first": "Newest first",
+  "Oldest first": "Oldest first",
+  "Customer A–Z": "Customer A–Z",
+  "Customer Z–A": "Customer Z–A",
+  "No services match your search.": "No services match your search."
 }

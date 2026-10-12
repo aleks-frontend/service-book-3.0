@@ -191,5 +191,15 @@
   "Note": "Beleška",
   "Add an internal note…": "Dodajte internu belešku…",
   "Add note": "Dodaj belešku",
-  "Could not add the note. Please try again.": "Dodavanje beleške nije uspelo. Pokušajte ponovo."
+  "Could not add the note. Please try again.": "Dodavanje beleške nije uspelo. Pokušajte ponovo.",
+  "Search services": "Pretraga servisa",
+  "Search by number, customer, phone, device or description": "Pretraga po broju, mušteriji, telefonu, uređaju ili opisu",
+  "Filter by status": "Filtriraj po statusu",
+  "All statuses": "Svi statusi",
+  "Sort": "Sortiranje",
+  "Newest first": "Najnoviji prvo",
+  "Oldest first": "Najstariji prvo",
+  "Customer A–Z": "Mušterija A–Ž",
+  "Customer Z–A": "Mušterija Ž–A",
+  "No services match your search.": "Nijedan servis ne odgovara pretrazi."
 }

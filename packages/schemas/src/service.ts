@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { customerSummarySchema } from "./customer.js";
 import { deviceSummarySchema } from "./device.js";
-import { optionalText } from "./fields.js";
+import { optionalText, sortDirSchema } from "./fields.js";
 import { serviceLineSchema } from "./serviceLine.js";
 
 /** Where a service is in its lifecycle; a new service is Received (see GLOSSARY.md). */
@@ -21,6 +21,11 @@ export const plainDateSchema = z
 /** Midnight UTC of a `YYYY-MM-DD` date, as Postgres stores a `DATE`. */
 export function plainDateToUtc(date: string) {
   return new Date(`${date}T00:00:00Z`);
+}
+
+/** The `YYYY-MM-DD` date of a `DATE` read from Postgres as midnight UTC. */
+export function utcToPlainDate(date: Date) {
+  return date.toISOString().slice(0, 10);
 }
 
 /** The most devices one service may have attached. */
@@ -79,9 +84,16 @@ export function formatServiceNumber(year: number, sequence: number) {
 export const SERVICE_PAGE_SIZE_DEFAULT = 20;
 export const SERVICE_PAGE_SIZE_MAX = 50;
 
+/** What the services list can be sorted by; a customer's services come newest first. */
+export const SERVICE_SORTS = ["date", "customer"] as const;
+export type ServiceSort = (typeof SERVICE_SORTS)[number];
+
 /**
- * `GET /api/services`: newest first (by date, then service number). `cursor`
- * is the previous page's `nextCursor`, an opaque string.
+ * `GET /api/services`: every word of the search must match the service
+ * number, the customer's name or phone, an attached device's manufacturer or
+ * model, or the description. `status` keeps one status. Sorted by date (ties
+ * by service number) or by customer name, newest first by default. `cursor`
+ * is the previous page's `nextCursor`, an opaque string valid for the same sort.
  */
 export const serviceListQuerySchema = z.object({
   cursor: z.string().optional(),
@@ -91,6 +103,10 @@ export const serviceListQuerySchema = z.object({
     .min(1)
     .max(SERVICE_PAGE_SIZE_MAX)
     .default(SERVICE_PAGE_SIZE_DEFAULT),
+  search: z.string().trim().optional(),
+  status: statusSchema.optional(),
+  sort: z.enum(SERVICE_SORTS).default("date"),
+  sortDir: sortDirSchema.default("desc"),
 });
 
 export type ServiceListQuery = z.input<typeof serviceListQuerySchema>;

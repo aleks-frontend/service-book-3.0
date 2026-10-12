@@ -6,8 +6,8 @@ import { authenticatedAgent } from "./helpers.js";
 
 const UNKNOWN_ID = "00000000-0000-4000-8000-000000000000";
 
-async function createCustomer(agent: TestAgent, name = "Marko Marković") {
-  const { body } = await agent.post("/api/customers").send({ name, phone: "0641234567" });
+async function createCustomer(agent: TestAgent, name = "Marko Marković", phone = "0641234567") {
+  const { body } = await agent.post("/api/customers").send({ name, phone });
   return body as { id: string; name: string; phone: string };
 }
 
@@ -363,6 +363,235 @@ describe("services: list", () => {
     expect((await agent.get("/api/services?limit=0")).status).toBe(400);
     expect((await agent.get("/api/services?limit=51")).status).toBe(400);
     expect((await agent.get("/api/services?cursor=garbage")).status).toBe(400);
+  });
+});
+
+describe("services: search, status filter and sort", () => {
+  /**
+   * Five services, numbered in creation order:
+   * 2026-0001 Ana Anić (061 111 2233), Apple iPhone 13, "Pukao ekran", 10 Jan, In progress
+   * 2026-0002 Bojan Bojić (062 222), Lenovo ThinkPad + USB-C cable, "Ne pali se", 12 Jan
+   * 2025-0001 Ana Anić, Apple iPhone 13, no description, 1 Dec 2025
+   * 2026-0003 Marko Marković, Samsung Galaxy S21, "100% mrtav", 12 Jan, In progress
+   * 2026-0004 another Marko Marković, Samsung Galaxy S21, 11 Jan
+   */
+  async function seedServices(agent: TestAgent) {
+    const ana = await createCustomer(agent, "Ana Anić", "061 111 2233");
+    const iphone = await createDevice(agent, {
+      manufacturer: "Apple",
+      model: "iPhone 13",
+      ownerId: ana.id,
+    });
+    const bojan = await createCustomer(agent, "Bojan Bojić", "062 222");
+    const thinkpad = await createDevice(agent, {
+      manufacturer: "Lenovo",
+      model: "ThinkPad",
+      ownerId: bojan.id,
+    });
+    const cable = await createDevice(agent, { model: "USB-C cable" });
+    const marko = await customerWithDevice(agent);
+    const otherMarko = await customerWithDevice(agent);
+
+    const services = [
+      { customer: ana, devices: [iphone], description: "Pukao ekran", date: "2026-01-10" },
+      {
+        customer: bojan,
+        devices: [thinkpad, cable],
+        description: "Ne pali se",
+        date: "2026-01-12",
+      },
+      { customer: ana, devices: [iphone], date: "2025-12-01" },
+      { ...marko, devices: [marko.device], description: "100% mrtav", date: "2026-01-12" },
+      { ...otherMarko, devices: [otherMarko.device], date: "2026-01-11" },
+    ];
+    const created = [];
+    for (const { customer, devices, description, date } of services) {
+      created.push(
+        await createService(agent, {
+          customerId: customer.id,
+          deviceIds: devices.map(({ id }) => id),
+          description,
+          date,
+        }),
+      );
+    }
+    for (const service of [created[0], created[3]]) {
+      await agent.put(`/api/services/${service.id}/status`).send({ status: "IN_PROGRESS" });
+    }
+  }
+
+  /** The numbers of every service the query lists, fetched in one page. */
+  async function listed(agent: TestAgent, query: Record<string, string | undefined>) {
+    const response = await agent.get("/api/services").query({ ...query, limit: 50 });
+    expect(response.status).toBe(200);
+    expect(response.body.nextCursor).toBeNull();
+    return (response.body.items as { number: string }[]).map(({ number }) => number);
+  }
+
+  /** The numbers of every service the query lists, fetched `limit` at a time. */
+  async function paged(agent: TestAgent, query: Record<string, string | undefined>, limit: number) {
+    const seen: string[] = [];
+    let cursor: string | null = null;
+    do {
+      const response = await agent
+        .get("/api/services")
+        .query({ ...query, limit, ...(cursor && { cursor }) });
+      expect(response.status).toBe(200);
+      seen.push(...(response.body.items as { number: string }[]).map(({ number }) => number));
+      cursor = response.body.nextCursor;
+    } while (cursor);
+    return seen;
+  }
+
+  it("searches the service number", async () => {
+    const { agent } = await authenticatedAgent();
+    await seedServices(agent);
+
+    expect(await listed(agent, { search: "2026-0002" })).toEqual(["2026-0002"]);
+    expect(await listed(agent, { search: "0001" })).toEqual(["2026-0001", "2025-0001"]);
+    expect(await listed(agent, { search: "2025-" })).toEqual(["2025-0001"]);
+  });
+
+  it("searches the customer's name and phone, ignoring case", async () => {
+    const { agent } = await authenticatedAgent();
+    await seedServices(agent);
+
+    expect(await listed(agent, { search: "bojan" })).toEqual(["2026-0002"]);
+    expect(await listed(agent, { search: "ANA" })).toEqual(["2026-0001", "2025-0001"]);
+    expect(await listed(agent, { search: "062 222" })).toEqual(["2026-0002"]);
+    expect(await listed(agent, { search: "2233" })).toEqual(["2026-0001", "2025-0001"]);
+  });
+
+  it("finds a phone typed with other separators than it was saved with", async () => {
+    const { agent } = await authenticatedAgent();
+    await seedServices(agent);
+
+    expect(await listed(agent, { search: "0611112233" })).toEqual(["2026-0001", "2025-0001"]);
+    expect(await listed(agent, { search: "061-111-2233" })).toEqual(["2026-0001", "2025-0001"]);
+    expect(await listed(agent, { search: "062222" })).toEqual(["2026-0002"]);
+  });
+
+  it("searches the names of attached devices, manufacturer and model alike", async () => {
+    const { agent } = await authenticatedAgent();
+    await seedServices(agent);
+
+    expect(await listed(agent, { search: "lenovo" })).toEqual(["2026-0002"]);
+    expect(await listed(agent, { search: "usb-c" })).toEqual(["2026-0002"]);
+    expect(await listed(agent, { search: "Apple iPhone" })).toEqual(["2026-0001", "2025-0001"]);
+  });
+
+  it("searches the description", async () => {
+    const { agent } = await authenticatedAgent();
+    await seedServices(agent);
+
+    expect(await listed(agent, { search: "EKRAN" })).toEqual(["2026-0001"]);
+  });
+
+  it("lists only services matching every word, each in any field", async () => {
+    const { agent } = await authenticatedAgent();
+    await seedServices(agent);
+
+    expect(await listed(agent, { search: "  ana   ekran " })).toEqual(["2026-0001"]);
+    expect(await listed(agent, { search: "ana lenovo" })).toEqual([]);
+    expect(await listed(agent, { search: "   " })).toHaveLength(5);
+  });
+
+  it("takes % and _ in the search literally", async () => {
+    const { agent } = await authenticatedAgent();
+    await seedServices(agent);
+
+    expect(await listed(agent, { search: "100%" })).toEqual(["2026-0003"]);
+    expect(await listed(agent, { search: "%" })).toEqual(["2026-0003"]);
+    expect(await listed(agent, { search: "_" })).toEqual([]);
+  });
+
+  it("filters by status, alone and with a search", async () => {
+    const { agent } = await authenticatedAgent();
+    await seedServices(agent);
+
+    expect(await listed(agent, { status: "IN_PROGRESS" })).toEqual(["2026-0003", "2026-0001"]);
+    expect(await listed(agent, { status: "RECEIVED" })).toEqual([
+      "2026-0002",
+      "2026-0004",
+      "2025-0001",
+    ]);
+    expect(await listed(agent, { status: "IN_PROGRESS", search: "ana" })).toEqual(["2026-0001"]);
+    expect(await listed(agent, { status: "DELIVERED" })).toEqual([]);
+  });
+
+  it("sorts by date, newest or oldest first, then by number", async () => {
+    const { agent } = await authenticatedAgent();
+    await seedServices(agent);
+
+    expect(await listed(agent, { sort: "date", sortDir: "desc" })).toEqual([
+      "2026-0003",
+      "2026-0002",
+      "2026-0004",
+      "2026-0001",
+      "2025-0001",
+    ]);
+    expect(await listed(agent, { sort: "date", sortDir: "asc" })).toEqual([
+      "2025-0001",
+      "2026-0001",
+      "2026-0004",
+      "2026-0002",
+      "2026-0003",
+    ]);
+  });
+
+  it("sorts by customer name either way, a customer's services newest first", async () => {
+    const { agent } = await authenticatedAgent();
+    await seedServices(agent);
+
+    expect(await listed(agent, { sort: "customer", sortDir: "asc" })).toEqual([
+      "2026-0001",
+      "2025-0001",
+      "2026-0002",
+      "2026-0003",
+      "2026-0004",
+    ]);
+    expect(await listed(agent, { sort: "customer", sortDir: "desc" })).toEqual([
+      "2026-0003",
+      "2026-0004",
+      "2026-0002",
+      "2026-0001",
+      "2025-0001",
+    ]);
+  });
+
+  it("pages through the same services in the same order under every combination", async () => {
+    const { agent } = await authenticatedAgent();
+    await seedServices(agent);
+
+    for (const sort of ["date", "customer"]) {
+      for (const sortDir of ["asc", "desc"]) {
+        for (const filter of [{}, { status: "RECEIVED" }, { search: "a" }]) {
+          const query = { sort, sortDir, ...filter };
+          const all = await listed(agent, query);
+          expect(all.length, JSON.stringify(query)).toBeGreaterThan(1);
+          for (const limit of [1, 2]) {
+            expect(await paged(agent, query, limit), JSON.stringify({ ...query, limit })).toEqual(
+              all,
+            );
+          }
+        }
+      }
+    }
+  });
+
+  it("rejects an unknown status, sort or direction, or another sort's cursor, with 400", async () => {
+    const { agent } = await authenticatedAgent();
+    await seedServices(agent);
+
+    expect((await agent.get("/api/services?status=OPEN")).status).toBe(400);
+    expect((await agent.get("/api/services?sort=title")).status).toBe(400);
+    expect((await agent.get("/api/services?sortDir=up")).status).toBe(400);
+
+    const { body } = await agent.get("/api/services?sort=customer&limit=1");
+    const otherSort = await agent
+      .get("/api/services")
+      .query({ sort: "date", cursor: body.nextCursor });
+    expect(otherSort.status).toBe(400);
   });
 });
 

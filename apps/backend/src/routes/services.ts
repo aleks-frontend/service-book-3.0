@@ -3,7 +3,6 @@ import { Router, type Response } from "express";
 import {
   formatServiceNumber,
   linesTotal,
-  plainDateSchema,
   plainDateToUtc,
   serviceInputSchema,
   serviceListQuerySchema,
@@ -13,9 +12,11 @@ import {
   type ServiceDetail,
   type ServiceInput,
   type Status,
+  utcToPlainDate,
 } from "@servicebook/schemas";
 import { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma.js";
+import { listServiceIds } from "../lib/serviceList.js";
 import {
   idParam,
   isNotFound,
@@ -65,17 +66,12 @@ const serviceDetailSelect = {
 type ServiceRow = Prisma.ServiceGetPayload<{ select: typeof serviceSelect }>;
 type ServiceDetailRow = Prisma.ServiceGetPayload<{ select: typeof serviceDetailSelect }>;
 
-/** A `@db.Date` column holds midnight UTC; the API speaks `YYYY-MM-DD`. */
-function toPlainDate(date: Date) {
-  return date.toISOString().slice(0, 10);
-}
-
 /** What the API shows of a service: its number and total, never the legacy fields. */
 function toService({ year, sequence, date, devices, lines, ...rest }: ServiceRow): Service {
   return {
     ...rest,
     number: formatServiceNumber(year, sequence),
-    date: toPlainDate(date),
+    date: utcToPlainDate(date),
     devices: devices.map(({ device }) => device),
     total: linesTotal(lines),
   };
@@ -135,64 +131,33 @@ function deviceRows(deviceIds: string[]) {
   return deviceIds.map((deviceId, position) => ({ deviceId, position }));
 }
 
-/** Newest first; (year, sequence) is unique, so the order is total and pages never overlap. */
-const newestFirst = [
-  { date: "desc" },
-  { year: "desc" },
-  { sequence: "desc" },
-] satisfies Prisma.ServiceOrderByWithRelationInput[];
-
-type Cursor = { date: Date; year: number; sequence: number };
-
-/** The last listed service's sort key, so the next page starts after it even if it is deleted. */
-function encodeCursor({ date, year, sequence }: Cursor) {
-  return `${toPlainDate(date)}_${year}_${sequence}`;
-}
-
-function decodeCursor(cursor: string): Cursor | null {
-  const match = /^(\d{4}-\d{2}-\d{2})_(\d{1,9})_(\d{1,9})$/.exec(cursor);
-  if (!match || !plainDateSchema.safeParse(match[1]).success) return null;
-  return { date: plainDateToUtc(match[1]), year: Number(match[2]), sequence: Number(match[3]) };
-}
-
-/** Services that sort after the cursor in `newestFirst` order. */
-function afterCursor({ date, year, sequence }: Cursor): Prisma.ServiceWhereInput {
-  return {
-    OR: [
-      { date: { lt: date } },
-      { date, year: { lt: year } },
-      { date, year, sequence: { lt: sequence } },
-    ],
-  };
-}
-
 servicesRouter.get("/", async (req, res) => {
   const parsed = serviceListQuerySchema.safeParse(req.query);
-  const cursor = parsed.success && parsed.data.cursor ? decodeCursor(parsed.data.cursor) : null;
-  if (!parsed.success || (parsed.data.cursor && !cursor)) {
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid query", details: parsed.error.flatten() });
+    return;
+  }
+  const page = await listServiceIds(parsed.data);
+  if (!page) {
     res.status(400).json({
       error: "Invalid query",
-      details: parsed.success
-        ? { formErrors: [], fieldErrors: { cursor: ["Invalid cursor"] } }
-        : parsed.error.flatten(),
+      details: { formErrors: [], fieldErrors: { cursor: ["Invalid cursor"] } },
     });
     return;
   }
 
-  const { limit } = parsed.data;
-  // One extra row tells whether another page follows.
   const rows = await prisma.service.findMany({
-    where: cursor ? afterCursor(cursor) : {},
-    orderBy: newestFirst,
-    take: limit + 1,
+    where: { id: { in: page.ids } },
     select: serviceSelect,
   });
-  const items = rows.slice(0, limit);
-  const last = items.at(-1);
-
+  const byId = new Map(rows.map((row) => [row.id, row]));
   const result: CursorPage<Service> = {
-    items: items.map(toService),
-    nextCursor: rows.length > limit && last ? encodeCursor(last) : null,
+    // A service deleted since the ids were listed is left out.
+    items: page.ids.flatMap((id) => {
+      const row = byId.get(id);
+      return row ? [toService(row)] : [];
+    }),
+    nextCursor: page.nextCursor,
   };
   res.json(result);
 });
