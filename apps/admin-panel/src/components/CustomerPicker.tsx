@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import Select from "react-select";
+import CreatableSelect from "react-select/creatable";
 import type { CustomerSummary } from "@servicebook/schemas";
 import { useCustomersQuery } from "@/lib/customers";
+import { isCreateOption, toCreateOption, type CreateOption } from "@/lib/createOption";
+import { CreateOptionLabel } from "./CreateOptionLabel";
 import { selectClassNames } from "./selectClassNames";
 
 const SEARCH_DEBOUNCE_MS = 300;
@@ -17,7 +19,11 @@ type CustomerPickerProps = {
   invalid?: boolean;
   disabled?: boolean;
   className?: string;
+  /** Offers a new customer with what was typed as their name, under the matches. */
+  onCreate?: (name: string) => void;
 };
+
+type Option = CustomerSummary | CreateOption;
 
 /**
  * Picks one customer by typing part of their name, phone or email; the search
@@ -35,6 +41,7 @@ export function CustomerPicker({
   invalid,
   disabled,
   className,
+  onCreate,
 }: CustomerPickerProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -57,18 +64,23 @@ export function CustomerPicker({
   }));
 
   return (
-    <Select<CustomerSummary, false>
+    <CreatableSelect<Option, false>
       inputId={id}
       aria-label={ariaLabel}
       aria-invalid={invalid}
       className={className}
       value={value}
-      onChange={(customer) => onChange(customer)}
+      // The create row never reaches onChange; it goes to onCreateOption.
+      onChange={(customer) => onChange(customer && !isCreateOption(customer) ? customer : null)}
       options={options}
-      getOptionValue={(customer) => customer.id}
-      getOptionLabel={(customer) => customer.name}
+      getOptionValue={(option) => (isCreateOption(option) ? option.input : option.id)}
+      getOptionLabel={(option) => (isCreateOption(option) ? option.input : option.name)}
       formatOptionLabel={(customer, { context }) =>
-        context === "value" ? (
+        isCreateOption(customer) ? (
+          <CreateOptionLabel>
+            {t('New customer "{{name}}"', { name: customer.input })}
+          </CreateOptionLabel>
+        ) : context === "value" ? (
           customer.name
         ) : (
           <div className="flex items-baseline justify-between gap-3">
@@ -79,6 +91,10 @@ export function CustomerPicker({
       }
       // The server already filtered the options by the search.
       filterOption={null}
+      isValidNewOption={(input) => onCreate !== undefined && input.trim() !== ""}
+      getNewOptionData={(input) => toCreateOption(input.trim())}
+      onCreateOption={(input) => onCreate?.(input.trim())}
+      createOptionPosition="last"
       inputValue={inputValue}
       onInputChange={(next, { action }) => {
         if (action === "input-change") setInputValue(next);
@@ -94,7 +110,7 @@ export function CustomerPicker({
       noOptionsMessage={() => t("No customers match your search.")}
       loadingMessage={() => t("Loading…")}
       unstyled
-      classNames={selectClassNames<CustomerSummary, false>(invalid)}
+      classNames={selectClassNames<Option, false>(invalid)}
     />
   );
 }

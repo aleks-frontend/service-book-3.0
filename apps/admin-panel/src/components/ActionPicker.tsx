@@ -11,7 +11,7 @@ type ActionPickerProps = {
   id?: string;
   value: Action | null;
   onChange: (action: Action | null) => void;
-  /** Offers to create an action named after the search when no action has that name. */
+  /** Offers a new action with what was typed as its name, unless an action already has that name. */
   onCreate?: (name: string) => void;
   placeholder: string;
   "aria-label"?: string;
@@ -50,7 +50,7 @@ export function ActionPicker({
       formatOptionLabel={(option, { context }) =>
         isCreateOption(option) ? (
           <CreateOptionLabel>
-            {t('Create action "{{name}}"', { name: option.input })}
+            {t('New action "{{name}}"', { name: option.input })}
           </CreateOptionLabel>
         ) : context === "value" ? (
           option.name

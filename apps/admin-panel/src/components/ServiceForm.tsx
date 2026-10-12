@@ -39,7 +39,8 @@ export function ServiceForm({ id, service, onSubmit }: ServiceFormProps) {
   // The form only holds ids; the pickers also need the names to show.
   const [customer, setCustomer] = useState<CustomerSummary | null>(null);
   const [devices, setDevices] = useState<DeviceSummary[]>([]);
-  const [creatingCustomer, setCreatingCustomer] = useState(false);
+  // The name the new customer starts with; null while its dialog is closed.
+  const [newCustomerName, setNewCustomerName] = useState<string | null>(null);
   // The model the new device starts with; null while its dialog is closed.
   const [newDeviceModel, setNewDeviceModel] = useState<string | null>(null);
 
@@ -101,12 +102,7 @@ export function ServiceForm({ id, service, onSubmit }: ServiceFormProps) {
             <label htmlFor={`${id}-customer`} className="text-sm font-medium">
               {t("Customer")} *
             </label>
-            <Button
-              type="button"
-              variant="link"
-              size="xs"
-              onClick={() => setCreatingCustomer(true)}
-            >
+            <Button type="button" variant="link" size="xs" onClick={() => setNewCustomerName("")}>
               <Plus className="mr-1 h-3.5 w-3.5" aria-hidden />
               {t("New customer")}
             </Button>
@@ -119,6 +115,7 @@ export function ServiceForm({ id, service, onSubmit }: ServiceFormProps) {
                 id={`${id}-customer`}
                 value={customer}
                 onChange={changeCustomer}
+                onCreate={setNewCustomerName}
                 placeholder={t("Search customers")}
                 invalid={!!errors.customerId}
               />
@@ -196,8 +193,9 @@ export function ServiceForm({ id, service, onSubmit }: ServiceFormProps) {
 
       {/* Outside the form: a nested dialog's submit would otherwise bubble up to it through the React tree. */}
       <CustomerFormDialog
-        open={creatingCustomer}
-        onOpenChange={setCreatingCustomer}
+        open={newCustomerName !== null}
+        onOpenChange={(open) => !open && setNewCustomerName(null)}
+        defaultName={newCustomerName ?? undefined}
         onSaved={({ id, name, phone }) => changeCustomer({ id, name, phone })}
       />
       <DeviceFormDialog

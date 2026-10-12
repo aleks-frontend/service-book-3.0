@@ -22,10 +22,11 @@ test("a staff member registers a service for a new customer and opens it via ?se
   // The date starts as today.
   await expect(addDialog.getByLabel("Datum")).toHaveValue(today());
 
-  // A new customer, created inline.
-  await addDialog.getByRole("button", { name: "Nova mušterija" }).click();
+  // A new customer, created inline from what was typed in the picker.
+  await addDialog.getByLabel("Mušterija *").fill("Petar Petrović");
+  await page.getByRole("option", { name: "Nova mušterija „Petar Petrović“" }).click();
   const customerDialog = page.getByRole("dialog", { name: "Nova mušterija" });
-  await customerDialog.getByLabel("Ime").fill("Petar Petrović");
+  await expect(customerDialog.getByLabel("Ime")).toHaveValue("Petar Petrović");
   await customerDialog.getByLabel("Telefon").fill("0601112233");
   await customerDialog.getByRole("button", { name: "Dodaj mušteriju" }).click();
   await expect(customerDialog).toBeHidden();
@@ -204,7 +205,7 @@ test("an action or device missing from the pickers is created from the add-line 
 
   // The search becomes the new action's name; only its price is left to type.
   await addDialog.getByLabel("Usluga").fill("Čišćenje tastature");
-  await page.getByRole("option", { name: "Dodaj uslugu „Čišćenje tastature“" }).click();
+  await page.getByRole("option", { name: "Nova usluga „Čišćenje tastature“" }).click();
   const actionDialog = page.getByRole("dialog", { name: "Nova usluga" });
   await expect(actionDialog.getByLabel("Naziv")).toHaveValue("Čišćenje tastature");
   await page.keyboard.type("1200");

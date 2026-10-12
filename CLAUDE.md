@@ -16,7 +16,7 @@ Single-context: one `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/ag
 
 ### Entity pickers
 
-Every field that picks an entity (customer, device, action, …) offers creating one from two places, and both behave the same:
+Every form field that picks an entity (customer, device, action, …) offers creating one from two places, and both behave the same. A picker used as a list filter (e.g. the owner filter on the devices page) only picks.
 
 - **The picker**: `<Entity>Picker` wraps react-select's `CreatableSelect` and takes `onCreate(text)`. The create row sits last (`createOptionPosition="last"`), is built with `lib/createOption.ts`, rendered with `CreateOptionLabel`, and reads `New <entity> "{{text}}"`.
 - **The field header**: the label on the left, a `Button variant="link" size="xs"` with a `Plus` icon reading `New <entity>` on the right; disabled whenever the picker is.

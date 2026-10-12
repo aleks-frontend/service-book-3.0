@@ -27,6 +27,8 @@ type CustomerFormDialogProps = {
   onOpenChange: (open: boolean) => void;
   /** The customer to edit; omitted when creating one. */
   customer?: Customer;
+  /** The name a new customer starts with, e.g. what was searched for in a picker. */
+  defaultName?: string;
   /** Called with the saved customer, e.g. to pick a customer created inline. */
   onSaved?: (customer: Customer) => void;
 };
@@ -59,9 +61,9 @@ const FIELDS = [
   autoComplete?: string;
 }[];
 
-function toFormValues(customer?: Customer): CustomerInputValues {
+function toFormValues(customer?: Customer, defaultName = ""): CustomerInputValues {
   return {
-    name: customer?.name ?? "",
+    name: customer?.name ?? defaultName,
     phone: customer?.phone ?? "",
     email: customer?.email ?? "",
     address: customer?.address ?? "",
@@ -73,6 +75,7 @@ export function CustomerFormDialog({
   open,
   onOpenChange,
   customer,
+  defaultName,
   onSaved,
 }: CustomerFormDialogProps) {
   const { t } = useTranslation();
@@ -83,6 +86,7 @@ export function CustomerFormDialog({
     register,
     handleSubmit,
     reset,
+    setFocus,
     formState: { errors },
   } = useForm<CustomerInputValues, unknown, CustomerInput>({
     // zodResolver submits the schema's parsed output (blank optional fields
@@ -95,8 +99,8 @@ export function CustomerFormDialog({
   });
 
   useEffect(() => {
-    if (open) reset(toFormValues(customer));
-  }, [open, customer, reset]);
+    if (open) reset(toFormValues(customer, defaultName));
+  }, [open, customer, defaultName, reset]);
 
   function onSubmit(input: CustomerInput) {
     saveCustomer.mutate(
@@ -112,7 +116,15 @@ export function CustomerFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent
+        className="max-w-md"
+        onOpenAutoFocus={(event) => {
+          // With the name given, the phone is what is left to fill in.
+          if (!defaultName) return;
+          event.preventDefault();
+          setFocus("phone");
+        }}
+      >
         <DialogHeader className="pr-8">
           <DialogTitle>{isEdit ? t("Edit customer") : t("New customer")}</DialogTitle>
           <DialogDescription>{t("Fields marked with * are required.")}</DialogDescription>

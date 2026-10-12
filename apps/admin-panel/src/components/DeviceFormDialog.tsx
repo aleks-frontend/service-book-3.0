@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Controller, useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "react-i18next";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import {
   deviceInputSchema,
   type Device,
@@ -12,6 +12,7 @@ import {
 } from "@servicebook/schemas";
 import { useSaveDeviceMutation } from "@/lib/devices";
 import { cn } from "@/lib/utils";
+import { CustomerFormDialog } from "./CustomerFormDialog";
 import { CustomerPicker } from "./CustomerPicker";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -52,6 +53,8 @@ export function DeviceFormDialog({
 
   // The form only holds the owner's id; the picker also needs the name to show.
   const [owner, setOwner] = useState<CustomerSummary | null>(null);
+  // The name the new owner starts with; null while their dialog is closed.
+  const [newOwnerName, setNewOwnerName] = useState<string | null>(null);
 
   const {
     register,
@@ -59,6 +62,7 @@ export function DeviceFormDialog({
     handleSubmit,
     reset,
     setFocus,
+    setValue,
     formState: { errors },
   } = useForm<DeviceInputValues, unknown, DeviceInput>({
     // zodResolver submits the schema's parsed output, but @hookform/resolvers
@@ -77,6 +81,11 @@ export function DeviceFormDialog({
     });
     setOwner(device ? device.owner : defaultOwner);
   }, [open, device, defaultOwner, defaultModel, reset]);
+
+  function changeOwner(next: CustomerSummary | null) {
+    setOwner(next);
+    setValue("ownerId", next?.id ?? null);
+  }
 
   function onSubmit(input: DeviceInput) {
     saveDevice.mutate(
@@ -151,20 +160,24 @@ export function DeviceFormDialog({
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="device-owner" className="text-sm font-medium">
-              {t("Owner")}
-            </label>
+            <div className="flex items-center justify-between gap-2">
+              <label htmlFor="device-owner" className="text-sm font-medium">
+                {t("Owner")}
+              </label>
+              <Button type="button" variant="link" size="xs" onClick={() => setNewOwnerName("")}>
+                <Plus className="mr-1 h-3.5 w-3.5" aria-hidden />
+                {t("New customer")}
+              </Button>
+            </div>
             <Controller
               control={control}
               name="ownerId"
-              render={({ field }) => (
+              render={() => (
                 <CustomerPicker
                   id="device-owner"
                   value={owner}
-                  onChange={(customer) => {
-                    setOwner(customer);
-                    field.onChange(customer?.id ?? null);
-                  }}
+                  onChange={changeOwner}
+                  onCreate={setNewOwnerName}
                   placeholder={t("Search customers")}
                   invalid={!!errors.ownerId}
                 />
@@ -175,6 +188,14 @@ export function DeviceFormDialog({
             </p>
           </div>
         </form>
+
+        {/* Outside the form: a nested dialog's submit would otherwise bubble up to it through the React tree. */}
+        <CustomerFormDialog
+          open={newOwnerName !== null}
+          onOpenChange={(open) => !open && setNewOwnerName(null)}
+          defaultName={newOwnerName ?? undefined}
+          onSaved={({ id, name, phone }) => changeOwner({ id, name, phone })}
+        />
 
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
