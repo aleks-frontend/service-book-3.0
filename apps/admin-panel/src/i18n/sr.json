@@ -119,7 +119,7 @@
   "Devices deleted: {{deleted}}. Kept because they are in use: {{inUse}}.": "Obrisano uređaja: {{deleted}}. Zadržano jer su u upotrebi: {{inUse}}.",
   "Could not delete the devices. Please try again.": "Brisanje uređaja nije uspelo. Pokušajte ponovo.",
   "This customer still owns devices or has services, so they cannot be deleted.": "Mušterija još ima uređaje ili servise, pa ne može biti obrisana.",
-  "This device is attached to a service, so it cannot be deleted.": "Uređaj je vezan za servis, pa ne može biti obrisan.",
+  "This device is used on a service, so it cannot be deleted.": "Uređaj je vezan za servis, pa ne može biti obrisan.",
   "Service": "Servis",
   "Service {{number}}": "Servis {{number}}",
   "Service {{number}} created": "Servis {{number}} je dodat",
@@ -204,5 +204,13 @@
   "No services match your search.": "Nijedan servis ne odgovara pretrazi.",
   "Added on {{date}}": "Dodato {{date}}",
   "Delete customer": "Obriši mušteriju",
-  "Delete device": "Obriši uređaj"
+  "Delete device": "Obriši uređaj",
+  "Service history": "Istorija servisa",
+  "Could not load the service history.": "Nije moguće učitati istoriju servisa.",
+  "This customer owns no devices.": "Ova mušterija nema uređaja.",
+  "and {{count}} more": "i još {{count}}",
+  "This customer has no services yet.": "Ova mušterija još nema servisa.",
+  "This device has not been on a service yet.": "Ovaj uređaj još nije bio na servisu.",
+  "Sold": "Prodat",
+  "This device is attached to another customer's services, so it cannot get this owner.": "Ovaj uređaj je na servisima druge mušterije, pa ne može dobiti ovog vlasnika."
 }

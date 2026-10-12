@@ -15,6 +15,7 @@ import {
   useDeleteDeviceMutation,
   useDevicesQuery,
 } from "@/lib/devices";
+import { useOpenServiceParam } from "@/lib/useOpenServiceParam";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
@@ -23,6 +24,7 @@ import { DeviceDrawer } from "@/components/DeviceDrawer";
 import { DeviceFormDialog } from "@/components/DeviceFormDialog";
 import { DevicesTable } from "@/components/DevicesTable";
 import { Pagination } from "@/components/Pagination";
+import { ServiceDrawer } from "@/components/ServiceDrawer";
 
 const SEARCH_DEBOUNCE_MS = 300;
 /** How many selected devices the bulk delete confirmation names before "and N more". */
@@ -44,6 +46,8 @@ export function DevicesPage() {
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
   const [openDeviceId, setOpenDeviceId] = useState<string | null>(null);
+  // A service opened from the device's history stacks over its drawer.
+  const { openServiceId, openService, closeService } = useOpenServiceParam();
   const [form, setForm] = useState<FormState>({ open: false });
   const [deviceToDelete, setDeviceToDelete] = useState<Device | null>(null);
   const [confirmingBulkDelete, setConfirmingBulkDelete] = useState(false);
@@ -233,7 +237,10 @@ export function DevicesPage() {
         onClose={() => setOpenDeviceId(null)}
         onEdit={handleEdit}
         onDelete={handleDelete}
+        onOpenService={openService}
       />
+
+      <ServiceDrawer serviceId={openServiceId} onClose={closeService} />
 
       <DeviceFormDialog
         open={form.open}

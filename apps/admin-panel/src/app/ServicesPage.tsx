@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { LayoutGrid, Loader2, Plus, Search, Table2 } from "lucide-react";
 import {
   STATUSES,
@@ -11,6 +10,7 @@ import {
 } from "@servicebook/schemas";
 import { useServicesInfiniteQuery } from "@/lib/services";
 import { STATUS_LABELS } from "@/lib/statuses";
+import { useOpenServiceParam } from "@/lib/useOpenServiceParam";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,7 +26,6 @@ import { ServiceFormDialog } from "@/components/ServiceFormDialog";
 import { ServicesList, type ServicesView } from "@/components/ServicesList";
 
 const VIEW_STORAGE_KEY = "servicebook-services-view";
-const SERVICE_PARAM = "service";
 const SEARCH_DEBOUNCE_MS = 300;
 /** The status filter's value for "any status"; a select item's value cannot be empty. */
 const ALL_STATUSES = "ALL";
@@ -58,44 +57,6 @@ function saveView(view: ServicesView) {
   } catch {
     // Storage can be unavailable (private mode); the choice still applies to this visit.
   }
-}
-
-/** Marks a history entry pushed by opening the drawer, so closing it can go back instead. */
-type DrawerState = { openedFromList?: boolean } | null;
-
-/**
- * The open service lives in the `?service=<id>` URL param, so a deep link
- * opens it and the back button closes it.
- */
-function useOpenServiceParam() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const location = useLocation();
-  const navigate = useNavigate();
-
-  const openServiceId = searchParams.get(SERVICE_PARAM);
-
-  function openService(id: string) {
-    const next = new URLSearchParams(searchParams);
-    next.set(SERVICE_PARAM, id);
-    // Switching from one open service to another replaces the entry.
-    setSearchParams(next, {
-      replace: openServiceId !== null,
-      state: { openedFromList: true } satisfies DrawerState,
-    });
-  }
-
-  function closeService() {
-    if ((location.state as DrawerState)?.openedFromList) {
-      navigate(-1);
-      return;
-    }
-    // A deep link has no list entry to go back to.
-    const next = new URLSearchParams(searchParams);
-    next.delete(SERVICE_PARAM);
-    setSearchParams(next, { replace: true });
-  }
-
-  return { openServiceId, openService, closeService };
 }
 
 export function ServicesPage() {

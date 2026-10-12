@@ -76,6 +76,16 @@ export const serviceDetailSchema = serviceSchema.extend({
 
 export type ServiceDetail = z.infer<typeof serviceDetailSchema>;
 
+/** A service in a device's history, saying how the device appears on it. */
+export const deviceServiceSchema = serviceSchema.extend({
+  /** The device is one of the service's attached devices. */
+  attached: z.boolean(),
+  /** The device is sold on one of the service's sale lines. */
+  sold: z.boolean(),
+});
+
+export type DeviceService = z.infer<typeof deviceServiceSchema>;
+
 /** The service number as staff members see it, e.g. `2026-0042`. */
 export function formatServiceNumber(year: number, sequence: number) {
   return `${year}-${String(sequence).padStart(4, "0")}`;

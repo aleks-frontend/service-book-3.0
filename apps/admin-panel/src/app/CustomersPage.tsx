@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Plus, Search } from "lucide-react";
 import type { Customer, PageSize, SortDir } from "@servicebook/schemas";
 import { useCustomersQuery, useDeleteCustomerMutation } from "@/lib/customers";
+import { useOpenServiceParam } from "@/lib/useOpenServiceParam";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
@@ -10,6 +11,7 @@ import { CustomerDrawer } from "@/components/CustomerDrawer";
 import { CustomerFormDialog } from "@/components/CustomerFormDialog";
 import { CustomersTable } from "@/components/CustomersTable";
 import { Pagination } from "@/components/Pagination";
+import { ServiceDrawer } from "@/components/ServiceDrawer";
 
 const SEARCH_DEBOUNCE_MS = 300;
 
@@ -26,6 +28,8 @@ export function CustomersPage() {
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
   const [openCustomerId, setOpenCustomerId] = useState<string | null>(null);
+  // A service opened from the customer's history stacks over its drawer.
+  const { openServiceId, openService, closeService } = useOpenServiceParam();
   const [form, setForm] = useState<FormState>({ open: false });
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
 
@@ -124,7 +128,10 @@ export function CustomersPage() {
         onClose={() => setOpenCustomerId(null)}
         onEdit={handleEdit}
         onDelete={handleDelete}
+        onOpenService={openService}
       />
+
+      <ServiceDrawer serviceId={openServiceId} onClose={closeService} />
 
       <CustomerFormDialog
         open={form.open}

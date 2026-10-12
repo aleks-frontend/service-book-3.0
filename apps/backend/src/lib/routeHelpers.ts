@@ -52,16 +52,42 @@ export function isNotFound(error: unknown) {
 
 /**
  * Whether Postgres refused a write over a foreign key: deleting a record that
- * others still refer to, or referring to one that does not exist.
+ * others still refer to, or referring to one that does not exist. Prisma
+ * reports it as P2003, but a raw `DriverAdapterError` from the pg adapter can
+ * also surface it with Postgres's own code.
  */
 export function isForeignKeyViolation(error: unknown) {
-  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003";
+  if (error instanceof Prisma.PrismaClientKnownRequestError) return error.code === "P2003";
+  if (!(error instanceof Error) || error.name !== "DriverAdapterError") return false;
+  const cause = (error as { cause?: { code?: string } }).cause;
+  return cause?.code === "23503" || cause?.code === "23001";
+}
+
+/** 409 with a code the admin panel translates, e.g. "CUSTOMER_IN_USE". */
+export function sendConflict(res: Response, error: string, code: string) {
+  res.status(409).json({ error, code });
 }
 
 /**
- * 409 for a record that cannot be deleted while others refer to it. The admin
- * panel translates the message from `code`, e.g. "CUSTOMER_IN_USE".
+ * Deletes one record and answers 204, or 409 with `inUseCode` while others
+ * still refer to it, or 404 when there is no such record. Every record that a
+ * service's history refers to is deleted through here.
  */
-export function sendInUse(res: Response, label: string, code: string) {
-  res.status(409).json({ error: `${label} is in use`, code });
+export async function sendDelete(
+  res: Response,
+  label: string,
+  inUseCode: string,
+  deleteOne: () => Promise<unknown>,
+) {
+  try {
+    await deleteOne();
+    res.status(204).send();
+  } catch (error) {
+    if (isForeignKeyViolation(error)) {
+      sendConflict(res, `${label} is in use`, inUseCode);
+      return;
+    }
+    if (!isNotFound(error)) throw error;
+    sendNotFound(res, label);
+  }
 }

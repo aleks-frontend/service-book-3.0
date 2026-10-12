@@ -4,10 +4,9 @@ import { prisma } from "../lib/prisma.js";
 import {
   hideLegacyId,
   idParam,
-  isForeignKeyViolation,
   isNotFound,
   parseBody,
-  sendInUse,
+  sendDelete,
   sendNotFound,
 } from "../lib/routeHelpers.js";
 
@@ -67,20 +66,10 @@ actionsRouter.put("/:id", async (req, res) => {
   }
 });
 
+// An action used on a work line stays, so old services keep their lines.
 actionsRouter.delete("/:id", async (req, res) => {
   const id = idParam(req, res, LABEL);
   if (!id) return;
 
-  try {
-    await prisma.action.delete({ where: { id } });
-    res.status(204).send();
-  } catch (error) {
-    // An action used on a work line stays, so old bills stay intact.
-    if (isForeignKeyViolation(error)) {
-      sendInUse(res, LABEL, "ACTION_IN_USE");
-      return;
-    }
-    if (!isNotFound(error)) throw error;
-    sendNotFound(res, LABEL);
-  }
+  await sendDelete(res, LABEL, "ACTION_IN_USE", () => prisma.action.delete({ where: { id } }));
 });

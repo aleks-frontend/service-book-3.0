@@ -1,8 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { Router, type Response } from "express";
 import {
-  formatServiceNumber,
-  linesTotal,
   plainDateToUtc,
   serviceInputSchema,
   serviceListQuerySchema,
@@ -12,11 +10,11 @@ import {
   type ServiceDetail,
   type ServiceInput,
   type Status,
-  utcToPlainDate,
 } from "@servicebook/schemas";
 import { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma.js";
 import { listServiceIds } from "../lib/serviceList.js";
+import { serviceSelect, toService } from "../lib/serviceRows.js";
 import {
   idParam,
   isNotFound,
@@ -34,48 +32,12 @@ servicesRouter.use("/:id/log", serviceLogRouter);
 
 const LABEL = "Service";
 
-const deviceSummarySelect = {
-  id: true,
-  manufacturer: true,
-  model: true,
-  serialNumber: true,
-  owner: { select: { id: true, name: true, phone: true } },
-} satisfies Prisma.DeviceSelect;
-
-const serviceSelect = {
-  id: true,
-  year: true,
-  sequence: true,
-  publicToken: true,
-  date: true,
-  description: true,
-  status: true,
-  customer: { select: { id: true, name: true, phone: true } },
-  devices: { orderBy: { position: "asc" }, select: { device: { select: deviceSummarySelect } } },
-  // Only what the total needs; the list does not show the lines.
-  lines: { select: { quantity: true, unitPrice: true } },
-  createdAt: true,
-  updatedAt: true,
-} satisfies Prisma.ServiceSelect;
-
 const serviceDetailSelect = {
   ...serviceSelect,
   lines: { orderBy: lineOrder, select: lineSelect },
 } satisfies Prisma.ServiceSelect;
 
-type ServiceRow = Prisma.ServiceGetPayload<{ select: typeof serviceSelect }>;
 type ServiceDetailRow = Prisma.ServiceGetPayload<{ select: typeof serviceDetailSelect }>;
-
-/** What the API shows of a service: its number and total, never the legacy fields. */
-function toService({ year, sequence, date, devices, lines, ...rest }: ServiceRow): Service {
-  return {
-    ...rest,
-    number: formatServiceNumber(year, sequence),
-    date: utcToPlainDate(date),
-    devices: devices.map(({ device }) => device),
-    total: linesTotal(lines),
-  };
-}
 
 /** One service with its lines, as the drawer shows it. */
 function toServiceDetail(row: ServiceDetailRow): ServiceDetail {

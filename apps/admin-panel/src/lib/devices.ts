@@ -52,7 +52,14 @@ export function useSaveDeviceMutation() {
         queryClient.invalidateQueries({ queryKey: serviceKeys.all }),
       ]);
     },
-    onError: () => toast.error(t("Could not save the device. Please try again.")),
+    onError: (error: HttpError) =>
+      toast.error(
+        error.code === "DEVICE_ATTACHED_TO_OTHER_CUSTOMER"
+          ? t(
+              "This device is attached to another customer's services, so it cannot get this owner.",
+            )
+          : t("Could not save the device. Please try again."),
+      ),
   });
 }
 
@@ -70,7 +77,7 @@ export function useDeleteDeviceMutation() {
     onError: (error: HttpError) =>
       toast.error(
         error.code === "DEVICE_IN_USE"
-          ? t("This device is attached to a service, so it cannot be deleted.")
+          ? t("This device is used on a service, so it cannot be deleted.")
           : t("Could not delete the device. Please try again."),
       ),
   });

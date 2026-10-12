@@ -119,7 +119,7 @@
   "Devices deleted: {{deleted}}. Kept because they are in use: {{inUse}}.": "Törölt eszközök: {{deleted}}. Használatban vannak, ezért megmaradtak: {{inUse}}.",
   "Could not delete the devices. Please try again.": "Az eszközök törlése nem sikerült. Próbálja újra.",
   "This customer still owns devices or has services, so they cannot be deleted.": "Az ügyfélnek még vannak eszközei vagy szervizei, ezért nem törölhető.",
-  "This device is attached to a service, so it cannot be deleted.": "Az eszköz egy szervizhez tartozik, ezért nem törölhető.",
+  "This device is used on a service, so it cannot be deleted.": "Az eszköz egy szervizhez tartozik, ezért nem törölhető.",
   "Service": "Szerviz",
   "Service {{number}}": "Szerviz: {{number}}",
   "Service {{number}} created": "A(z) {{number}} szerviz létrehozva",
@@ -204,5 +204,13 @@
   "No services match your search.": "Egy szerviz sem felel meg a keresésnek.",
   "Added on {{date}}": "Hozzáadva: {{date}}",
   "Delete customer": "Ügyfél törlése",
-  "Delete device": "Eszköz törlése"
+  "Delete device": "Eszköz törlése",
+  "Service history": "Szervizelőzmények",
+  "Could not load the service history.": "Nem sikerült betölteni a szervizelőzményeket.",
+  "This customer owns no devices.": "Ennek az ügyfélnek nincs eszköze.",
+  "and {{count}} more": "és még {{count}}",
+  "This customer has no services yet.": "Ennek az ügyfélnek még nincs szervize.",
+  "This device has not been on a service yet.": "Ez az eszköz még nem volt szervizen.",
+  "Sold": "Eladva",
+  "This device is attached to another customer's services, so it cannot get this owner.": "Ez az eszköz egy másik ügyfél szervizeihez tartozik, ezért nem kaphatja meg ezt a tulajdonost."
 }

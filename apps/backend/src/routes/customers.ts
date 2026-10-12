@@ -4,16 +4,17 @@ import {
   customerListQuerySchema,
   type Customer,
   type Page,
+  type Service,
 } from "@servicebook/schemas";
 import { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma.js";
+import { findServiceHistory } from "../lib/serviceRows.js";
 import {
   hideLegacyId,
   idParam,
-  isForeignKeyViolation,
   isNotFound,
   parseBody,
-  sendInUse,
+  sendDelete,
   sendNotFound,
 } from "../lib/routeHelpers.js";
 
@@ -76,6 +77,19 @@ customersRouter.get("/:id", async (req, res) => {
   res.json(customer);
 });
 
+// The customer's services, newest first, for the history in their drawer.
+customersRouter.get("/:id/services", async (req, res) => {
+  const id = idParam(req, res, LABEL);
+  if (!id) return;
+
+  if (!(await prisma.customer.findUnique({ where: { id }, select: { id: true } }))) {
+    sendNotFound(res, LABEL);
+    return;
+  }
+  const services: Service[] = await findServiceHistory({ customerId: id });
+  res.json(services);
+});
+
 // The edit dialog always sends every field, so an update replaces them all.
 customersRouter.put("/:id", async (req, res) => {
   const id = idParam(req, res, LABEL);
@@ -96,20 +110,10 @@ customersRouter.put("/:id", async (req, res) => {
   }
 });
 
+// A customer who still owns devices or has services keeps them, so the delete is refused.
 customersRouter.delete("/:id", async (req, res) => {
   const id = idParam(req, res, LABEL);
   if (!id) return;
 
-  try {
-    await prisma.customer.delete({ where: { id } });
-    res.status(204).send();
-  } catch (error) {
-    // A customer who still owns devices or has services keeps them, so the delete is refused.
-    if (isForeignKeyViolation(error)) {
-      sendInUse(res, LABEL, "CUSTOMER_IN_USE");
-      return;
-    }
-    if (!isNotFound(error)) throw error;
-    sendNotFound(res, LABEL);
-  }
+  await sendDelete(res, LABEL, "CUSTOMER_IN_USE", () => prisma.customer.delete({ where: { id } }));
 });

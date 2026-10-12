@@ -2,16 +2,25 @@ import { useTranslation } from "react-i18next";
 import { deviceLabel, type Device } from "@servicebook/schemas";
 import { useDeviceQuery } from "@/lib/devices";
 import { formatDate } from "@/lib/format";
+import { useDeviceServicesQuery } from "@/lib/services";
 import { DrawerSummary, DrawerSummaryRow, EntityDrawer } from "./EntityDrawer";
+import { ServiceHistory } from "./ServiceHistory";
 
 type DeviceDrawerProps = {
   deviceId: string | null;
   onClose: () => void;
   onEdit: (device: Device) => void;
   onDelete: (device: Device) => void;
+  onOpenService: (serviceId: string) => void;
 };
 
-export function DeviceDrawer({ deviceId, onClose, onEdit, onDelete }: DeviceDrawerProps) {
+export function DeviceDrawer({
+  deviceId,
+  onClose,
+  onEdit,
+  onDelete,
+  onOpenService,
+}: DeviceDrawerProps) {
   const { t, i18n } = useTranslation();
   const { data: device, isError } = useDeviceQuery(deviceId);
 
@@ -33,7 +42,12 @@ export function DeviceDrawer({ deviceId, onClose, onEdit, onDelete }: DeviceDraw
       onEdit={onEdit}
       onDelete={onDelete}
     >
-      {(device) => <DeviceSummary device={device} />}
+      {(device) => (
+        <>
+          <DeviceSummary device={device} />
+          <DeviceServices deviceId={device.id} onOpen={onOpenService} />
+        </>
+      )}
     </EntityDrawer>
   );
 }
@@ -70,5 +84,39 @@ function DeviceSummary({ device }: { device: Device }) {
         )}
       </DrawerSummaryRow>
     </DrawerSummary>
+  );
+}
+
+/**
+ * Every service the device was attached to or sold on, newest first; each
+ * opens its own drawer. A generic device's services can be anyone's.
+ */
+function DeviceServices({
+  deviceId,
+  onOpen,
+}: {
+  deviceId: string;
+  onOpen: (serviceId: string) => void;
+}) {
+  const { t } = useTranslation();
+  const { data, isError } = useDeviceServicesQuery(deviceId);
+
+  return (
+    <ServiceHistory
+      services={data}
+      isError={isError}
+      emptyMessage={t("This device has not been on a service yet.")}
+      describe={(service) => (
+        <>
+          {service.customer.name}
+          {service.sold && (
+            <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-xs text-foreground">
+              {t("Sold")}
+            </span>
+          )}
+        </>
+      )}
+      onOpen={(service) => onOpen(service.id)}
+    />
   );
 }

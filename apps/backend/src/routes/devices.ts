@@ -3,18 +3,21 @@ import {
   deviceInputSchema,
   deviceListQuerySchema,
   type Device,
+  type DeviceService,
   type Page,
 } from "@servicebook/schemas";
 import { Prisma } from "../generated/prisma/client.js";
 import { bulkDeleteHandler } from "../lib/bulkDelete.js";
 import { prisma } from "../lib/prisma.js";
+import { findServiceHistory } from "../lib/serviceRows.js";
 import {
   idParam,
   isForeignKeyViolation,
   isNotFound,
   parseBody,
+  sendConflict,
+  sendDelete,
   sendFieldError,
-  sendInUse,
   sendNotFound,
 } from "../lib/routeHelpers.js";
 
@@ -115,6 +118,47 @@ devicesRouter.get("/:id", async (req, res) => {
   res.json(device);
 });
 
+// Every service the device is attached to or sold on, newest first, for the history in its drawer.
+devicesRouter.get("/:id/services", async (req, res) => {
+  const id = idParam(req, res, LABEL);
+  if (!id) return;
+
+  if (!(await prisma.device.findUnique({ where: { id }, select: { id: true } }))) {
+    sendNotFound(res, LABEL);
+    return;
+  }
+  const [services, saleLines] = await Promise.all([
+    findServiceHistory({
+      OR: [{ devices: { some: { deviceId: id } } }, { lines: { some: { deviceId: id } } }],
+    }),
+    // Only sale lines refer to a device.
+    prisma.serviceLine.findMany({ where: { deviceId: id }, select: { serviceId: true } }),
+  ]);
+  const soldOn = new Set(saleLines.map(({ serviceId }) => serviceId));
+  const result: DeviceService[] = services.map((service) => ({
+    ...service,
+    attached: service.devices.some((device) => device.id === id),
+    sold: soldOn.has(service.id),
+  }));
+  res.json(result);
+});
+
+/**
+ * Whether giving the device `ownerId` would reassign it while it is attached
+ * to a service of anyone else (ADR-0004). Keeping the owner or making the
+ * device generic is always allowed.
+ */
+async function isAttachedToOtherCustomer(id: string, ownerId: string | null) {
+  if (ownerId === null) return false;
+  const current = await prisma.device.findUnique({ where: { id }, select: { ownerId: true } });
+  if (!current || current.ownerId === ownerId) return false;
+  const other = await prisma.serviceDevice.findFirst({
+    where: { deviceId: id, service: { customerId: { not: ownerId } } },
+    select: { serviceId: true },
+  });
+  return other !== null;
+}
+
 // The edit dialog always sends every field, so an update replaces them all;
 // a missing or null owner makes the device generic.
 devicesRouter.put("/:id", async (req, res) => {
@@ -122,6 +166,14 @@ devicesRouter.put("/:id", async (req, res) => {
   if (!id) return;
   const input = parseBody(deviceInputSchema, req, res, LABEL);
   if (!input) return;
+  if (await isAttachedToOtherCustomer(id, input.ownerId)) {
+    sendConflict(
+      res,
+      "Device is attached to services of another customer",
+      "DEVICE_ATTACHED_TO_OTHER_CUSTOMER",
+    );
+    return;
+  }
 
   try {
     const device: Device = await prisma.device.update({
@@ -140,20 +192,10 @@ devicesRouter.put("/:id", async (req, res) => {
   }
 });
 
+// A device attached to a service or sold on one stays with it.
 devicesRouter.delete("/:id", async (req, res) => {
   const id = idParam(req, res, LABEL);
   if (!id) return;
 
-  try {
-    await prisma.device.delete({ where: { id } });
-    res.status(204).send();
-  } catch (error) {
-    // A device attached to a service stays with it.
-    if (isForeignKeyViolation(error)) {
-      sendInUse(res, LABEL, "DEVICE_IN_USE");
-      return;
-    }
-    if (!isNotFound(error)) throw error;
-    sendNotFound(res, LABEL);
-  }
+  await sendDelete(res, LABEL, "DEVICE_IN_USE", () => prisma.device.delete({ where: { id } }));
 });

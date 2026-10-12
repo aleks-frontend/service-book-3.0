@@ -1,14 +1,22 @@
 import { useTranslation } from "react-i18next";
-import type { Customer } from "@servicebook/schemas";
+import { Loader2 } from "lucide-react";
+import { deviceLabel, type Customer } from "@servicebook/schemas";
 import { useCustomerQuery } from "@/lib/customers";
+import { useDevicesQuery } from "@/lib/devices";
 import { formatDate } from "@/lib/format";
+import { useCustomerServicesQuery } from "@/lib/services";
 import { DrawerSummary, DrawerSummaryRow, EntityDrawer } from "./EntityDrawer";
+import { ServiceHistory } from "./ServiceHistory";
+
+/** The most devices the drawer lists; the rest are counted. */
+const DEVICES_SHOWN = 50;
 
 type CustomerDrawerProps = {
   customerId: string | null;
   onClose: () => void;
   onEdit: (customer: Customer) => void;
   onDelete: (customer: Customer) => void;
+  onOpenService: (serviceId: string) => void;
 };
 
 /** Facebook is stored as staff typed it: a profile URL or just a name. */
@@ -22,7 +30,13 @@ function facebookLink(facebook: string) {
   );
 }
 
-export function CustomerDrawer({ customerId, onClose, onEdit, onDelete }: CustomerDrawerProps) {
+export function CustomerDrawer({
+  customerId,
+  onClose,
+  onEdit,
+  onDelete,
+  onOpenService,
+}: CustomerDrawerProps) {
   const { t, i18n } = useTranslation();
   const { data: customer, isError } = useCustomerQuery(customerId);
 
@@ -44,7 +58,13 @@ export function CustomerDrawer({ customerId, onClose, onEdit, onDelete }: Custom
       onEdit={onEdit}
       onDelete={onDelete}
     >
-      {(customer) => <CustomerSummary customer={customer} />}
+      {(customer) => (
+        <>
+          <CustomerSummary customer={customer} />
+          <CustomerDevices customerId={customer.id} />
+          <CustomerServices customerId={customer.id} onOpen={onOpenService} />
+        </>
+      )}
     </EntityDrawer>
   );
 }
@@ -74,5 +94,71 @@ function CustomerSummary({ customer }: { customer: Customer }) {
         <DrawerSummaryRow label={t("Facebook")}>{facebookLink(customer.facebook)}</DrawerSummaryRow>
       )}
     </DrawerSummary>
+  );
+}
+
+/** The devices the customer owns, by name. */
+function CustomerDevices({ customerId }: { customerId: string }) {
+  const { t } = useTranslation();
+  const { data, isError } = useDevicesQuery({
+    ownerId: customerId,
+    page: 1,
+    pageSize: DEVICES_SHOWN,
+  });
+
+  return (
+    <section className="space-y-2" aria-label={t("Devices")}>
+      <h3 className="text-sm font-semibold">
+        {t("Devices")}
+        {data && data.total > 0 && (
+          <span className="ml-1.5 font-normal text-muted-foreground">({data.total})</span>
+        )}
+      </h3>
+      {isError ? (
+        <p className="text-sm text-destructive">{t("Could not load devices.")}</p>
+      ) : data === undefined ? (
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      ) : data.total === 0 ? (
+        <p className="text-sm text-muted-foreground">{t("This customer owns no devices.")}</p>
+      ) : (
+        <ul className="divide-y rounded-md border text-sm">
+          {data.items.map((device) => (
+            <li key={device.id} className="flex justify-between gap-3 px-3 py-2">
+              <span className="font-medium">{deviceLabel(device)}</span>
+              {device.serialNumber && (
+                <span className="truncate text-muted-foreground">{device.serialNumber}</span>
+              )}
+            </li>
+          ))}
+          {data.total > data.items.length && (
+            <li className="px-3 py-2 text-muted-foreground">
+              {t("and {{count}} more", { count: data.total - data.items.length })}
+            </li>
+          )}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+/** The customer's services, newest first; each opens its own drawer. */
+function CustomerServices({
+  customerId,
+  onOpen,
+}: {
+  customerId: string;
+  onOpen: (serviceId: string) => void;
+}) {
+  const { t } = useTranslation();
+  const { data, isError } = useCustomerServicesQuery(customerId);
+
+  return (
+    <ServiceHistory
+      services={data}
+      isError={isError}
+      emptyMessage={t("This customer has no services yet.")}
+      describe={(service) => service.devices.map(deviceLabel).join(", ")}
+      onOpen={(service) => onOpen(service.id)}
+    />
   );
 }

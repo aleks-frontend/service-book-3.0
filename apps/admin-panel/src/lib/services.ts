@@ -9,6 +9,7 @@ import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import type {
   CursorPage,
+  DeviceService,
   LogEntry,
   Service,
   ServiceDetail,
@@ -25,6 +26,9 @@ export const serviceKeys = {
   all: ["services"] as const,
   lists: ["services", "list"] as const,
   list: (query: ServiceListQuery) => ["services", "list", query] as const,
+  // Histories sit under `lists`, so every change that refreshes the lists refreshes them too.
+  customerHistory: (customerId: string) => ["services", "list", "customer", customerId] as const,
+  deviceHistory: (deviceId: string) => ["services", "list", "device", deviceId] as const,
   detail: (id: string) => ["services", "detail", id] as const,
   log: (id: string) => ["services", "log", id] as const,
 };
@@ -49,6 +53,22 @@ export function useServiceQuery(id: string | null) {
     queryKey: serviceKeys.detail(id ?? ""),
     queryFn: () => request<ServiceDetail>(`/services/${id}`),
     enabled: id !== null,
+  });
+}
+
+/** A customer's services, newest first, for the history in their drawer. */
+export function useCustomerServicesQuery(customerId: string) {
+  return useQuery({
+    queryKey: serviceKeys.customerHistory(customerId),
+    queryFn: () => request<Service[]>(`/customers/${customerId}/services`),
+  });
+}
+
+/** Every service a device is attached to or sold on, newest first, for its drawer. */
+export function useDeviceServicesQuery(deviceId: string) {
+  return useQuery({
+    queryKey: serviceKeys.deviceHistory(deviceId),
+    queryFn: () => request<DeviceService[]>(`/devices/${deviceId}/services`),
   });
 }
 
