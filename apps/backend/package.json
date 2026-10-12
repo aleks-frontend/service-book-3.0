@@ -14,7 +14,9 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "prisma:seed": "prisma db seed",
-    "staff:create": "tsx src/scripts/createStaffMember.ts"
+    "staff:create": "tsx src/scripts/createStaffMember.ts",
+    "seed:dummy-services": "tsx src/scripts/seedDummyServices.ts",
+    "seed:dummy-actions": "tsx src/scripts/seedDummyActions.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
