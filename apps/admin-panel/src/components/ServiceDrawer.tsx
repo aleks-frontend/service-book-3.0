@@ -3,8 +3,9 @@ import { useTranslation } from "react-i18next";
 import { deviceLabel, type ServiceDetail } from "@servicebook/schemas";
 import { useDeleteServiceMutation, useServiceQuery } from "@/lib/services";
 import { formatDate, formatPlainDate } from "@/lib/format";
+import type { OpenDrawer } from "@/lib/useDrawerStack";
 import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog";
-import { DrawerSummary, DrawerSummaryRow, EntityDrawer } from "./EntityDrawer";
+import { DrawerLink, DrawerSummary, DrawerSummaryRow, EntityDrawer } from "./EntityDrawer";
 import { ServiceFormDialog } from "./ServiceFormDialog";
 import { ServiceLines } from "./ServiceLines";
 import { ServiceLog } from "./ServiceLog";
@@ -14,10 +15,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 type ServiceDrawerProps = {
   serviceId: string | null;
   onClose: () => void;
+  onOpen: OpenDrawer;
 };
 
-/** One service, opened from the `?service=<id>` URL param. */
-export function ServiceDrawer({ serviceId, onClose }: ServiceDrawerProps) {
+/** One service, opened in the drawer stack as `?service=<id>`. */
+export function ServiceDrawer({ serviceId, onClose, onOpen }: ServiceDrawerProps) {
   const { t, i18n } = useTranslation();
   const { data: service, isError } = useServiceQuery(serviceId);
   const deleteService = useDeleteServiceMutation();
@@ -60,7 +62,7 @@ export function ServiceDrawer({ serviceId, onClose }: ServiceDrawerProps) {
       >
         {(service) => (
           <>
-            <ServiceSummary service={service} />
+            <ServiceSummary service={service} onOpen={onOpen} />
             <Tabs defaultValue="details">
               <TabsList>
                 <TabsTrigger value="details">{t("Details")}</TabsTrigger>
@@ -94,13 +96,15 @@ export function ServiceDrawer({ serviceId, onClose }: ServiceDrawerProps) {
 }
 
 /** The customer, devices, date and description at a glance; they are changed in the edit modal. */
-function ServiceSummary({ service }: { service: ServiceDetail }) {
+function ServiceSummary({ service, onOpen }: { service: ServiceDetail; onOpen: OpenDrawer }) {
   const { t, i18n } = useTranslation();
 
   return (
     <DrawerSummary label={t("Service details")}>
       <DrawerSummaryRow label={t("Customer")}>
-        <span className="font-medium">{service.customer.name}</span>
+        <DrawerLink onClick={() => onOpen("customer", service.customer.id)}>
+          {service.customer.name}
+        </DrawerLink>
         {" · "}
         <a href={`tel:${service.customer.phone}`} className="text-primary hover:underline">
           {service.customer.phone}

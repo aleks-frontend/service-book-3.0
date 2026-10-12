@@ -10,7 +10,7 @@ import {
 } from "@servicebook/schemas";
 import { useServicesInfiniteQuery } from "@/lib/services";
 import { STATUS_LABELS } from "@/lib/statuses";
-import { useDrawerParam } from "@/lib/useDrawerParam";
+import { useDrawerStack } from "@/lib/useDrawerStack";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ServiceDrawer } from "@/components/ServiceDrawer";
+import { DrawerStack } from "@/components/DrawerStack";
 import { ServiceFormDialog } from "@/components/ServiceFormDialog";
 import { ServicesList, type ServicesView } from "@/components/ServicesList";
 
@@ -63,7 +63,7 @@ export function ServicesPage() {
   const { t } = useTranslation();
   const [view, setView] = useState<ServicesView>(readSavedView);
   const [creating, setCreating] = useState(false);
-  const serviceDrawer = useDrawerParam("service");
+  const drawers = useDrawerStack();
 
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
@@ -205,7 +205,7 @@ export function ServicesPage() {
           <ServicesList
             services={services}
             view={view}
-            onOpen={(service) => serviceDrawer.open(service.id)}
+            onOpen={(service) => drawers.open("service", service.id)}
             emptyMessage={
               isPending
                 ? t("Loading…")
@@ -230,7 +230,7 @@ export function ServicesPage() {
         </>
       )}
 
-      <ServiceDrawer serviceId={serviceDrawer.openId} onClose={serviceDrawer.close} />
+      <DrawerStack />
       <ServiceFormDialog open={creating} onOpenChange={setCreating} />
     </section>
   );

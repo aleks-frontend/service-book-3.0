@@ -1,10 +1,14 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Loader2 } from "lucide-react";
 import { deviceLabel, type Customer } from "@servicebook/schemas";
-import { useCustomerQuery } from "@/lib/customers";
+import { useCustomerQuery, useDeleteCustomerMutation } from "@/lib/customers";
 import { useDevicesQuery } from "@/lib/devices";
 import { formatDate } from "@/lib/format";
 import { useCustomerServicesQuery } from "@/lib/services";
+import type { OpenDrawer } from "@/lib/useDrawerStack";
+import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog";
+import { CustomerFormDialog } from "./CustomerFormDialog";
 import { DrawerSummary, DrawerSummaryRow, EntityDrawer } from "./EntityDrawer";
 import { ServiceHistory } from "./ServiceHistory";
 
@@ -14,10 +18,7 @@ const DEVICES_SHOWN = 50;
 type CustomerDrawerProps = {
   customerId: string | null;
   onClose: () => void;
-  onEdit: (customer: Customer) => void;
-  onDelete: (customer: Customer) => void;
-  onOpenDevice: (deviceId: string) => void;
-  onOpenService: (serviceId: string) => void;
+  onOpen: OpenDrawer;
 };
 
 /** Facebook is stored as staff typed it: a profile URL or just a name. */
@@ -31,43 +32,65 @@ function facebookLink(facebook: string) {
   );
 }
 
-export function CustomerDrawer({
-  customerId,
-  onClose,
-  onEdit,
-  onDelete,
-  onOpenDevice,
-  onOpenService,
-}: CustomerDrawerProps) {
+/** One customer, opened in the drawer stack as `?customer=<id>`. */
+export function CustomerDrawer({ customerId, onClose, onOpen }: CustomerDrawerProps) {
   const { t, i18n } = useTranslation();
   const { data: customer, isError } = useCustomerQuery(customerId);
+  const deleteCustomer = useDeleteCustomerMutation();
+  const [editing, setEditing] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+
+  function confirmDelete() {
+    if (!customer) return;
+    deleteCustomer.mutate(customer.id, {
+      onSuccess: () => {
+        setConfirmingDelete(false);
+        onClose();
+      },
+    });
+  }
 
   return (
-    <EntityDrawer
-      open={customerId !== null}
-      onClose={onClose}
-      entity={customer}
-      isError={isError}
-      errorMessage={t("Could not load the customer.")}
-      title={customer?.name ?? t("Customer")}
-      description={
-        customer
-          ? t("Added on {{date}}", { date: formatDate(customer.createdAt, i18n.language) })
-          : t("Customer details")
-      }
-      editLabel={t("Edit customer")}
-      deleteLabel={t("Delete customer")}
-      onEdit={onEdit}
-      onDelete={onDelete}
-    >
-      {(customer) => (
-        <>
-          <CustomerSummary customer={customer} />
-          <CustomerDevices customerId={customer.id} onOpen={onOpenDevice} />
-          <CustomerServices customerId={customer.id} onOpen={onOpenService} />
-        </>
+    <>
+      <EntityDrawer
+        open={customerId !== null}
+        onClose={onClose}
+        entity={customer}
+        isError={isError}
+        errorMessage={t("Could not load the customer.")}
+        title={customer?.name ?? t("Customer")}
+        description={
+          customer
+            ? t("Added on {{date}}", { date: formatDate(customer.createdAt, i18n.language) })
+            : t("Customer details")
+        }
+        editLabel={t("Edit customer")}
+        deleteLabel={t("Delete customer")}
+        onEdit={() => setEditing(true)}
+        onDelete={() => setConfirmingDelete(true)}
+      >
+        {(customer) => (
+          <>
+            <CustomerSummary customer={customer} />
+            <CustomerDevices customerId={customer.id} onOpen={onOpen} />
+            <CustomerServices customerId={customer.id} onOpen={onOpen} />
+          </>
+        )}
+      </EntityDrawer>
+
+      {customer && (
+        <CustomerFormDialog open={editing} onOpenChange={setEditing} customer={customer} />
       )}
-    </EntityDrawer>
+
+      <ConfirmDeleteDialog
+        open={confirmingDelete}
+        onOpenChange={setConfirmingDelete}
+        title={t("Delete customer?")}
+        description={t("{{name}} will be permanently deleted.", { name: customer?.name ?? "" })}
+        isDeleting={deleteCustomer.isPending}
+        onConfirm={confirmDelete}
+      />
+    </>
   );
 }
 
@@ -100,13 +123,7 @@ function CustomerSummary({ customer }: { customer: Customer }) {
 }
 
 /** The devices the customer owns, by name; each opens its own drawer. */
-function CustomerDevices({
-  customerId,
-  onOpen,
-}: {
-  customerId: string;
-  onOpen: (deviceId: string) => void;
-}) {
+function CustomerDevices({ customerId, onOpen }: { customerId: string; onOpen: OpenDrawer }) {
   const { t } = useTranslation();
   const { data, isError } = useDevicesQuery({
     ownerId: customerId,
@@ -135,7 +152,7 @@ function CustomerDevices({
               <button
                 type="button"
                 className="flex w-full justify-between gap-3 px-3 py-2 text-left transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none"
-                onClick={() => onOpen(device.id)}
+                onClick={() => onOpen("device", device.id)}
               >
                 <span className="font-medium">{deviceLabel(device)}</span>
                 {device.serialNumber && (
@@ -156,13 +173,7 @@ function CustomerDevices({
 }
 
 /** The customer's services, newest first; each opens its own drawer. */
-function CustomerServices({
-  customerId,
-  onOpen,
-}: {
-  customerId: string;
-  onOpen: (serviceId: string) => void;
-}) {
+function CustomerServices({ customerId, onOpen }: { customerId: string; onOpen: OpenDrawer }) {
   const { t } = useTranslation();
   const { data, isError } = useCustomerServicesQuery(customerId);
 
@@ -172,7 +183,7 @@ function CustomerServices({
       isError={isError}
       emptyMessage={t("This customer has no services yet.")}
       describe={(service) => service.devices.map(deviceLabel).join(", ")}
-      onOpen={(service) => onOpen(service.id)}
+      onOpen={(service) => onOpen("service", service.id)}
     />
   );
 }

@@ -4,19 +4,20 @@ import { deviceLabel, type Device } from "@servicebook/schemas";
 import { useDeleteDeviceMutation, useDeviceQuery } from "@/lib/devices";
 import { formatDate } from "@/lib/format";
 import { useDeviceServicesQuery } from "@/lib/services";
+import type { OpenDrawer } from "@/lib/useDrawerStack";
 import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog";
 import { DeviceFormDialog } from "./DeviceFormDialog";
-import { DrawerSummary, DrawerSummaryRow, EntityDrawer } from "./EntityDrawer";
+import { DrawerLink, DrawerSummary, DrawerSummaryRow, EntityDrawer } from "./EntityDrawer";
 import { ServiceHistory } from "./ServiceHistory";
 
 type DeviceDrawerProps = {
   deviceId: string | null;
   onClose: () => void;
-  onOpenService: (serviceId: string) => void;
+  onOpen: OpenDrawer;
 };
 
-/** One device, opened from the `?device=<id>` URL param on any page. */
-export function DeviceDrawer({ deviceId, onClose, onOpenService }: DeviceDrawerProps) {
+/** One device, opened in the drawer stack as `?device=<id>`. */
+export function DeviceDrawer({ deviceId, onClose, onOpen }: DeviceDrawerProps) {
   const { t, i18n } = useTranslation();
   const { data: device, isError } = useDeviceQuery(deviceId);
   const deleteDevice = useDeleteDeviceMutation();
@@ -54,8 +55,8 @@ export function DeviceDrawer({ deviceId, onClose, onOpenService }: DeviceDrawerP
       >
         {(device) => (
           <>
-            <DeviceSummary device={device} />
-            <DeviceServices deviceId={device.id} onOpen={onOpenService} />
+            <DeviceSummary device={device} onOpen={onOpen} />
+            <DeviceServices deviceId={device.id} onOpen={onOpen} />
           </>
         )}
       </EntityDrawer>
@@ -77,8 +78,9 @@ export function DeviceDrawer({ deviceId, onClose, onOpenService }: DeviceDrawerP
 }
 
 /** The device and its owner at a glance; they are changed in the edit modal. */
-function DeviceSummary({ device }: { device: Device }) {
+function DeviceSummary({ device, onOpen }: { device: Device; onOpen: OpenDrawer }) {
   const { t } = useTranslation();
+  const { owner } = device;
 
   return (
     <DrawerSummary label={t("Device details")}>
@@ -95,12 +97,12 @@ function DeviceSummary({ device }: { device: Device }) {
         </DrawerSummaryRow>
       )}
       <DrawerSummaryRow label={t("Owner")}>
-        {device.owner ? (
+        {owner ? (
           <>
-            <span className="font-medium">{device.owner.name}</span>
+            <DrawerLink onClick={() => onOpen("customer", owner.id)}>{owner.name}</DrawerLink>
             {" · "}
-            <a href={`tel:${device.owner.phone}`} className="text-primary hover:underline">
-              {device.owner.phone}
+            <a href={`tel:${owner.phone}`} className="text-primary hover:underline">
+              {owner.phone}
             </a>
           </>
         ) : (
@@ -115,13 +117,7 @@ function DeviceSummary({ device }: { device: Device }) {
  * Every service the device was attached to or sold on, newest first; each
  * opens its own drawer. A generic device's services can be anyone's.
  */
-function DeviceServices({
-  deviceId,
-  onOpen,
-}: {
-  deviceId: string;
-  onOpen: (serviceId: string) => void;
-}) {
+function DeviceServices({ deviceId, onOpen }: { deviceId: string; onOpen: OpenDrawer }) {
   const { t } = useTranslation();
   const { data, isError } = useDeviceServicesQuery(deviceId);
 
@@ -140,7 +136,7 @@ function DeviceServices({
           )}
         </>
       )}
-      onOpen={(service) => onOpen(service.id)}
+      onOpen={(service) => onOpen("service", service.id)}
     />
   );
 }

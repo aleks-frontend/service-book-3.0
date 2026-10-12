@@ -26,11 +26,12 @@ test("a customer's drawer lists their devices and services, and an entry opens t
 }) => {
   await logIn(page);
   await expect(page).toHaveURL("/services");
-  const { service } = await customerWithService(page, "Zoran Zorić");
+  const { customer, service } = await customerWithService(page, "Zoran Zorić");
 
   await page.goto("/customers");
   await page.getByLabel("Pretraga mušterija").fill("Zoran");
   await page.getByRole("row", { name: /Zoran Zorić/ }).click();
+  await expect(page).toHaveURL(`/customers?customer=${customer.id}`);
   const customerDrawer = page.getByRole("dialog", { name: "Zoran Zorić" });
   await expect(customerDrawer.getByRole("region", { name: "Uređaji" })).toContainText(
     "Xiaomi Redmi Zoran Zorić",
@@ -38,14 +39,14 @@ test("a customer's drawer lists their devices and services, and an entry opens t
 
   const history = customerDrawer.getByRole("region", { name: "Istorija servisa" });
   await history.getByRole("button", { name: new RegExp(service.number) }).click();
-  await expect(page).toHaveURL(`/customers?service=${service.id}`);
+  await expect(page).toHaveURL(`/customers?customer=${customer.id}&service=${service.id}`);
   const serviceDrawer = page.getByRole("dialog", { name: `Servis ${service.number}` });
   await expect(serviceDrawer).toBeVisible();
 
   // Closing the service goes back to the customer.
   await page.keyboard.press("Escape");
   await expect(serviceDrawer).toBeHidden();
-  await expect(page).toHaveURL("/customers");
+  await expect(page).toHaveURL(`/customers?customer=${customer.id}`);
   await expect(customerDrawer).toBeVisible();
 
   // The customer has a service, so they cannot be deleted.
@@ -62,7 +63,8 @@ test("a device in a customer's drawer opens its own drawer, stacked, which edits
 }) => {
   await logIn(page);
   await expect(page).toHaveURL("/services");
-  const { device, service } = await customerWithService(page, "Milan Milić");
+  const { customer, device, service } = await customerWithService(page, "Milan Milić");
+  const customerUrl = `/customers?customer=${customer.id}`;
 
   await page.goto("/customers");
   await page.getByLabel("Pretraga mušterija").fill("Milan");
@@ -72,7 +74,7 @@ test("a device in a customer's drawer opens its own drawer, stacked, which edits
     .getByRole("region", { name: "Uređaji" })
     .getByRole("button", { name: /Redmi Milan Milić/ })
     .click();
-  await expect(page).toHaveURL(`/customers?device=${device.id}`);
+  await expect(page).toHaveURL(`${customerUrl}&device=${device.id}`);
   const deviceDrawer = page.getByRole("dialog", { name: `Xiaomi ${device.model}` });
   await expect(deviceDrawer.getByRole("region", { name: "Istorija servisa" })).toContainText(
     "Milan Milić",
@@ -91,18 +93,18 @@ test("a device in a customer's drawer opens its own drawer, stacked, which edits
     .getByRole("region", { name: "Istorija servisa" })
     .getByRole("button", { name: new RegExp(service.number) })
     .click();
-  await expect(page).toHaveURL(`/customers?device=${device.id}&service=${service.id}`);
+  await expect(page).toHaveURL(`${customerUrl}&device=${device.id}&service=${service.id}`);
   const serviceDrawer = page.getByRole("dialog", { name: `Servis ${service.number}` });
   await expect(serviceDrawer).toBeVisible();
 
   // Escape closes one drawer at a time, back to the customer.
   await page.keyboard.press("Escape");
   await expect(serviceDrawer).toBeHidden();
-  await expect(page).toHaveURL(`/customers?device=${device.id}`);
+  await expect(page).toHaveURL(`${customerUrl}&device=${device.id}`);
   await expect(renamedDrawer).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(renamedDrawer).toBeHidden();
-  await expect(page).toHaveURL("/customers");
+  await expect(page).toHaveURL(customerUrl);
   // The customer's devices show the edit.
   await expect(customerDrawer.getByRole("region", { name: "Uređaji" })).toContainText(
     "Redmi Note Milan",
@@ -141,4 +143,47 @@ test("a link to a device opens its drawer", async ({ page }) => {
   await page.keyboard.press("Escape");
   await expect(deviceDrawer).toBeHidden();
   await expect(page).toHaveURL("/customers");
+});
+
+test("a customer's name in a device's or service's drawer opens the customer's drawer on top", async ({
+  page,
+}) => {
+  await logIn(page);
+  await expect(page).toHaveURL("/services");
+  const { customer, device, service } = await customerWithService(page, "Petar Perić");
+
+  await page.goto(`/devices?device=${device.id}`);
+  const deviceDrawer = page.getByRole("dialog", { name: `Xiaomi ${device.model}` });
+  await deviceDrawer
+    .getByRole("region", { name: "Detalji uređaja" })
+    .getByRole("button", { name: "Petar Perić" })
+    .click();
+  const deviceUrl = `/devices?device=${device.id}`;
+  await expect(page).toHaveURL(`${deviceUrl}&customer=${customer.id}`);
+  const customerDrawer = page.getByRole("dialog", { name: "Petar Perić" });
+  await customerDrawer
+    .getByRole("region", { name: "Istorija servisa" })
+    .getByRole("button", { name: new RegExp(service.number) })
+    .click();
+  const serviceDrawer = page.getByRole("dialog", { name: `Servis ${service.number}` });
+  await serviceDrawer
+    .getByRole("region", { name: "Detalji servisa" })
+    .getByRole("button", { name: "Petar Perić" })
+    .click();
+
+  // The same customer opens again, on top of everything.
+  const stackUrl = `${deviceUrl}&customer=${customer.id}&service=${service.id}`;
+  await expect(page).toHaveURL(`${stackUrl}&customer=${customer.id}`);
+  await expect(customerDrawer).toBeVisible();
+
+  // Escape closes one drawer at a time, back to the device.
+  await page.keyboard.press("Escape");
+  await expect(page).toHaveURL(stackUrl);
+  await expect(serviceDrawer).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page).toHaveURL(`${deviceUrl}&customer=${customer.id}`);
+  await expect(customerDrawer).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page).toHaveURL(deviceUrl);
+  await expect(deviceDrawer).toBeVisible();
 });

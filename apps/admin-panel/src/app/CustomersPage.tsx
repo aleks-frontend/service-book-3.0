@@ -3,16 +3,14 @@ import { useTranslation } from "react-i18next";
 import { Plus, Search } from "lucide-react";
 import type { Customer, PageSize, SortDir } from "@servicebook/schemas";
 import { useCustomersQuery, useDeleteCustomerMutation } from "@/lib/customers";
-import { useDrawerParam } from "@/lib/useDrawerParam";
+import { useDrawerStack } from "@/lib/useDrawerStack";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
-import { CustomerDrawer } from "@/components/CustomerDrawer";
 import { CustomerFormDialog } from "@/components/CustomerFormDialog";
 import { CustomersTable } from "@/components/CustomersTable";
-import { DeviceDrawer } from "@/components/DeviceDrawer";
+import { DrawerStack } from "@/components/DrawerStack";
 import { Pagination } from "@/components/Pagination";
-import { ServiceDrawer } from "@/components/ServiceDrawer";
 
 const SEARCH_DEBOUNCE_MS = 300;
 
@@ -28,10 +26,7 @@ export function CustomersPage() {
   const [pageSize, setPageSize] = useState<PageSize>(10);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
-  const [openCustomerId, setOpenCustomerId] = useState<string | null>(null);
-  // A device or service opened from the customer's drawer stacks over it.
-  const deviceDrawer = useDrawerParam("device");
-  const serviceDrawer = useDrawerParam("service");
+  const drawers = useDrawerStack();
   const [form, setForm] = useState<FormState>({ open: false });
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
 
@@ -58,10 +53,7 @@ export function CustomersPage() {
   function confirmDelete() {
     if (!customerToDelete) return;
     deleteCustomer.mutate(customerToDelete.id, {
-      onSuccess: () => {
-        if (openCustomerId === customerToDelete.id) setOpenCustomerId(null);
-        setCustomerToDelete(null);
-      },
+      onSuccess: () => setCustomerToDelete(null),
     });
   }
 
@@ -101,7 +93,7 @@ export function CustomersPage() {
               setSortDir(next);
               setPage(1);
             }}
-            onOpen={(customer) => setOpenCustomerId(customer.id)}
+            onOpen={(customer) => drawers.open("customer", customer.id)}
             onEdit={handleEdit}
             onDelete={handleDelete}
             emptyMessage={
@@ -125,22 +117,7 @@ export function CustomersPage() {
         </>
       )}
 
-      <CustomerDrawer
-        customerId={openCustomerId}
-        onClose={() => setOpenCustomerId(null)}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        onOpenDevice={deviceDrawer.open}
-        onOpenService={serviceDrawer.open}
-      />
-
-      <DeviceDrawer
-        deviceId={deviceDrawer.openId}
-        onClose={deviceDrawer.close}
-        onOpenService={serviceDrawer.open}
-      />
-
-      <ServiceDrawer serviceId={serviceDrawer.openId} onClose={serviceDrawer.close} />
+      <DrawerStack />
 
       <CustomerFormDialog
         open={form.open}

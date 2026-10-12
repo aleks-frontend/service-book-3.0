@@ -15,16 +15,15 @@ import {
   useDeleteDeviceMutation,
   useDevicesQuery,
 } from "@/lib/devices";
-import { useDrawerParam } from "@/lib/useDrawerParam";
+import { useDrawerStack } from "@/lib/useDrawerStack";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
 import { CustomerPicker } from "@/components/CustomerPicker";
-import { DeviceDrawer } from "@/components/DeviceDrawer";
 import { DeviceFormDialog } from "@/components/DeviceFormDialog";
 import { DevicesTable } from "@/components/DevicesTable";
+import { DrawerStack } from "@/components/DrawerStack";
 import { Pagination } from "@/components/Pagination";
-import { ServiceDrawer } from "@/components/ServiceDrawer";
 
 const SEARCH_DEBOUNCE_MS = 300;
 /** How many selected devices the bulk delete confirmation names before "and N more". */
@@ -45,9 +44,7 @@ export function DevicesPage() {
   const [pageSize, setPageSize] = useState<PageSize>(10);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
-  const deviceDrawer = useDrawerParam("device");
-  // A service opened from the device's history stacks over its drawer.
-  const serviceDrawer = useDrawerParam("service");
+  const drawers = useDrawerStack();
   const [form, setForm] = useState<FormState>({ open: false });
   const [deviceToDelete, setDeviceToDelete] = useState<Device | null>(null);
   const [confirmingBulkDelete, setConfirmingBulkDelete] = useState(false);
@@ -95,10 +92,7 @@ export function DevicesPage() {
   function confirmDelete() {
     if (!deviceToDelete) return;
     deleteDevice.mutate(deviceToDelete.id, {
-      onSuccess: () => {
-        if (deviceDrawer.openId === deviceToDelete.id) deviceDrawer.close();
-        setDeviceToDelete(null);
-      },
+      onSuccess: () => setDeviceToDelete(null),
     });
   }
 
@@ -106,8 +100,7 @@ export function DevicesPage() {
     bulkDeleteDevices.mutate(
       selectedDevices.map((device) => device.id),
       {
-        onSuccess: ({ deletedIds }) => {
-          if (deviceDrawer.openId && deletedIds.includes(deviceDrawer.openId)) deviceDrawer.close();
+        onSuccess: () => {
           clearSelection();
           setConfirmingBulkDelete(false);
         },
@@ -208,7 +201,7 @@ export function DevicesPage() {
               setSortDir(next);
               setPage(1);
             }}
-            onOpen={(device) => deviceDrawer.open(device.id)}
+            onOpen={(device) => drawers.open("device", device.id)}
             onEdit={handleEdit}
             onDelete={handleDelete}
             emptyMessage={
@@ -232,13 +225,7 @@ export function DevicesPage() {
         </>
       )}
 
-      <DeviceDrawer
-        deviceId={deviceDrawer.openId}
-        onClose={deviceDrawer.close}
-        onOpenService={serviceDrawer.open}
-      />
-
-      <ServiceDrawer serviceId={serviceDrawer.openId} onClose={serviceDrawer.close} />
+      <DrawerStack />
 
       <DeviceFormDialog
         open={form.open}

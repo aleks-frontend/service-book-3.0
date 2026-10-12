@@ -133,3 +133,16 @@ export function DrawerSummaryRow({ label, children }: { label: string; children:
     </>
   );
 }
+
+/** A name in a drawer that opens its entity's own drawer on top. */
+export function DrawerLink({ onClick, children }: { onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      className="font-medium text-primary hover:underline focus-visible:underline focus-visible:outline-none"
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  );
+}
