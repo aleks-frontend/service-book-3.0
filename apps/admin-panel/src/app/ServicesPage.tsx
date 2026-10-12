@@ -10,7 +10,7 @@ import {
 } from "@servicebook/schemas";
 import { useServicesInfiniteQuery } from "@/lib/services";
 import { STATUS_LABELS } from "@/lib/statuses";
-import { useOpenServiceParam } from "@/lib/useOpenServiceParam";
+import { useDrawerParam } from "@/lib/useDrawerParam";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,7 +63,7 @@ export function ServicesPage() {
   const { t } = useTranslation();
   const [view, setView] = useState<ServicesView>(readSavedView);
   const [creating, setCreating] = useState(false);
-  const { openServiceId, openService, closeService } = useOpenServiceParam();
+  const serviceDrawer = useDrawerParam("service");
 
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
@@ -205,7 +205,7 @@ export function ServicesPage() {
           <ServicesList
             services={services}
             view={view}
-            onOpen={(service) => openService(service.id)}
+            onOpen={(service) => serviceDrawer.open(service.id)}
             emptyMessage={
               isPending
                 ? t("Loading…")
@@ -230,7 +230,7 @@ export function ServicesPage() {
         </>
       )}
 
-      <ServiceDrawer serviceId={openServiceId} onClose={closeService} />
+      <ServiceDrawer serviceId={serviceDrawer.openId} onClose={serviceDrawer.close} />
       <ServiceFormDialog open={creating} onOpenChange={setCreating} />
     </section>
   );

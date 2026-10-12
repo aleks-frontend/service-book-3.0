@@ -3,13 +3,14 @@ import { useTranslation } from "react-i18next";
 import { Plus, Search } from "lucide-react";
 import type { Customer, PageSize, SortDir } from "@servicebook/schemas";
 import { useCustomersQuery, useDeleteCustomerMutation } from "@/lib/customers";
-import { useOpenServiceParam } from "@/lib/useOpenServiceParam";
+import { useDrawerParam } from "@/lib/useDrawerParam";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
 import { CustomerDrawer } from "@/components/CustomerDrawer";
 import { CustomerFormDialog } from "@/components/CustomerFormDialog";
 import { CustomersTable } from "@/components/CustomersTable";
+import { DeviceDrawer } from "@/components/DeviceDrawer";
 import { Pagination } from "@/components/Pagination";
 import { ServiceDrawer } from "@/components/ServiceDrawer";
 
@@ -28,8 +29,9 @@ export function CustomersPage() {
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
   const [openCustomerId, setOpenCustomerId] = useState<string | null>(null);
-  // A service opened from the customer's history stacks over its drawer.
-  const { openServiceId, openService, closeService } = useOpenServiceParam();
+  // A device or service opened from the customer's drawer stacks over it.
+  const deviceDrawer = useDrawerParam("device");
+  const serviceDrawer = useDrawerParam("service");
   const [form, setForm] = useState<FormState>({ open: false });
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
 
@@ -128,10 +130,17 @@ export function CustomersPage() {
         onClose={() => setOpenCustomerId(null)}
         onEdit={handleEdit}
         onDelete={handleDelete}
-        onOpenService={openService}
+        onOpenDevice={deviceDrawer.open}
+        onOpenService={serviceDrawer.open}
       />
 
-      <ServiceDrawer serviceId={openServiceId} onClose={closeService} />
+      <DeviceDrawer
+        deviceId={deviceDrawer.openId}
+        onClose={deviceDrawer.close}
+        onOpenService={serviceDrawer.open}
+      />
+
+      <ServiceDrawer serviceId={serviceDrawer.openId} onClose={serviceDrawer.close} />
 
       <CustomerFormDialog
         open={form.open}

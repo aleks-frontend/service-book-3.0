@@ -1,54 +1,78 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { deviceLabel, type Device } from "@servicebook/schemas";
-import { useDeviceQuery } from "@/lib/devices";
+import { useDeleteDeviceMutation, useDeviceQuery } from "@/lib/devices";
 import { formatDate } from "@/lib/format";
 import { useDeviceServicesQuery } from "@/lib/services";
+import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog";
+import { DeviceFormDialog } from "./DeviceFormDialog";
 import { DrawerSummary, DrawerSummaryRow, EntityDrawer } from "./EntityDrawer";
 import { ServiceHistory } from "./ServiceHistory";
 
 type DeviceDrawerProps = {
   deviceId: string | null;
   onClose: () => void;
-  onEdit: (device: Device) => void;
-  onDelete: (device: Device) => void;
   onOpenService: (serviceId: string) => void;
 };
 
-export function DeviceDrawer({
-  deviceId,
-  onClose,
-  onEdit,
-  onDelete,
-  onOpenService,
-}: DeviceDrawerProps) {
+/** One device, opened from the `?device=<id>` URL param on any page. */
+export function DeviceDrawer({ deviceId, onClose, onOpenService }: DeviceDrawerProps) {
   const { t, i18n } = useTranslation();
   const { data: device, isError } = useDeviceQuery(deviceId);
+  const deleteDevice = useDeleteDeviceMutation();
+  const [editing, setEditing] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+
+  function confirmDelete() {
+    if (!device) return;
+    deleteDevice.mutate(device.id, {
+      onSuccess: () => {
+        setConfirmingDelete(false);
+        onClose();
+      },
+    });
+  }
 
   return (
-    <EntityDrawer
-      open={deviceId !== null}
-      onClose={onClose}
-      entity={device}
-      isError={isError}
-      errorMessage={t("Could not load the device.")}
-      title={device ? deviceLabel(device) : t("Device")}
-      description={
-        device
-          ? t("Added on {{date}}", { date: formatDate(device.createdAt, i18n.language) })
-          : t("Device details")
-      }
-      editLabel={t("Edit device")}
-      deleteLabel={t("Delete device")}
-      onEdit={onEdit}
-      onDelete={onDelete}
-    >
-      {(device) => (
-        <>
-          <DeviceSummary device={device} />
-          <DeviceServices deviceId={device.id} onOpen={onOpenService} />
-        </>
-      )}
-    </EntityDrawer>
+    <>
+      <EntityDrawer
+        open={deviceId !== null}
+        onClose={onClose}
+        entity={device}
+        isError={isError}
+        errorMessage={t("Could not load the device.")}
+        title={device ? deviceLabel(device) : t("Device")}
+        description={
+          device
+            ? t("Added on {{date}}", { date: formatDate(device.createdAt, i18n.language) })
+            : t("Device details")
+        }
+        editLabel={t("Edit device")}
+        deleteLabel={t("Delete device")}
+        onEdit={() => setEditing(true)}
+        onDelete={() => setConfirmingDelete(true)}
+      >
+        {(device) => (
+          <>
+            <DeviceSummary device={device} />
+            <DeviceServices deviceId={device.id} onOpen={onOpenService} />
+          </>
+        )}
+      </EntityDrawer>
+
+      {device && <DeviceFormDialog open={editing} onOpenChange={setEditing} device={device} />}
+
+      <ConfirmDeleteDialog
+        open={confirmingDelete}
+        onOpenChange={setConfirmingDelete}
+        title={t("Delete device?")}
+        description={t("{{name}} will be permanently deleted.", {
+          name: device ? deviceLabel(device) : "",
+        })}
+        isDeleting={deleteDevice.isPending}
+        onConfirm={confirmDelete}
+      />
+    </>
   );
 }
 

@@ -15,7 +15,7 @@ import {
   useDeleteDeviceMutation,
   useDevicesQuery,
 } from "@/lib/devices";
-import { useOpenServiceParam } from "@/lib/useOpenServiceParam";
+import { useDrawerParam } from "@/lib/useDrawerParam";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
@@ -45,9 +45,9 @@ export function DevicesPage() {
   const [pageSize, setPageSize] = useState<PageSize>(10);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
-  const [openDeviceId, setOpenDeviceId] = useState<string | null>(null);
+  const deviceDrawer = useDrawerParam("device");
   // A service opened from the device's history stacks over its drawer.
-  const { openServiceId, openService, closeService } = useOpenServiceParam();
+  const serviceDrawer = useDrawerParam("service");
   const [form, setForm] = useState<FormState>({ open: false });
   const [deviceToDelete, setDeviceToDelete] = useState<Device | null>(null);
   const [confirmingBulkDelete, setConfirmingBulkDelete] = useState(false);
@@ -96,7 +96,7 @@ export function DevicesPage() {
     if (!deviceToDelete) return;
     deleteDevice.mutate(deviceToDelete.id, {
       onSuccess: () => {
-        if (openDeviceId === deviceToDelete.id) setOpenDeviceId(null);
+        if (deviceDrawer.openId === deviceToDelete.id) deviceDrawer.close();
         setDeviceToDelete(null);
       },
     });
@@ -107,7 +107,7 @@ export function DevicesPage() {
       selectedDevices.map((device) => device.id),
       {
         onSuccess: ({ deletedIds }) => {
-          if (openDeviceId && deletedIds.includes(openDeviceId)) setOpenDeviceId(null);
+          if (deviceDrawer.openId && deletedIds.includes(deviceDrawer.openId)) deviceDrawer.close();
           clearSelection();
           setConfirmingBulkDelete(false);
         },
@@ -208,7 +208,7 @@ export function DevicesPage() {
               setSortDir(next);
               setPage(1);
             }}
-            onOpen={(device) => setOpenDeviceId(device.id)}
+            onOpen={(device) => deviceDrawer.open(device.id)}
             onEdit={handleEdit}
             onDelete={handleDelete}
             emptyMessage={
@@ -233,14 +233,12 @@ export function DevicesPage() {
       )}
 
       <DeviceDrawer
-        deviceId={openDeviceId}
-        onClose={() => setOpenDeviceId(null)}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        onOpenService={openService}
+        deviceId={deviceDrawer.openId}
+        onClose={deviceDrawer.close}
+        onOpenService={serviceDrawer.open}
       />
 
-      <ServiceDrawer serviceId={openServiceId} onClose={closeService} />
+      <ServiceDrawer serviceId={serviceDrawer.openId} onClose={serviceDrawer.close} />
 
       <DeviceFormDialog
         open={form.open}

@@ -57,6 +57,58 @@ test("a customer's drawer lists their devices and services, and an entry opens t
   await expect(page.getByText("ne može biti obrisan", { exact: false })).toBeVisible();
 });
 
+test("a device in a customer's drawer opens its own drawer, stacked, which edits the device and leads on to its services", async ({
+  page,
+}) => {
+  await logIn(page);
+  await expect(page).toHaveURL("/services");
+  const { device, service } = await customerWithService(page, "Milan Milić");
+
+  await page.goto("/customers");
+  await page.getByLabel("Pretraga mušterija").fill("Milan");
+  await page.getByRole("row", { name: /Milan Milić/ }).click();
+  const customerDrawer = page.getByRole("dialog", { name: "Milan Milić" });
+  await customerDrawer
+    .getByRole("region", { name: "Uređaji" })
+    .getByRole("button", { name: /Redmi Milan Milić/ })
+    .click();
+  await expect(page).toHaveURL(`/customers?device=${device.id}`);
+  const deviceDrawer = page.getByRole("dialog", { name: `Xiaomi ${device.model}` });
+  await expect(deviceDrawer.getByRole("region", { name: "Istorija servisa" })).toContainText(
+    "Milan Milić",
+  );
+
+  // The device drawer edits the device by itself, on any page.
+  await deviceDrawer.getByRole("button", { name: "Izmena uređaja" }).click();
+  const form = page.getByRole("dialog", { name: "Izmena uređaja" });
+  await form.getByLabel("Model").fill("Redmi Note Milan");
+  await form.getByRole("button", { name: "Sačuvaj izmene" }).click();
+  await expect(form).toBeHidden();
+  const renamedDrawer = page.getByRole("dialog", { name: "Xiaomi Redmi Note Milan" });
+  await expect(renamedDrawer).toBeVisible();
+
+  await renamedDrawer
+    .getByRole("region", { name: "Istorija servisa" })
+    .getByRole("button", { name: new RegExp(service.number) })
+    .click();
+  await expect(page).toHaveURL(`/customers?device=${device.id}&service=${service.id}`);
+  const serviceDrawer = page.getByRole("dialog", { name: `Servis ${service.number}` });
+  await expect(serviceDrawer).toBeVisible();
+
+  // Escape closes one drawer at a time, back to the customer.
+  await page.keyboard.press("Escape");
+  await expect(serviceDrawer).toBeHidden();
+  await expect(page).toHaveURL(`/customers?device=${device.id}`);
+  await expect(renamedDrawer).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(renamedDrawer).toBeHidden();
+  await expect(page).toHaveURL("/customers");
+  // The customer's devices show the edit.
+  await expect(customerDrawer.getByRole("region", { name: "Uređaji" })).toContainText(
+    "Redmi Note Milan",
+  );
+});
+
 test("a device's drawer lists every service it was on, and an entry opens the service's drawer", async ({
   page,
 }) => {
@@ -67,11 +119,26 @@ test("a device's drawer lists every service it was on, and an entry opens the se
   await page.goto("/devices");
   await page.getByLabel("Pretraga uređaja").fill("Redmi Vesna");
   await page.getByRole("row", { name: /Redmi Vesna/ }).click();
+  await expect(page).toHaveURL(`/devices?device=${device.id}`);
   const deviceDrawer = page.getByRole("dialog", { name: `Xiaomi ${device.model}` });
   const history = deviceDrawer.getByRole("region", { name: "Istorija servisa" });
   await expect(history).toContainText("Vesna Vesić");
 
   await history.getByRole("button", { name: new RegExp(service.number) }).click();
-  await expect(page).toHaveURL(`/devices?service=${service.id}`);
+  await expect(page).toHaveURL(`/devices?device=${device.id}&service=${service.id}`);
   await expect(page.getByRole("dialog", { name: `Servis ${service.number}` })).toBeVisible();
+});
+
+test("a link to a device opens its drawer", async ({ page }) => {
+  await logIn(page);
+  await expect(page).toHaveURL("/services");
+  const { device } = await customerWithService(page, "Dragan Dragić");
+
+  await page.goto(`/customers?device=${device.id}`);
+  const deviceDrawer = page.getByRole("dialog", { name: `Xiaomi ${device.model}` });
+  await expect(deviceDrawer).toBeVisible();
+
+  await page.keyboard.press("Escape");
+  await expect(deviceDrawer).toBeHidden();
+  await expect(page).toHaveURL("/customers");
 });

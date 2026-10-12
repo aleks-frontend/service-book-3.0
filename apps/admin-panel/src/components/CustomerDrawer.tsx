@@ -16,6 +16,7 @@ type CustomerDrawerProps = {
   onClose: () => void;
   onEdit: (customer: Customer) => void;
   onDelete: (customer: Customer) => void;
+  onOpenDevice: (deviceId: string) => void;
   onOpenService: (serviceId: string) => void;
 };
 
@@ -35,6 +36,7 @@ export function CustomerDrawer({
   onClose,
   onEdit,
   onDelete,
+  onOpenDevice,
   onOpenService,
 }: CustomerDrawerProps) {
   const { t, i18n } = useTranslation();
@@ -61,7 +63,7 @@ export function CustomerDrawer({
       {(customer) => (
         <>
           <CustomerSummary customer={customer} />
-          <CustomerDevices customerId={customer.id} />
+          <CustomerDevices customerId={customer.id} onOpen={onOpenDevice} />
           <CustomerServices customerId={customer.id} onOpen={onOpenService} />
         </>
       )}
@@ -97,8 +99,14 @@ function CustomerSummary({ customer }: { customer: Customer }) {
   );
 }
 
-/** The devices the customer owns, by name. */
-function CustomerDevices({ customerId }: { customerId: string }) {
+/** The devices the customer owns, by name; each opens its own drawer. */
+function CustomerDevices({
+  customerId,
+  onOpen,
+}: {
+  customerId: string;
+  onOpen: (deviceId: string) => void;
+}) {
   const { t } = useTranslation();
   const { data, isError } = useDevicesQuery({
     ownerId: customerId,
@@ -123,11 +131,17 @@ function CustomerDevices({ customerId }: { customerId: string }) {
       ) : (
         <ul className="divide-y rounded-md border text-sm">
           {data.items.map((device) => (
-            <li key={device.id} className="flex justify-between gap-3 px-3 py-2">
-              <span className="font-medium">{deviceLabel(device)}</span>
-              {device.serialNumber && (
-                <span className="truncate text-muted-foreground">{device.serialNumber}</span>
-              )}
+            <li key={device.id}>
+              <button
+                type="button"
+                className="flex w-full justify-between gap-3 px-3 py-2 text-left transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none"
+                onClick={() => onOpen(device.id)}
+              >
+                <span className="font-medium">{deviceLabel(device)}</span>
+                {device.serialNumber && (
+                  <span className="truncate text-muted-foreground">{device.serialNumber}</span>
+                )}
+              </button>
             </li>
           ))}
           {data.total > data.items.length && (
