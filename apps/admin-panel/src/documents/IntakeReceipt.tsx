@@ -17,52 +17,77 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 16,
+    marginBottom: 18,
+  },
+  subtitle: {
+    flexDirection: "row",
+    gap: 3,
+  },
+  number: {
+    fontWeight: 700,
+    color: colors.primary,
+  },
+  date: {
+    color: colors.muted,
   },
   qr: {
-    width: 110,
     alignItems: "center",
+    width: 112,
+    padding: 6,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 6,
   },
   qrImage: {
-    width: 80,
-    height: 80,
+    width: 76,
+    height: 76,
   },
   qrCaption: {
-    fontSize: 8,
+    fontSize: 7,
+    lineHeight: 1.3,
     textAlign: "center",
     color: colors.muted,
   },
   section: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: 12,
+    marginBottom: 14,
   },
   sectionTitle: {
-    backgroundColor: "#e5e7eb",
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    fontWeight: 700,
+    marginBottom: 4,
   },
-  sectionBody: {
-    padding: 8,
-    gap: 2,
-  },
-  faultBody: {
-    minHeight: 140,
+  field: {
+    flexDirection: "row",
   },
   fieldLabel: {
-    fontWeight: 700,
+    width: 70,
+    color: colors.muted,
+  },
+  fieldValue: {
+    flex: 1,
+  },
+  device: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  deviceDivider: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    marginTop: 4,
+    paddingTop: 4,
   },
   serialNumber: {
-    marginLeft: 10,
-    fontSize: 9,
     color: colors.muted,
+  },
+  // White, so there is room to add notes by hand.
+  faultBody: {
+    minHeight: 140,
+    backgroundColor: "#ffffff",
   },
   signatures: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-end",
-    marginTop: 40,
+    marginTop: 36,
   },
   signature: {
     width: 220,
@@ -75,9 +100,13 @@ const styles = StyleSheet.create({
   },
   signatureName: {
     borderTopWidth: 1,
-    borderTopColor: colors.text,
+    borderTopColor: colors.muted,
     paddingTop: 4,
     fontWeight: 700,
+  },
+  signatureRole: {
+    fontSize: 8,
+    color: colors.muted,
   },
 });
 
@@ -117,10 +146,11 @@ export function IntakeReceipt({
 
         <View style={styles.titleRow}>
           <View>
-            <Text style={documentStyles.title}>
-              {t("Intake receipt {{number}}", { number: service.number })}
-            </Text>
-            <Text>{formatPlainDate(service.date, language)}</Text>
+            <Text style={documentStyles.title}>{t("Intake receipt")}</Text>
+            <View style={styles.subtitle}>
+              <Text style={styles.number}>{service.number}</Text>
+              <Text style={styles.date}>· {formatPlainDate(service.date, language)}</Text>
+            </View>
           </View>
           <View style={styles.qr}>
             <Image src={qrCode} style={styles.qrImage} />
@@ -136,9 +166,13 @@ export function IntakeReceipt({
         </Section>
 
         <Section title={t("Devices on service")}>
-          {service.devices.map((device) => (
-            <View key={device.id} wrap={false}>
-              <Text>– {deviceLabel(device)}</Text>
+          {service.devices.map((device, index) => (
+            <View
+              key={device.id}
+              style={index > 0 ? [styles.device, styles.deviceDivider] : styles.device}
+              wrap={false}
+            >
+              <Text>{deviceLabel(device)}</Text>
               {device.serialNumber && (
                 <Text style={styles.serialNumber}>
                   {t("S/N {{serialNumber}}", { serialNumber: device.serialNumber })}
@@ -157,9 +191,11 @@ export function IntakeReceipt({
           <View style={styles.signature}>
             {settings.signature && <Image src={settings.signature} style={styles.signatureImage} />}
             <Text style={styles.signatureName}>{staffMember.name}</Text>
+            {settings.name && <Text style={styles.signatureRole}>{settings.name}</Text>}
           </View>
           <View style={styles.signature}>
             <Text style={styles.signatureName}>{customer.name}</Text>
+            <Text style={styles.signatureRole}>{t("Customer")}</Text>
           </View>
         </View>
       </Page>
@@ -178,18 +214,20 @@ function Section({
 }) {
   return (
     <View style={styles.section} wrap={false}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      <View style={bodyStyle ? [styles.sectionBody, bodyStyle] : styles.sectionBody}>
+      <Text style={[documentStyles.eyebrow, styles.sectionTitle]}>{title}</Text>
+      <View style={bodyStyle ? [documentStyles.card, bodyStyle] : documentStyles.card}>
         {children}
       </View>
     </View>
   );
 }
 
+/** A muted label beside its value, like `DrawerSummaryRow` in the app. */
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <Text>
-      <Text style={styles.fieldLabel}>{label}:</Text> {children}
-    </Text>
+    <View style={styles.field}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      <Text style={styles.fieldValue}>{children}</Text>
+    </View>
   );
 }
