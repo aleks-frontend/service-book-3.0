@@ -11,5 +11,5 @@ A device's owner is nullable; a device with no owner is a generic device. Device
 ## Consequences
 
 - During the legacy import, ownership is derived from usage (see the mapping in #17).
-- Each line stores a snapshot of its label and unit price, so later edits to an action or device do not rewrite old dispatch notes.
+- Each line stores a snapshot of its label and unit price, so later edits to an action or device do not rewrite old service reports.
 - A referenced device cannot be deleted. Its owner cannot be changed while it is attached to another customer's services.

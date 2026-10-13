@@ -1,4 +1,10 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  queryOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import type { Customer, CustomerInput, CustomerListQuery, Page } from "@servicebook/schemas";
@@ -22,12 +28,15 @@ export function useCustomersQuery(query: CustomerListQuery, { enabled = true } =
   });
 }
 
-export function useCustomerQuery(id: string | null) {
-  return useQuery({
-    queryKey: customerKeys.detail(id ?? ""),
+export function customerQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: customerKeys.detail(id),
     queryFn: () => request<Customer>(`/customers/${id}`),
-    enabled: id !== null,
   });
+}
+
+export function useCustomerQuery(id: string | null) {
+  return useQuery({ ...customerQueryOptions(id ?? ""), enabled: id !== null });
 }
 
 export function useSaveCustomerMutation() {

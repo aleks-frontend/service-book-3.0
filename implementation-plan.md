@@ -36,7 +36,7 @@ Vocabulary is in [`GLOSSARY.md`](./GLOSSARY.md), the stack is in [`techstack.md`
 | #11 | Services search, status filter and sort | #10 | agent |
 | #12 | History drawers and in-use protection | #9 | agent |
 | #13 | Settings: company identity | #3 | agent |
-| #14 | Dispatch note PDF with public QR | #9, #13 | agent |
+| #14 | Intake receipt PDF with public QR | #9, #13 | agent |
 | #15 | Customer report tab and service report PDF | #14 | agent |
 | #16 | Statistics: earnings and status counts | #9, #10 | agent |
 | #17 | Legacy Firebase import (dry-run + idempotent write) | #9, #10 | agent |
@@ -86,7 +86,7 @@ Empty-string arrays are treated as empty. Public tokens are generated freshly. T
 These are roughly in order. Each will get its own spec and tickets.
 
 1. **Customer page:** a dedicated customer detail page with full service history.
-2. **Public status page:** a read-only `/s/<publicToken>` page showing status, service lines and the customer report. The QR codes on dispatch notes printed in phase 1 already point here.
+2. **Public status page:** a read-only `/s/<publicToken>` page showing status, service lines and the customer report. The QR codes on intake receipts and service reports printed in phase 1 already point here (#22).
 3. **Service photos:** photos on services and log entries, stored in Cloudflare R2, with thumbnails and a lightbox. Photos of damage at intake are the priority.
 4. **Device photos.**
 5. **Device extras** beyond the serial number, which phase 1 already stores (still to be discussed).

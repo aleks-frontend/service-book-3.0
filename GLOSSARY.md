@@ -84,13 +84,13 @@ _Avoid_: Remark, note, summary, description
 
 ### Documents & identity
 
-**Dispatch note**:
-The PDF handed to the customer on pickup, listing service lines and total, with a QR code of the public link (Serbian: otpremnica).
-_Avoid_: Invoice, bill
+**Intake receipt**:
+The PDF handed to the customer when they leave their devices, which they bring back to pick them up: the customer's details, the devices, the fault description, a signature line for the staff member and one for the customer, and a QR code of the public link. It has no prices (Serbian: prijemnica; Hungarian: átvételi elismervény).
+_Avoid_: Dispatch note, otpremnica, invoice
 
 **Service report**:
-The PDF containing the customer report for a service.
-_Avoid_: Work report, summary
+The PDF handed to the customer once the service is done: the service lines and total, the customer report, the signature and a QR code of the public link.
+_Avoid_: Invoice, bill, work report, summary
 
 **Settings**:
 The single record of the company's identity (name, address, contacts, tax ID, logo, signature) used on documents.

@@ -28,8 +28,10 @@ export const documentStyles = StyleSheet.create({
     color: colors.text,
     padding: 40,
   },
+  // Larger text sets its own line height; the page's is relative to its 10pt.
   title: {
     fontSize: 18,
     fontWeight: 700,
+    lineHeight: 1.3,
   },
 });

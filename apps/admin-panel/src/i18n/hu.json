@@ -225,15 +225,16 @@
   "PNG or JPEG, up to 1 MB.": "PNG vagy JPEG, legfeljebb 1 MB.",
   "Must be a PNG or JPEG image": "A képnek PNG vagy JPEG formátumúnak kell lennie",
   "Must be at most 1 MB": "A kép legfeljebb 1 MB lehet",
-  "The company details printed on dispatch notes and service reports.": "A szállítóleveleken és szervizjelentéseken megjelenő cégadatok.",
+  "The company details printed on intake receipts and service reports.": "Az átvételi elismervényeken és szervizjelentéseken megjelenő cégadatok.",
   "Could not load the settings.": "A beállítások betöltése nem sikerült.",
   "Settings saved": "Beállítások mentve",
   "Could not save the settings. Please try again.": "A beállítások mentése nem sikerült. Próbálja újra.",
-  "Dispatch note": "Szállítólevél",
-  "Dispatch note {{number}}": "Szállítólevél {{number}}",
-  "dispatch-note-{{number}}.pdf": "szallitolevel-{{number}}.pdf",
-  "Line": "Tétel",
-  "Amount (RSD)": "Összeg (RSD)",
   "Scan to follow the service online": "Olvassa be a szerviz online követéséhez",
-  "Could not create the dispatch note. Please try again.": "A szállítólevél elkészítése nem sikerült. Próbálja újra."
+  "Intake receipt": "Átvételi elismervény",
+  "Intake receipt {{number}}": "Átvételi elismervény {{number}}",
+  "intake-receipt-{{number}}.pdf": "atveteli-elismerveny-{{number}}.pdf",
+  "Devices on service": "Szervizelt eszközök",
+  "Fault description": "Hiba leírása",
+  "S/N {{serialNumber}}": "Sorozatszám: {{serialNumber}}",
+  "Could not create the intake receipt. Please try again.": "Az átvételi elismervény elkészítése nem sikerült. Próbálja újra."
 }

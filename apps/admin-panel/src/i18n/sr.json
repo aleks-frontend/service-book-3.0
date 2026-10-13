@@ -225,15 +225,16 @@
   "PNG or JPEG, up to 1 MB.": "PNG ili JPEG, najviše 1 MB.",
   "Must be a PNG or JPEG image": "Slika mora biti PNG ili JPEG",
   "Must be at most 1 MB": "Slika može imati najviše 1 MB",
-  "The company details printed on dispatch notes and service reports.": "Podaci o firmi koji se štampaju na otpremnicama i izveštajima o servisu.",
+  "The company details printed on intake receipts and service reports.": "Podaci o firmi koji se štampaju na prijemnicama i izveštajima o servisu.",
   "Could not load the settings.": "Učitavanje podešavanja nije uspelo.",
   "Settings saved": "Podešavanja su sačuvana",
   "Could not save the settings. Please try again.": "Čuvanje podešavanja nije uspelo. Pokušajte ponovo.",
-  "Dispatch note": "Otpremnica",
-  "Dispatch note {{number}}": "Otpremnica {{number}}",
-  "dispatch-note-{{number}}.pdf": "otpremnica-{{number}}.pdf",
-  "Line": "Stavka",
-  "Amount (RSD)": "Iznos (RSD)",
   "Scan to follow the service online": "Skenirajte da pratite servis na internetu",
-  "Could not create the dispatch note. Please try again.": "Pravljenje otpremnice nije uspelo. Pokušajte ponovo."
+  "Intake receipt": "Prijemnica",
+  "Intake receipt {{number}}": "Prijemnica {{number}}",
+  "intake-receipt-{{number}}.pdf": "prijemnica-{{number}}.pdf",
+  "Devices on service": "Uređaji na servisu",
+  "Fault description": "Opis kvara",
+  "S/N {{serialNumber}}": "SN: {{serialNumber}}",
+  "Could not create the intake receipt. Please try again.": "Pravljenje prijemnice nije uspelo. Pokušajte ponovo."
 }

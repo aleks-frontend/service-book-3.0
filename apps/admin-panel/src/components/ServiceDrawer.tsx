@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Loader2, Printer } from "lucide-react";
 import { deviceLabel, type ServiceDetail } from "@servicebook/schemas";
-import { useDownloadDispatchNoteMutation } from "@/lib/dispatchNote";
+import { useDownloadIntakeReceiptMutation } from "@/lib/intakeReceipt";
 import { useDeleteServiceMutation, useServiceQuery } from "@/lib/services";
 import { formatDate, formatPlainDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -65,7 +65,7 @@ export function ServiceDrawer({ serviceId, onClose, onOpen }: ServiceDrawerProps
         actions={(service) => (
           <>
             <StatusSelect serviceId={service.id} status={service.status} />
-            <DispatchNoteButton service={service} />
+            <IntakeReceiptButton service={service} />
           </>
         )}
       >
@@ -104,9 +104,9 @@ export function ServiceDrawer({ serviceId, onClose, onOpen }: ServiceDrawerProps
   );
 }
 
-function DispatchNoteButton({ service }: { service: ServiceDetail }) {
+function IntakeReceiptButton({ service }: { service: ServiceDetail }) {
   const { t } = useTranslation();
-  const download = useDownloadDispatchNoteMutation();
+  const download = useDownloadIntakeReceiptMutation();
   const Icon = download.isPending ? Loader2 : Printer;
 
   return (
@@ -114,8 +114,8 @@ function DispatchNoteButton({ service }: { service: ServiceDetail }) {
       variant="ghost"
       size="icon"
       className="h-8 w-8"
-      aria-label={t("Dispatch note")}
-      title={t("Dispatch note")}
+      aria-label={t("Intake receipt")}
+      title={t("Intake receipt")}
       disabled={download.isPending}
       onClick={() => download.mutate(service)}
     >

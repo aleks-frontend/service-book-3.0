@@ -59,7 +59,7 @@ Domain vocabulary is in [`GLOSSARY.md`](./GLOSSARY.md), and architectural decisi
 - **Tables:** TanStack Table.
 - **Forms:** react-hook-form + Zod resolvers, with the same schemas as the backend.
 - **i18next:** `sr` (default), `hu` and `en`. The chosen language is persisted, and dates and numbers are formatted per locale.
-- **@react-pdf/renderer** produces the dispatch note (with a QR code of the public link) and the service report, client-side.
+- **@react-pdf/renderer** produces the intake receipt and the service report (both with a QR code of the public link), client-side.
 - **Recharts** draws the earnings chart.
 - **HTTP client:** a small fetch wrapper with `credentials: "include"` that revives ISO date strings and redirects to login on 401.
 - **Sentry** (`@sentry/react`).
@@ -68,7 +68,7 @@ Domain vocabulary is in [`GLOSSARY.md`](./GLOSSARY.md), and architectural decisi
 
 - **Vitest + Supertest:** the primary seam. They exercise the HTTP API end to end against a real Postgres test database (`servicebook_test`), reset between tests, with an authenticated agent for a seeded staff member.
 - **Legacy import:** run against an anonymised Firebase fixture committed to the repo, with results asserted through the HTTP API. The real export is never committed.
-- **Playwright:** a thin end-to-end layer covering login and the redirect to login when logged out, creating a service through the "Add" modal, the `?service=` drawer (deep link and back button), and generating a dispatch note.
+- **Playwright:** a thin end-to-end layer covering login and the redirect to login when logged out, creating a service through the "Add" modal, the `?service=` drawer (deep link and back button), and generating an intake receipt.
 - **Not tested separately:** React components, PDF layouts and internal helpers. They are covered through the seams above.
 - **Development style:** test-first at these seams.
 

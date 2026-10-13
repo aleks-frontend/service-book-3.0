@@ -225,15 +225,16 @@
   "PNG or JPEG, up to 1 MB.": "PNG or JPEG, up to 1 MB.",
   "Must be a PNG or JPEG image": "Must be a PNG or JPEG image",
   "Must be at most 1 MB": "Must be at most 1 MB",
-  "The company details printed on dispatch notes and service reports.": "The company details printed on dispatch notes and service reports.",
+  "The company details printed on intake receipts and service reports.": "The company details printed on intake receipts and service reports.",
   "Could not load the settings.": "Could not load the settings.",
   "Settings saved": "Settings saved",
   "Could not save the settings. Please try again.": "Could not save the settings. Please try again.",
-  "Dispatch note": "Dispatch note",
-  "Dispatch note {{number}}": "Dispatch note {{number}}",
-  "dispatch-note-{{number}}.pdf": "dispatch-note-{{number}}.pdf",
-  "Line": "Line",
-  "Amount (RSD)": "Amount (RSD)",
   "Scan to follow the service online": "Scan to follow the service online",
-  "Could not create the dispatch note. Please try again.": "Could not create the dispatch note. Please try again."
+  "Intake receipt": "Intake receipt",
+  "Intake receipt {{number}}": "Intake receipt {{number}}",
+  "intake-receipt-{{number}}.pdf": "intake-receipt-{{number}}.pdf",
+  "Devices on service": "Devices on service",
+  "Fault description": "Fault description",
+  "S/N {{serialNumber}}": "S/N {{serialNumber}}",
+  "Could not create the intake receipt. Please try again.": "Could not create the intake receipt. Please try again."
 }

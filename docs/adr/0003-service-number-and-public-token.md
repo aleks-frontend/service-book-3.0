@@ -10,7 +10,7 @@ Every service has three identifiers, each with one job:
 
 - **UUID primary key:** internal references and API paths.
 - **Service number (`YYYY-NNNN`):** what staff and customers say on the phone and see on paper. It is sequential per year and restarts at 0001 each January.
-- **Public token** (see `GLOSSARY.md`): used only in the public link and its QR code on the dispatch note.
+- **Public token** (see `GLOSSARY.md`): used only in the public link and its QR code on the intake receipt and service report.
 
 The Firebase timestamp is kept only as the legacy ID.
 

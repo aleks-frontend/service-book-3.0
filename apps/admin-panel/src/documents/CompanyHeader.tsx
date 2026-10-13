@@ -21,6 +21,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 13,
     fontWeight: 700,
+    lineHeight: 1.3,
   },
   details: {
     color: colors.muted,

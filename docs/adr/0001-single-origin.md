@@ -6,7 +6,7 @@ bakery-mono serves its frontends separately from its API. Service Book has one i
 
 ## Decision
 
-In production, one Express process serves both the built admin panel and the API under `/api`, on one domain. It is deployed as a single Railway service plus Postgres. This makes Better Auth's session cookie first-party with no CORS or `SameSite` configuration. It also avoids a separate static-file container (the cost difference is in `techstack.md`), and the QR on the dispatch note can point to the same host.
+In production, one Express process serves both the built admin panel and the API under `/api`, on one domain. It is deployed as a single Railway service plus Postgres. This makes Better Auth's session cookie first-party with no CORS or `SameSite` configuration. It also avoids a separate static-file container (the cost difference is in `techstack.md`), and the QR on printed documents can point to the same host.
 
 ## Consequences
 
