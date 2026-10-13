@@ -228,5 +228,12 @@
   "The company details printed on dispatch notes and service reports.": "The company details printed on dispatch notes and service reports.",
   "Could not load the settings.": "Could not load the settings.",
   "Settings saved": "Settings saved",
-  "Could not save the settings. Please try again.": "Could not save the settings. Please try again."
+  "Could not save the settings. Please try again.": "Could not save the settings. Please try again.",
+  "Dispatch note": "Dispatch note",
+  "Dispatch note {{number}}": "Dispatch note {{number}}",
+  "dispatch-note-{{number}}.pdf": "dispatch-note-{{number}}.pdf",
+  "Line": "Line",
+  "Amount (RSD)": "Amount (RSD)",
+  "Scan to follow the service online": "Scan to follow the service online",
+  "Could not create the dispatch note. Please try again.": "Could not create the dispatch note. Please try again."
 }

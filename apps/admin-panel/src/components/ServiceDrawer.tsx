@@ -1,8 +1,11 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Loader2, Printer } from "lucide-react";
 import { deviceLabel, type ServiceDetail } from "@servicebook/schemas";
+import { useDownloadDispatchNoteMutation } from "@/lib/dispatchNote";
 import { useDeleteServiceMutation, useServiceQuery } from "@/lib/services";
 import { formatDate, formatPlainDate } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import type { OpenDrawer } from "@/lib/useDrawerStack";
 import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog";
 import { DrawerLink, DrawerSummary, DrawerSummaryRow, EntityDrawer } from "./EntityDrawer";
@@ -10,6 +13,7 @@ import { ServiceFormDialog } from "./ServiceFormDialog";
 import { ServiceLines } from "./ServiceLines";
 import { ServiceLog } from "./ServiceLog";
 import { StatusSelect } from "./StatusSelect";
+import { Button } from "./ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 
 type ServiceDrawerProps = {
@@ -58,7 +62,12 @@ export function ServiceDrawer({ serviceId, onClose, onOpen }: ServiceDrawerProps
         deleteLabel={t("Delete service")}
         onEdit={() => setEditing(true)}
         onDelete={() => setConfirmingDelete(true)}
-        actions={(service) => <StatusSelect serviceId={service.id} status={service.status} />}
+        actions={(service) => (
+          <>
+            <StatusSelect serviceId={service.id} status={service.status} />
+            <DispatchNoteButton service={service} />
+          </>
+        )}
       >
         {(service) => (
           <>
@@ -92,6 +101,26 @@ export function ServiceDrawer({ serviceId, onClose, onOpen }: ServiceDrawerProps
         onConfirm={confirmDelete}
       />
     </>
+  );
+}
+
+function DispatchNoteButton({ service }: { service: ServiceDetail }) {
+  const { t } = useTranslation();
+  const download = useDownloadDispatchNoteMutation();
+  const Icon = download.isPending ? Loader2 : Printer;
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-8 w-8"
+      aria-label={t("Dispatch note")}
+      title={t("Dispatch note")}
+      disabled={download.isPending}
+      onClick={() => download.mutate(service)}
+    >
+      <Icon className={cn("h-4 w-4", download.isPending && "animate-spin")} aria-hidden />
+    </Button>
   );
 }
 

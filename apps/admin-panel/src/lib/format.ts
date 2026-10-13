@@ -13,13 +13,17 @@ export function formatDate(date: Date, language: string) {
   });
 }
 
+/** A whole-dinar amount with the locale's digit grouping, e.g. "4.500" in Serbian. */
+export function formatAmount(amount: number, language: string) {
+  return amount.toLocaleString(toLocale(language), { maximumFractionDigits: 0 });
+}
+
 /**
- * A whole-dinar amount with the locale's digit grouping and "RSD" always after
- * it, e.g. "4.500 RSD" in Serbian and "4,500 RSD" in English.
+ * A whole-dinar amount with "RSD" always after it, e.g. "4.500 RSD" in
+ * Serbian and "4,500 RSD" in English.
  */
 export function formatRsd(amount: number, language: string) {
-  const number = amount.toLocaleString(toLocale(language), { maximumFractionDigits: 0 });
-  return `${number} RSD`;
+  return `${formatAmount(amount, language)} RSD`;
 }
 
 /** Today in the browser's time zone, as `YYYY-MM-DD`. */

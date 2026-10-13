@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryOptions, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import type { Settings, SettingsInput } from "@servicebook/schemas";
@@ -9,11 +9,13 @@ const settingsKeys = {
 };
 
 /** The company identity; every field is null until it is first saved. */
+export const settingsQueryOptions = queryOptions({
+  queryKey: settingsKeys.all,
+  queryFn: () => request<Settings>("/settings"),
+});
+
 export function useSettingsQuery() {
-  return useQuery({
-    queryKey: settingsKeys.all,
-    queryFn: () => request<Settings>("/settings"),
-  });
+  return useQuery(settingsQueryOptions);
 }
 
 export function useSaveSettingsMutation() {

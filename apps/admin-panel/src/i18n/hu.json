@@ -228,5 +228,12 @@
   "The company details printed on dispatch notes and service reports.": "A szállítóleveleken és szervizjelentéseken megjelenő cégadatok.",
   "Could not load the settings.": "A beállítások betöltése nem sikerült.",
   "Settings saved": "Beállítások mentve",
-  "Could not save the settings. Please try again.": "A beállítások mentése nem sikerült. Próbálja újra."
+  "Could not save the settings. Please try again.": "A beállítások mentése nem sikerült. Próbálja újra.",
+  "Dispatch note": "Szállítólevél",
+  "Dispatch note {{number}}": "Szállítólevél {{number}}",
+  "dispatch-note-{{number}}.pdf": "szallitolevel-{{number}}.pdf",
+  "Line": "Tétel",
+  "Amount (RSD)": "Összeg (RSD)",
+  "Scan to follow the service online": "Olvassa be a szerviz online követéséhez",
+  "Could not create the dispatch note. Please try again.": "A szállítólevél elkészítése nem sikerült. Próbálja újra."
 }
