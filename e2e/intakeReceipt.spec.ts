@@ -1,20 +1,9 @@
-import { readFile } from "node:fs/promises";
-import { expect, test, type Download } from "@playwright/test";
+import { expect, test } from "@playwright/test";
+import { dataUrl, IMAGES, readDownload } from "./documents.js";
 import { STAFF } from "./env.js";
 import { logIn } from "./logIn.js";
-import { readPdf } from "./pdf.js";
 
 // The UI defaults to Serbian (sr).
-
-const IMAGES = "apps/backend/test/fixtures/images";
-
-async function dataUrl(path: string, type: string) {
-  return `data:${type};base64,${(await readFile(path)).toString("base64")}`;
-}
-
-async function readDownload(download: Download) {
-  return readPdf(new Uint8Array(await readFile((await download.path())!)));
-}
 
 test("a staff member prints a service's intake receipt, in the UI language, with a QR code of its public link", async ({
   page,
@@ -68,8 +57,9 @@ test("a staff member prints a service's intake receipt, in the UI language, with
   const download = page.waitForEvent("download");
   await page
     .getByRole("dialog", { name: `Servis ${service.number}` })
-    .getByRole("button", { name: "Prijemnica" })
+    .getByRole("button", { name: "Štampa" })
     .click();
+  await page.getByRole("menuitem", { name: "Prijemnica" }).click();
   expect((await download).suggestedFilename()).toBe(`prijemnica-${service.number}.pdf`);
   const receipt = await readDownload(await download);
 
@@ -113,8 +103,9 @@ test("a staff member prints a service's intake receipt, in the UI language, with
   const englishDownload = page.waitForEvent("download");
   await page
     .getByRole("dialog", { name: `Service ${service.number}` })
-    .getByRole("button", { name: "Intake receipt" })
+    .getByRole("button", { name: "Print" })
     .click();
+  await page.getByRole("menuitem", { name: "Intake receipt" }).click();
   expect((await englishDownload).suggestedFilename()).toBe(`intake-receipt-${service.number}.pdf`);
   const englishReceipt = await readDownload(await englishDownload);
   for (const text of [

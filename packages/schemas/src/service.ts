@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { customerSummarySchema } from "./customer.js";
 import { deviceSummarySchema } from "./device.js";
-import { optionalText, sortDirSchema } from "./fields.js";
+import { blankAsNull, optionalText, sortDirSchema } from "./fields.js";
 import { serviceLineSchema } from "./serviceLine.js";
 
 /** Where a service is in its lifecycle; a new service is Received (see GLOSSARY.md). */
@@ -46,6 +46,16 @@ export const serviceInputSchema = z.object({
   date: plainDateSchema,
 });
 
+/** The longest customer report a staff member may write. */
+export const CUSTOMER_REPORT_MAX = 10_000;
+
+/** `PUT /api/services/:id/customer-report`: the service's customer report; blank clears it. */
+export const customerReportInputSchema = z.object({
+  customerReport: blankAsNull(z.string().trim().max(CUSTOMER_REPORT_MAX)),
+});
+
+export type CustomerReportInput = z.output<typeof customerReportInputSchema>;
+
 export type ServiceInputValues = z.input<typeof serviceInputSchema>;
 export type ServiceInput = z.output<typeof serviceInputSchema>;
 
@@ -69,9 +79,10 @@ export const serviceSchema = z.object({
 /** A service as listed: its total, but not its lines. */
 export type Service = z.infer<typeof serviceSchema>;
 
-/** One service as the drawer shows it, with its lines in order. */
+/** One service as the drawer shows it, with its lines in order and its customer report. */
 export const serviceDetailSchema = serviceSchema.extend({
   lines: z.array(serviceLineSchema),
+  customerReport: z.string().nullable(),
 });
 
 export type ServiceDetail = z.infer<typeof serviceDetailSchema>;

@@ -236,5 +236,15 @@
   "Devices on service": "Szervizelt eszközök",
   "Fault description": "Hiba leírása",
   "S/N {{serialNumber}}": "Sorozatszám: {{serialNumber}}",
-  "Could not create the intake receipt. Please try again.": "Az átvételi elismervény elkészítése nem sikerült. Próbálja újra."
+  "Could not create the intake receipt. Please try again.": "Az átvételi elismervény elkészítése nem sikerült. Próbálja újra.",
+  "Print": "Nyomtatás",
+  "Customer report": "Ügyféljelentés",
+  "What was done, as the customer reads it on the service report.": "Az elvégzett munka, ahogy az ügyfél a szervizjelentésen olvassa.",
+  "Customer report saved": "Ügyféljelentés mentve",
+  "Could not save the customer report. Please try again.": "Az ügyféljelentés mentése nem sikerült. Próbálja újra.",
+  "Service report": "Szervizjelentés",
+  "Service report {{number}}": "Szervizjelentés {{number}}",
+  "service-report-{{number}}.pdf": "szervizjelentes-{{number}}.pdf",
+  "Line total (RSD)": "Tételösszeg (RSD)",
+  "Could not create the service report. Please try again.": "A szervizjelentés elkészítése nem sikerült. Próbálja újra."
 }

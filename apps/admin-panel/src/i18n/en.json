@@ -236,5 +236,15 @@
   "Devices on service": "Devices on service",
   "Fault description": "Fault description",
   "S/N {{serialNumber}}": "S/N {{serialNumber}}",
-  "Could not create the intake receipt. Please try again.": "Could not create the intake receipt. Please try again."
+  "Could not create the intake receipt. Please try again.": "Could not create the intake receipt. Please try again.",
+  "Print": "Print",
+  "Customer report": "Customer report",
+  "What was done, as the customer reads it on the service report.": "What was done, as the customer reads it on the service report.",
+  "Customer report saved": "Customer report saved",
+  "Could not save the customer report. Please try again.": "Could not save the customer report. Please try again.",
+  "Service report": "Service report",
+  "Service report {{number}}": "Service report {{number}}",
+  "service-report-{{number}}.pdf": "service-report-{{number}}.pdf",
+  "Line total (RSD)": "Line total (RSD)",
+  "Could not create the service report. Please try again.": "Could not create the service report. Please try again."
 }

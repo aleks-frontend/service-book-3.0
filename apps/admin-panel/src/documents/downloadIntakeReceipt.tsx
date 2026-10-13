@@ -1,14 +1,9 @@
 import { pdf } from "@react-pdf/renderer";
 import type { TFunction } from "i18next";
-import QRCode from "qrcode";
 import type { Customer, ServiceDetail, Settings, StaffMember } from "@servicebook/schemas";
 import { downloadBlob } from "./download";
 import { IntakeReceipt } from "./IntakeReceipt";
-
-/** The service's public link on the host the admin panel is served from (ADR-0001). */
-function publicServiceUrl(publicToken: string) {
-  return `${window.location.origin}/s/${publicToken}`;
-}
+import { publicLinkQrCode } from "./qrCode";
 
 /**
  * Renders a service's intake receipt in the given language and downloads it.
@@ -29,11 +24,7 @@ export async function downloadIntakeReceipt({
   t: TFunction;
   language: string;
 }) {
-  const qrCode = await QRCode.toDataURL(publicServiceUrl(service.publicToken), {
-    errorCorrectionLevel: "M",
-    margin: 2,
-    width: 300,
-  });
+  const qrCode = await publicLinkQrCode(service.publicToken);
   const blob = await pdf(
     <IntakeReceipt
       service={service}

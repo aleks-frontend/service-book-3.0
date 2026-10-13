@@ -211,6 +211,84 @@ describe("services: update", () => {
   });
 });
 
+describe("services: customer report", () => {
+  async function newService(agent: TestAgent) {
+    const { customer, device } = await customerWithDevice(agent);
+    return createService(agent, {
+      customerId: customer.id,
+      deviceIds: [device.id],
+      description: "Screen cracked",
+      date: "2026-03-14",
+    });
+  }
+
+  it("is only reachable by a logged-in staff member", async () => {
+    const response = await request(createApp())
+      .put(`/api/services/${UNKNOWN_ID}/customer-report`)
+      .send({ customerReport: "Replaced the screen." });
+
+    expect(response.status).toBe(401);
+  });
+
+  it("starts empty, is saved trimmed and is returned with the service", async () => {
+    const { agent } = await authenticatedAgent();
+    const service = await newService(agent);
+    expect((await agent.get(`/api/services/${service.id}`)).body.customerReport).toBeNull();
+
+    const saved = await agent
+      .put(`/api/services/${service.id}/customer-report`)
+      .send({ customerReport: " Replaced the screen.\nTested the touch. " });
+
+    expect(saved.status).toBe(200);
+    expect(saved.body).toMatchObject({
+      id: service.id,
+      description: "Screen cracked",
+      customerReport: "Replaced the screen.\nTested the touch.",
+    });
+    expect((await agent.get(`/api/services/${service.id}`)).body).toEqual(saved.body);
+  });
+
+  it("is cleared by a blank report and kept by an edit of the service's details", async () => {
+    const { agent } = await authenticatedAgent();
+    const { customer, device } = await customerWithDevice(agent);
+    const service = await createService(agent, {
+      customerId: customer.id,
+      deviceIds: [device.id],
+      date: "2026-03-14",
+    });
+    await agent
+      .put(`/api/services/${service.id}/customer-report`)
+      .send({ customerReport: "Replaced the screen." });
+
+    const edited = await agent
+      .put(`/api/services/${service.id}`)
+      .send({ customerId: customer.id, deviceIds: [device.id], date: "2026-03-15" });
+    expect(edited.body.customerReport).toBe("Replaced the screen.");
+
+    const cleared = await agent
+      .put(`/api/services/${service.id}/customer-report`)
+      .send({ customerReport: "   " });
+    expect(cleared.status).toBe(200);
+    expect(cleared.body.customerReport).toBeNull();
+  });
+
+  it("refuses an overlong report with a 400, and an unknown service with a 404", async () => {
+    const { agent } = await authenticatedAgent();
+    const service = await newService(agent);
+
+    const overlong = await agent
+      .put(`/api/services/${service.id}/customer-report`)
+      .send({ customerReport: "x".repeat(10_001) });
+    const unknown = await agent
+      .put(`/api/services/${UNKNOWN_ID}/customer-report`)
+      .send({ customerReport: "Replaced the screen." });
+
+    expect(overlong.status).toBe(400);
+    expect((await agent.get(`/api/services/${service.id}`)).body.customerReport).toBeNull();
+    expect(unknown.status).toBe(404);
+  });
+});
+
 describe("services: validation", () => {
   it("rejects a service without a valid customer, devices or date with 400", async () => {
     const { agent } = await authenticatedAgent();

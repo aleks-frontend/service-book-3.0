@@ -164,6 +164,25 @@ export function useServiceLineMutations(serviceId: string) {
   return { add, update, remove, reorder };
 }
 
+/** Saves a service's customer report; a blank one clears it. */
+export function useSaveCustomerReportMutation(serviceId: string) {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
+
+  return useMutation({
+    mutationFn: (customerReport: string) =>
+      request<ServiceDetail>(`/services/${serviceId}/customer-report`, {
+        method: "PUT",
+        body: { customerReport },
+      }),
+    onSuccess: (service) => {
+      toast.success(t("Customer report saved"));
+      queryClient.setQueryData(serviceKeys.detail(service.id), service);
+    },
+    onError: () => toast.error(t("Could not save the customer report. Please try again.")),
+  });
+}
+
 /**
  * Moves a service to another status. The server logs the change, so the
  * service's log is refetched along with the list.

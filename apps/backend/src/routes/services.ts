@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { Router, type Response } from "express";
 import {
+  customerReportInputSchema,
   plainDateToUtc,
   serviceInputSchema,
   serviceListQuerySchema,
@@ -34,6 +35,7 @@ const LABEL = "Service";
 
 const serviceDetailSelect = {
   ...serviceSelect,
+  customerReport: true,
   lines: { orderBy: lineOrder, select: lineSelect },
 } satisfies Prisma.ServiceSelect;
 
@@ -41,7 +43,7 @@ type ServiceDetailRow = Prisma.ServiceGetPayload<{ select: typeof serviceDetailS
 
 /** One service with its lines, as the drawer shows it. */
 function toServiceDetail(row: ServiceDetailRow): ServiceDetail {
-  return { ...toService(row), lines: row.lines };
+  return { ...toService(row), lines: row.lines, customerReport: row.customerReport };
 }
 
 /** 12 URL-safe characters from 72 random bits: hard to guess, never sequential (ADR-0003). */
@@ -178,6 +180,26 @@ servicesRouter.put("/:id", async (req, res) => {
         customerId: input.customerId,
         devices: { deleteMany: {}, create: deviceRows(input.deviceIds) },
       },
+      select: serviceDetailSelect,
+    });
+    res.json(toServiceDetail(row));
+  } catch (error) {
+    if (!isNotFound(error)) throw error;
+    sendNotFound(res, LABEL);
+  }
+});
+
+// Written in the drawer's Customer report tab; the service's details stay.
+servicesRouter.put("/:id/customer-report", async (req, res) => {
+  const id = idParam(req, res, LABEL);
+  if (!id) return;
+  const input = parseBody(customerReportInputSchema, req, res, LABEL);
+  if (!input) return;
+
+  try {
+    const row = await prisma.service.update({
+      where: { id },
+      data: { customerReport: input.customerReport },
       select: serviceDetailSelect,
     });
     res.json(toServiceDetail(row));

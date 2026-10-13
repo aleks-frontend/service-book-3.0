@@ -149,26 +149,28 @@ enum Status {
 
 /// One customer's visit with one or more devices on a given date (see GLOSSARY.md, ADR-0003).
 model Service {
-  id          String            @id @default(uuid()) @db.Uuid
+  id             String            @id @default(uuid()) @db.Uuid
   /// With `sequence`, the service number `YYYY-NNNN`: the year of the service's date when it was created.
-  year        Int
+  year           Int
   /// Allocated from `ServiceNumberCounter` inside the creation transaction; never reused.
-  sequence    Int
+  sequence       Int
   /// Identifies the service on its public link; never the UUID or the service number.
-  publicToken String            @unique
-  date        DateTime          @db.Date
-  description String?
-  status      Status            @default(RECEIVED)
+  publicToken    String            @unique
+  date           DateTime          @db.Date
+  description    String?
+  /// The final customer-facing text describing what was done, printed on the service report.
+  customerReport String?
+  status         Status            @default(RECEIVED)
   /// A customer with services cannot be deleted.
-  customerId  String            @db.Uuid
-  customer    Customer          @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  devices     ServiceDevice[]
-  lines       ServiceLine[]
-  log         ServiceLogEntry[]
+  customerId     String            @db.Uuid
+  customer       Customer          @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  devices        ServiceDevice[]
+  lines          ServiceLine[]
+  log            ServiceLogEntry[]
   /// The record's ID in the old Firebase app (its timestamp); makes re-imports idempotent.
-  legacyId    String?           @unique
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  legacyId       String?           @unique
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
 
   @@unique([year, sequence])
   @@index([date, year, sequence])

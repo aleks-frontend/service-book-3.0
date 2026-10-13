@@ -236,5 +236,15 @@
   "Devices on service": "Uređaji na servisu",
   "Fault description": "Opis kvara",
   "S/N {{serialNumber}}": "SN: {{serialNumber}}",
-  "Could not create the intake receipt. Please try again.": "Pravljenje prijemnice nije uspelo. Pokušajte ponovo."
+  "Could not create the intake receipt. Please try again.": "Pravljenje prijemnice nije uspelo. Pokušajte ponovo.",
+  "Print": "Štampa",
+  "Customer report": "Izveštaj za mušteriju",
+  "What was done, as the customer reads it on the service report.": "Šta je urađeno, kako će mušterija pročitati na izveštaju o servisu.",
+  "Customer report saved": "Izveštaj za mušteriju je sačuvan",
+  "Could not save the customer report. Please try again.": "Čuvanje izveštaja za mušteriju nije uspelo. Pokušajte ponovo.",
+  "Service report": "Izveštaj o servisu",
+  "Service report {{number}}": "Izveštaj o servisu {{number}}",
+  "service-report-{{number}}.pdf": "izvestaj-o-servisu-{{number}}.pdf",
+  "Line total (RSD)": "Ukupno po stavci (RSD)",
+  "Could not create the service report. Please try again.": "Pravljenje izveštaja o servisu nije uspelo. Pokušajte ponovo."
 }
