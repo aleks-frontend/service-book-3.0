@@ -47,18 +47,18 @@ test("changing the range updates the earnings chart and total", async ({ page })
   const earnings = page.getByRole("region", { name: "Zarada" });
   const chart = earnings.getByRole("figure", { name: "Grafikon zarade" });
 
-  await page.getByLabel("Od").fill("2019-01-01");
-  await page.getByLabel("Do").fill("2019-12-31");
+  await earnings.getByLabel("Od").fill("2019-01-01");
+  await earnings.getByLabel("Do").fill("2019-12-31");
   // 1 × 5000 + 2 × 1500; the cancelled service earns nothing.
   await expect(earnings).toContainText("Ukupno: 8.000 RSD");
   await expect(chart).toContainText("jul 2019.");
 
-  await page.getByLabel("Do").fill("2019-05-31");
+  await earnings.getByLabel("Do").fill("2019-05-31");
   await expect(earnings).toContainText("Ukupno: 5.000 RSD");
   await expect(chart).toContainText("maj 2019.");
   await expect(chart).not.toContainText("jul 2019.");
 
-  await page.getByRole("combobox", { name: "Grupiši po" }).click();
+  await earnings.getByRole("combobox", { name: "Grupiši po" }).click();
   await page.getByRole("option", { name: "Godina" }).click();
   await expect(chart).toContainText("2019");
   await expect(chart).not.toContainText("maj 2019.");

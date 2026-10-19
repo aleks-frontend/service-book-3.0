@@ -36,6 +36,19 @@ function earningsQuery(from: string, to: string, bucket: EarningsBucket): Earnin
 
 export function StatisticsPage() {
   const { t } = useTranslation();
+
+  return (
+    <section className="space-y-6">
+      <h1 className="text-2xl font-semibold">{t("Statistics")}</h1>
+      <EarningsCard />
+      <StatusCountsCard />
+    </section>
+  );
+}
+
+/** Earnings with the range and grouping they are shown for; nothing else on the page follows the range. */
+function EarningsCard() {
+  const { t, i18n } = useTranslation();
   const id = useId();
 
   // This year so far, by month.
@@ -45,10 +58,23 @@ export function StatisticsPage() {
 
   const query = earningsQuery(from, to, bucket);
   const daysDisabled = !query || tooManyDays(from, to);
+  const { data, isError } = useEarningsQuery(query);
 
   return (
-    <section className="space-y-6">
-      <h1 className="text-2xl font-semibold">{t("Statistics")}</h1>
+    <section aria-labelledby={id} className="space-y-4 rounded-md border bg-card p-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 id={id} className="text-lg font-semibold">
+          {t("Earnings")}
+        </h2>
+        {query && data && (
+          <p className="text-sm text-muted-foreground">
+            {t("Total")}:{" "}
+            <span className="text-xl font-semibold tabular-nums text-foreground">
+              {formatRsd(data.earnings, i18n.language)}
+            </span>
+          </p>
+        )}
+      </div>
 
       <div className="flex flex-wrap items-end gap-3">
         <div className="space-y-1.5">
@@ -99,41 +125,11 @@ export function StatisticsPage() {
         </div>
       </div>
 
-      {query ? (
-        <EarningsCard query={query} />
-      ) : (
+      {!query ? (
         <p className="text-sm text-destructive">
           {t("Choose a start date on or before the end date.")}
         </p>
-      )}
-
-      <StatusCountsCard />
-    </section>
-  );
-}
-
-function EarningsCard({ query }: { query: EarningsQuery }) {
-  const { t, i18n } = useTranslation();
-  const id = useId();
-  const { data, isError } = useEarningsQuery(query);
-
-  return (
-    <section aria-labelledby={id} className="space-y-4 rounded-md border bg-card p-4">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id={id} className="text-lg font-semibold">
-          {t("Earnings")}
-        </h2>
-        {data && (
-          <p className="text-sm text-muted-foreground">
-            {t("Total")}:{" "}
-            <span className="text-xl font-semibold tabular-nums text-foreground">
-              {formatRsd(data.earnings, i18n.language)}
-            </span>
-          </p>
-        )}
-      </div>
-
-      {isError ? (
+      ) : isError ? (
         <p className="text-sm text-destructive">{t("Could not load the earnings.")}</p>
       ) : (
         <figure aria-label={t("Earnings chart")} className="h-72">
