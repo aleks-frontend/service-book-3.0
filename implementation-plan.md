@@ -58,14 +58,14 @@ This is a summary; the authoritative rules are in #17.
 | Firebase | New model |
 |---|---|
 | `customers/*` | Customer, keeping the legacy ID. Placeholder phones are imported as they are. |
-| `devices/*` | Device. `manufacturer`, `model` and `serialNumber` are copied; `title` becomes the description; the stored `name` is dropped (the label is derived), and names that differ from manufacturer + model are reported. Placeholder manufacturers (e.g. "N/A", "-") are reported. It is owned when used by exactly one customer's services and generic when used by several. `isNewDevice` is not stored: it only tells the import which references become sale lines, and "sold by us" is later derived from sale lines. |
+| `devices/*` | Device. `manufacturer` and `model` are copied (runs of spaces made single), `serial` becomes the serial number and `title` the description; the stored `name` is dropped (the label is derived), and names other than manufacturer + model, optionally followed by the serial in any form, are reported. Placeholder manufacturers (e.g. "N/A", "NA", "-") are reported. It is owned when attached to exactly one customer's services, and generic when attached under several customers, only ever sold, or never used. `isNewDevice` is not stored: references are routed by array (`devices` → attached, `newDevices` → sale lines), and references that disagree with the flag are reported. |
 | `actions/*` | Action. Numeric names are stringified. |
 | `services/*.customers[0]` / `devices[]` | The service's customer / its attached devices |
-| `services/*.status` | `shipped` → Delivered, `completed` → Completed, `received` → Received; anything else is reported |
-| `services/*.actions[]` | Work lines (string prices and quantities are coerced to integers) |
+| `services/*.status` | `shipped` → Delivered, `completed` → Completed, `received` → Received; anything else is reported and imported as Received |
+| `services/*.actions[]` | Work lines (string prices and quantities are coerced to integers; fractions are rounded and reported) |
 | `services/*.newDevices[]` | Sale lines |
-| `services/*.remark` | Legacy-remark log entry |
-| `services/*.date` (ms) | Service date. The timestamp is kept as the legacy ID, and service numbers are assigned in date order per year, with the per-year counters advanced past them. |
+| `services/*.remark` | Legacy-remark log entry, dated with the legacy timestamp. The `title` field of some 2019 services becomes one too, and is reported. |
+| `services/*.date` (ms) | Service date, the day in Serbia. The Firebase key (the creation timestamp) is kept as the legacy ID. Services are numbered in date order per year from the counters, so the counters end past them; on a re-run, imported services keep their numbers and new ones follow the year's last number. |
 | top-level `"false"` key | Skipped and reported |
 
 Empty-string arrays are treated as empty. Public tokens are generated freshly. The import supports `--dry-run`, and re-running it upserts by legacy ID.

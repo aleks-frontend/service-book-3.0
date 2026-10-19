@@ -1,0 +1,177 @@
+{
+  "ssot": {
+    "customers": {
+      "1570000000001": {
+        "name": "Petar Petrović",
+        "phone": "0641112233",
+        "email": "",
+        "address": ""
+      },
+      "1570000000002": {
+        "name": "Jelena Jovanović",
+        "phone": "/",
+        "email": "jelena@example.com",
+        "address": "Glavna 1",
+        "facebook": "facebook.com/jelena.example"
+      },
+      "customer3": {
+        "id": "customer3",
+        "name": "Kovács Anna",
+        "phone": "000",
+        "email": "",
+        "address": ""
+      },
+      "1570000000004": {
+        "name": "Milan Milić",
+        "phone": "0659998877",
+        "email": "",
+        "address": ""
+      }
+    },
+    "actions": {
+      "1570000000101": { "name": "Dijagnostika", "price": 1000 },
+      "1570000000102": { "name": "Zamena ekrana", "price": "2500" },
+      "1570000000103": { "name": 1234, "price": 500 },
+      "1570000000104": { "id": "1570000000104", "name": "Čišćenje", "price": 800 }
+    },
+    "devices": {
+      "1570000000201": {
+        "name": "Samsung Galaxy S21 R58M123",
+        "manufacturer": "Samsung",
+        "model": "Galaxy S21",
+        "serial": "R58M123",
+        "title": ""
+      },
+      "1570000000202": {
+        "name": "HP 250 G7",
+        "manufacturer": "HP",
+        "model": "250 G7",
+        "serial": "",
+        "title": "crni, 8GB RAM"
+      },
+      "1570000000203": {
+        "name": "Punjač USB-C",
+        "manufacturer": "N/A",
+        "model": "USB-C punjač",
+        "serial": "",
+        "title": "",
+        "isNewDevice": true
+      },
+      "device004": {
+        "id": "device004",
+        "name": "Kingston SSD 240GB",
+        "manufacturer": "Kingston",
+        "model": "A400 240GB",
+        "serial": "",
+        "title": "",
+        "isNewDevice": true
+      },
+      "1570000000205": {
+        "name": "Logitech M185",
+        "manufacturer": "Logitech",
+        "model": "M185",
+        "serial": "",
+        "title": "",
+        "isNewDevice": true
+      },
+      "1570000000206": {
+        "name": "Apple  iPhone 8 (sn: F2LX123)",
+        "manufacturer": "Apple",
+        "model": "iPhone  8",
+        "serial": "F2LX123",
+        "title": ""
+      },
+      "1570000000207": {
+        "name": "Lenovo IdeaPad 3",
+        "manufacturer": "Lenovo",
+        "model": "IdeaPad 3",
+        "serial": "",
+        "title": "",
+        "isNewDevice": true
+      }
+    },
+    "services": {
+      "1735800000000": {
+        "date": 1735800000000,
+        "customers": ["1570000000001"],
+        "devices": ["1570000000201"],
+        "description": "Razbijen ekran",
+        "status": "shipped",
+        "actions": [
+          { "rowId": 1, "actionId": "1570000000101", "quantity": 1, "price": 1000 },
+          { "rowId": 2, "actionId": "1570000000102", "quantity": "1", "price": "2500" }
+        ],
+        "newDevices": "",
+        "remark": "Klijent javio da ekran treperi"
+      },
+      "1736000000000": {
+        "date": 1740000000000,
+        "customers": ["1570000000002"],
+        "devices": ["1570000000202"],
+        "description": "Ne puni",
+        "status": "completed",
+        "actions": "",
+        "newDevices": [
+          {
+            "rowId": "1",
+            "deviceId": "1570000000203",
+            "deviceName": "Punjač USB-C",
+            "quantity": "2",
+            "price": "1200"
+          },
+          {
+            "rowId": "2",
+            "deviceId": 1570000000205,
+            "deviceName": "Logitech M185",
+            "quantity": 1,
+            "price": "9333.33"
+          }
+        ],
+        "remark": ""
+      },
+      "1738000000000": {
+        "date": 1738000000000,
+        "customers": ["1570000000004"],
+        "devices": ["1570000000202"],
+        "description": "Spor",
+        "title": "HP laptop",
+        "status": "received",
+        "actions": [{ "rowId": 1, "actionId": "1570000000103", "quantity": 2, "price": "500" }],
+        "remark": ""
+      },
+      "1767400000000": {
+        "date": 1767400000000,
+        "customers": ["1570000000001"],
+        "devices": ["1570000000201"],
+        "description": "Ne pali se",
+        "status": "shipped",
+        "actions": [{ "rowId": 1, "actionId": "1570000000101", "quantity": 1, "price": 1000 }],
+        "newDevices": [
+          {
+            "rowId": "1",
+            "deviceId": "device004",
+            "deviceName": "Kingston A400 240GB",
+            "quantity": 1,
+            "price": "4500"
+          }
+        ],
+        "remark": "Vraćen kupcu"
+      },
+      "1768000000000": {
+        "date": 1767223800000,
+        "customers": ["customer3"],
+        "devices": ["1570000000207"],
+        "description": "Pregreva se",
+        "status": "inprogress",
+        "actions": "",
+        "newDevices": "",
+        "remark": ""
+      }
+    },
+    "false": {
+      "customers": {
+        "1570000000999": { "name": "x", "phone": "0" }
+      }
+    }
+  }
+}

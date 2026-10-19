@@ -1,4 +1,3 @@
-import { randomBytes } from "node:crypto";
 import { Router, type Response } from "express";
 import {
   customerReportInputSchema,
@@ -15,6 +14,7 @@ import {
 import { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma.js";
 import { listServiceIds } from "../lib/serviceList.js";
+import { newPublicToken, nextSequence } from "../lib/serviceNumbers.js";
 import { serviceSelect, toService } from "../lib/serviceRows.js";
 import {
   idParam,
@@ -44,25 +44,6 @@ type ServiceDetailRow = Prisma.ServiceGetPayload<{ select: typeof serviceDetailS
 /** One service with its lines, as the drawer shows it. */
 function toServiceDetail(row: ServiceDetailRow): ServiceDetail {
   return { ...toService(row), lines: row.lines, customerReport: row.customerReport };
-}
-
-/** 12 URL-safe characters from 72 random bits: hard to guess, never sequential (ADR-0003). */
-function newPublicToken() {
-  return randomBytes(9).toString("base64url");
-}
-
-/**
- * The next sequence number of `year`. The upsert locks the year's counter row
- * until the surrounding transaction ends, so concurrent creates queue up and
- * never get the same number.
- */
-async function nextSequence(tx: Prisma.TransactionClient, year: number) {
-  const [{ last }] = await tx.$queryRaw<{ last: number }[]>`
-    INSERT INTO "service_number_counter" ("year", "last") VALUES (${year}, 1)
-    ON CONFLICT ("year") DO UPDATE SET "last" = "service_number_counter"."last" + 1
-    RETURNING "last"
-  `;
-  return last;
 }
 
 /**

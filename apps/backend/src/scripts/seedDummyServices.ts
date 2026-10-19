@@ -1,7 +1,7 @@
 import "dotenv/config";
-import { randomBytes } from "node:crypto";
 import type { Status } from "@servicebook/schemas";
 import { prisma } from "../lib/prisma.js";
+import { newPublicToken, nextSequence } from "../lib/serviceNumbers.js";
 
 // Usage: npm run seed:dummy-services -w @servicebook/backend -- [count]
 // Adds dummy customers, devices and services for trying out the services list
@@ -50,16 +50,6 @@ const DESCRIPTIONS = [
 
 const STATUSES: Status[] = ["RECEIVED", "IN_PROGRESS", "COMPLETED", "DELIVERED", "CANCELLED"];
 
-/** Same as the services route: the counter row hands out the year's next number. */
-async function nextSequence(year: number) {
-  const [{ last }] = await prisma.$queryRaw<{ last: number }[]>`
-    INSERT INTO "service_number_counter" ("year", "last") VALUES (${year}, 1)
-    ON CONFLICT ("year") DO UPDATE SET "last" = "service_number_counter"."last" + 1
-    RETURNING "last"
-  `;
-  return last;
-}
-
 try {
   const customers = await Promise.all(
     CUSTOMERS.map((customer) => prisma.customer.create({ data: customer })),
@@ -79,8 +69,8 @@ try {
     await prisma.service.create({
       data: {
         year,
-        sequence: await nextSequence(year),
-        publicToken: randomBytes(9).toString("base64url"),
+        sequence: await nextSequence(prisma, year),
+        publicToken: newPublicToken(),
         date,
         description: DESCRIPTIONS[i % DESCRIPTIONS.length],
         status: STATUSES[i % STATUSES.length],

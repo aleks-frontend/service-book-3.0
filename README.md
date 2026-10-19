@@ -22,6 +22,17 @@ There is no sign-up. Add more staff members with:
 npm run staff:create -w @servicebook/backend -- <email> <password> [name]
 ```
 
+## Importing the old app's data
+
+Export the Firebase database as JSON (the whole tree, or just its `ssot` node), then:
+
+```sh
+npm run import:legacy -w @servicebook/backend -- <export.json> --dry-run   # report only, writes nothing
+npm run import:legacy -w @servicebook/backend -- <export.json>             # one transaction
+```
+
+The report lists the counts, every anomaly (imported, but not quite as it was) and every skipped record. Re-running is safe: records are upserted by legacy ID, imported services keep their numbers and public tokens, and their attached devices, lines and legacy remarks are refreshed from the export. Never commit a real export; the tests use the anonymised `apps/backend/test/fixtures/legacy/firebase-export.json`.
+
 ## Scripts
 
 | Command | What it does |
