@@ -246,5 +246,17 @@
   "Service report {{number}}": "Izveštaj o servisu {{number}}",
   "service-report-{{number}}.pdf": "izvestaj-o-servisu-{{number}}.pdf",
   "Line total (RSD)": "Ukupno po stavci (RSD)",
-  "Could not create the service report. Please try again.": "Pravljenje izveštaja o servisu nije uspelo. Pokušajte ponovo."
+  "Could not create the service report. Please try again.": "Pravljenje izveštaja o servisu nije uspelo. Pokušajte ponovo.",
+  "From": "Od",
+  "To": "Do",
+  "Group by": "Grupiši po",
+  "Day": "Dan",
+  "Month": "Mesec",
+  "Year": "Godina",
+  "Earnings": "Zarada",
+  "Earnings chart": "Grafikon zarade",
+  "Services by status": "Servisi po statusu",
+  "Could not load the earnings.": "Zarada nije mogla da se učita.",
+  "Could not load the status counts.": "Broj servisa po statusu nije mogao da se učita.",
+  "Choose a start date on or before the end date.": "Izaberite početni datum koji nije posle krajnjeg."
 }

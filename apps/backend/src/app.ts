@@ -10,6 +10,7 @@ import { devicesRouter } from "./routes/devices.js";
 import { meRouter } from "./routes/me.js";
 import { servicesRouter } from "./routes/services.js";
 import { settingsRouter } from "./routes/settings.js";
+import { statisticsRouter } from "./routes/statistics.js";
 
 /** Room for both settings images at their size limit, base64-encoded, plus the text fields. */
 const SETTINGS_BODY_LIMIT = "4mb";
@@ -41,6 +42,7 @@ export function createApp({ adminPanelDir }: AppOptions = {}) {
   app.use("/api/actions", actionsRouter);
   app.use("/api/services", servicesRouter);
   app.use("/api/settings", settingsRouter);
+  app.use("/api/statistics", statisticsRouter);
 
   // Unknown API paths must never fall through to the admin panel's index.html.
   app.use("/api", (_req, res) => {

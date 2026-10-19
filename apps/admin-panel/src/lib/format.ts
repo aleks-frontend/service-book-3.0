@@ -49,3 +49,17 @@ export function formatDateTime(date: Date, language: string) {
     minute: "2-digit",
   });
 }
+
+/**
+ * An earnings bucket's period (`YYYY-MM-DD`, `YYYY-MM` or `YYYY`) for a
+ * chart axis, e.g. "1. maj 2026.", "maj 2026." or "2026" in Serbian.
+ */
+export function formatPeriod(period: string, language: string) {
+  const [year, month, day] = period.split("-").map(Number);
+  if (month === undefined) return String(year);
+  return new Date(year, month - 1, day ?? 1).toLocaleDateString(toLocale(language), {
+    year: "numeric",
+    month: "short",
+    day: day === undefined ? undefined : "numeric",
+  });
+}

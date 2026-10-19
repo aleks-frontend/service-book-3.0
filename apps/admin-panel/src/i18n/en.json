@@ -246,5 +246,17 @@
   "Service report {{number}}": "Service report {{number}}",
   "service-report-{{number}}.pdf": "service-report-{{number}}.pdf",
   "Line total (RSD)": "Line total (RSD)",
-  "Could not create the service report. Please try again.": "Could not create the service report. Please try again."
+  "Could not create the service report. Please try again.": "Could not create the service report. Please try again.",
+  "From": "From",
+  "To": "To",
+  "Group by": "Group by",
+  "Day": "Day",
+  "Month": "Month",
+  "Year": "Year",
+  "Earnings": "Earnings",
+  "Earnings chart": "Earnings chart",
+  "Services by status": "Services by status",
+  "Could not load the earnings.": "Could not load the earnings.",
+  "Could not load the status counts.": "Could not load the status counts.",
+  "Choose a start date on or before the end date.": "Choose a start date on or before the end date."
 }

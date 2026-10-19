@@ -246,5 +246,17 @@
   "Service report {{number}}": "Szervizjelentés {{number}}",
   "service-report-{{number}}.pdf": "szervizjelentes-{{number}}.pdf",
   "Line total (RSD)": "Tételösszeg (RSD)",
-  "Could not create the service report. Please try again.": "A szervizjelentés elkészítése nem sikerült. Próbálja újra."
+  "Could not create the service report. Please try again.": "A szervizjelentés elkészítése nem sikerült. Próbálja újra.",
+  "From": "Ettől",
+  "To": "Eddig",
+  "Group by": "Csoportosítás",
+  "Day": "Nap",
+  "Month": "Hónap",
+  "Year": "Év",
+  "Earnings": "Bevétel",
+  "Earnings chart": "Bevételi diagram",
+  "Services by status": "Szervizek állapot szerint",
+  "Could not load the earnings.": "A bevétel betöltése nem sikerült.",
+  "Could not load the status counts.": "Az állapotonkénti darabszám betöltése nem sikerült.",
+  "Choose a start date on or before the end date.": "A kezdő dátum nem lehet későbbi a záró dátumnál."
 }
