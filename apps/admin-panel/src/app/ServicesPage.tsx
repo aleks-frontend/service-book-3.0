@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { LayoutGrid, Loader2, Plus, Search, Table2 } from "lucide-react";
+import { LayoutGrid, Loader2, Plus, Table2 } from "lucide-react";
 import {
   STATUSES,
   statusSchema,
@@ -11,9 +11,9 @@ import {
 import { useServicesInfiniteQuery } from "@/lib/services";
 import { STATUS_LABELS } from "@/lib/statuses";
 import { useDrawerStack } from "@/lib/useDrawerStack";
+import { useSearching } from "@/lib/useSearching";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -22,6 +22,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DrawerStack } from "@/components/DrawerStack";
+import { LoadingRegion } from "@/components/LoadingRegion";
+import { SearchInput } from "@/components/SearchInput";
 import { ServiceFormDialog } from "@/components/ServiceFormDialog";
 import { ServicesList, type ServicesView } from "@/components/ServicesList";
 
@@ -70,10 +72,12 @@ export function ServicesPage() {
   const [status, setStatus] = useState<Status | null>(null);
   const [sortOption, setSortOption] = useState<SortOption>("date-desc");
 
+  const searchTyped = searchInput.trim();
   useEffect(() => {
-    const timeout = setTimeout(() => setSearch(searchInput.trim()), SEARCH_DEBOUNCE_MS);
+    if (searchTyped === search) return;
+    const timeout = setTimeout(() => setSearch(searchTyped), SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(timeout);
-  }, [searchInput]);
+  }, [searchTyped, search]);
 
   const { sort, sortDir } = SORT_OPTIONS[sortOption];
   const {
@@ -85,6 +89,7 @@ export function ServicesPage() {
     isFetchingNextPage,
     fetchNextPage,
   } = useServicesInfiniteQuery({ search, status: status ?? undefined, sort, sortDir });
+  const searching = useSearching(searchTyped, search, isPlaceholderData);
   const services = data?.pages.flatMap((page) => page.items) ?? [];
 
   // Loads the next page when the end of the list scrolls into view.
@@ -146,20 +151,13 @@ export function ServicesPage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <div className="relative w-full max-w-sm">
-          <Search
-            className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-            aria-hidden
-          />
-          <Input
-            type="search"
-            value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
-            placeholder={t("Search by number, customer, phone, device or description")}
-            aria-label={t("Search services")}
-            className="pl-9"
-          />
-        </div>
+        <SearchInput
+          value={searchInput}
+          onChange={setSearchInput}
+          placeholder={t("Search by number, customer, phone, device or description")}
+          aria-label={t("Search services")}
+          busy={searching}
+        />
         <Select
           value={status ?? ALL_STATUSES}
           onValueChange={(value) => {
@@ -202,25 +200,25 @@ export function ServicesPage() {
         <p className="text-sm text-destructive">{t("Could not load services.")}</p>
       ) : (
         <>
-          <ServicesList
-            services={services}
-            view={view}
-            onOpen={(service) => drawers.open("service", service.id)}
-            emptyMessage={
-              isPending
-                ? t("Loading…")
-                : search || status
-                  ? t("No services match your search.")
-                  : t("No services yet.")
-            }
-          />
+          <LoadingRegion refreshing={isPlaceholderData}>
+            <ServicesList
+              services={services}
+              view={view}
+              onOpen={(service) => drawers.open("service", service.id)}
+              loading={isPending}
+              emptyMessage={
+                search || status ? t("No services match your search.") : t("No services yet.")
+              }
+            />
+          </LoadingRegion>
           <div ref={sentinelRef} />
           {hasNextPage && (
             <div className="flex justify-center">
               <Button
                 variant="outline"
                 onClick={() => void fetchNextPage()}
-                disabled={isFetchingNextPage}
+                // While a new search's results load, the previous ones are not paged further.
+                disabled={isFetchingNextPage || isPlaceholderData}
               >
                 {isFetchingNextPage && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {t("Load more")}

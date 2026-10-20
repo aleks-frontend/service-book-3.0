@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp, Pencil, Trash2 } from "lucide-react";
 import type { Customer, SortDir } from "@servicebook/schemas";
+import { TableSkeletonRows } from "./Skeletons";
 import { Button } from "./ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 
@@ -19,6 +20,8 @@ type CustomersTableProps = {
   onOpen: (customer: Customer) => void;
   onEdit: (customer: Customer) => void;
   onDelete: (customer: Customer) => void;
+  /** The first page is still loading: placeholder rows show instead of the empty message. */
+  loading: boolean;
   emptyMessage: string;
 };
 
@@ -30,6 +33,7 @@ export function CustomersTable({
   onOpen,
   onEdit,
   onDelete,
+  loading,
   emptyMessage,
 }: CustomersTableProps) {
   const { t } = useTranslation();
@@ -128,7 +132,9 @@ export function CustomersTable({
           ))}
         </TableHeader>
         <TableBody>
-          {table.getRowModel().rows.length === 0 ? (
+          {table.getRowModel().rows.length === 0 && loading ? (
+            <TableSkeletonRows columns={columns.length} />
+          ) : table.getRowModel().rows.length === 0 ? (
             <TableRow>
               <TableCell
                 colSpan={columns.length}

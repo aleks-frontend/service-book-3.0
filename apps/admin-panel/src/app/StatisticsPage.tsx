@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { LoadingRegion } from "@/components/LoadingRegion";
 import { StatusBadge } from "@/components/StatusBadge";
 
 const BUCKET_LABELS: Record<EarningsBucket, string> = {
@@ -58,7 +59,7 @@ function EarningsCard() {
 
   const query = earningsQuery(from, to, bucket);
   const daysDisabled = !query || tooManyDays(from, to);
-  const { data, isError } = useEarningsQuery(query);
+  const { data, isPlaceholderData, isError } = useEarningsQuery(query);
 
   return (
     <section aria-labelledby={id} className="space-y-4 rounded-md border bg-card p-4">
@@ -132,42 +133,44 @@ function EarningsCard() {
       ) : isError ? (
         <p className="text-sm text-destructive">{t("Could not load the earnings.")}</p>
       ) : (
-        <figure aria-label={t("Earnings chart")} className="h-72">
-          {data && (
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data.buckets} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
-                <CartesianGrid vertical={false} className="stroke-border" />
-                <XAxis
-                  dataKey="period"
-                  tickFormatter={(period: string) => formatPeriod(period, i18n.language)}
-                  tickLine={false}
-                  fontSize={12}
-                />
-                <YAxis
-                  tickFormatter={(amount: number) => formatAmount(amount, i18n.language)}
-                  tickLine={false}
-                  axisLine={false}
-                  width={80}
-                  fontSize={12}
-                />
-                <Tooltip
-                  labelFormatter={(period) => formatPeriod(String(period), i18n.language)}
-                  formatter={(earnings) => [
-                    formatRsd(Number(earnings), i18n.language),
-                    t("Earnings"),
-                  ]}
-                  cursor={{ className: "fill-muted" }}
-                />
-                <Bar
-                  dataKey="earnings"
-                  fill="hsl(var(--primary))"
-                  radius={[4, 4, 0, 0]}
-                  maxBarSize={64}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </figure>
+        <LoadingRegion refreshing={isPlaceholderData}>
+          <figure aria-label={t("Earnings chart")} className="h-72">
+            {data && (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data.buckets} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
+                  <CartesianGrid vertical={false} className="stroke-border" />
+                  <XAxis
+                    dataKey="period"
+                    tickFormatter={(period: string) => formatPeriod(period, i18n.language)}
+                    tickLine={false}
+                    fontSize={12}
+                  />
+                  <YAxis
+                    tickFormatter={(amount: number) => formatAmount(amount, i18n.language)}
+                    tickLine={false}
+                    axisLine={false}
+                    width={80}
+                    fontSize={12}
+                  />
+                  <Tooltip
+                    labelFormatter={(period) => formatPeriod(String(period), i18n.language)}
+                    formatter={(earnings) => [
+                      formatRsd(Number(earnings), i18n.language),
+                      t("Earnings"),
+                    ]}
+                    cursor={{ className: "fill-muted" }}
+                  />
+                  <Bar
+                    dataKey="earnings"
+                    fill="hsl(var(--primary))"
+                    radius={[4, 4, 0, 0]}
+                    maxBarSize={64}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </figure>
+        </LoadingRegion>
       )}
     </section>
   );

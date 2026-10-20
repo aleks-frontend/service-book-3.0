@@ -1,13 +1,13 @@
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Search } from "lucide-react";
+import { Plus } from "lucide-react";
 import type { Action } from "@servicebook/schemas";
 import { useActionsQuery, useDeleteActionMutation } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ActionFormDialog } from "@/components/ActionFormDialog";
 import { ActionsTable } from "@/components/ActionsTable";
 import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
+import { SearchInput } from "@/components/SearchInput";
 
 /** The create/edit dialog is either closed, creating, or editing one action. */
 type FormState = { open: false } | { open: true; action?: Action };
@@ -40,20 +40,12 @@ export function ActionsPage() {
         </Button>
       </div>
 
-      <div className="relative max-w-sm">
-        <Search
-          className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-          aria-hidden
-        />
-        <Input
-          type="search"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder={t("Search by name")}
-          aria-label={t("Search actions")}
-          className="pl-9"
-        />
-      </div>
+      <SearchInput
+        value={search}
+        onChange={setSearch}
+        placeholder={t("Search by name")}
+        aria-label={t("Search actions")}
+      />
 
       {isError ? (
         <p className="text-sm text-destructive">{t("Could not load actions.")}</p>
@@ -63,7 +55,8 @@ export function ActionsPage() {
           search={search}
           onEdit={handleEdit}
           onDelete={handleDelete}
-          emptyMessage={isPending ? t("Loading…") : t("No actions yet.")}
+          loading={isPending}
+          emptyMessage={t("No actions yet.")}
           noMatchesMessage={t("No actions match your search.")}
         />
       )}

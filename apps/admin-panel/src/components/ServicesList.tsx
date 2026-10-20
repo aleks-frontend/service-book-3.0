@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { flexRender, getCoreRowModel, useReactTable, type ColumnDef } from "@tanstack/react-table";
 import { deviceLabel, type Service } from "@servicebook/schemas";
 import { formatPlainDate, formatRsd } from "@/lib/format";
+import { CardSkeletons, TableSkeletonRows } from "./Skeletons";
 import { StatusSelect } from "./StatusSelect";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 
@@ -13,8 +14,12 @@ type ServicesListProps = {
   services: Service[];
   view: ServicesView;
   onOpen: (service: Service) => void;
+  /** The first page is still loading: placeholders show instead of the empty message. */
+  loading: boolean;
   emptyMessage: string;
 };
+
+const CARD_GRID_CLASS = "grid gap-3 sm:grid-cols-2 xl:grid-cols-3";
 
 function devicesText(service: Service) {
   return service.devices.map(deviceLabel).join(", ");
@@ -32,7 +37,14 @@ function openProps(service: Service, onOpen: (service: Service) => void) {
 }
 
 /** The loaded services, newest first, as a table or as cards. */
-export function ServicesList({ services, view, onOpen, emptyMessage }: ServicesListProps) {
+export function ServicesList({ services, view, onOpen, loading, emptyMessage }: ServicesListProps) {
+  if (services.length === 0 && loading) {
+    return view === "cards" ? (
+      <CardSkeletons className={CARD_GRID_CLASS} />
+    ) : (
+      <ServicesTable services={services} onOpen={onOpen} loading />
+    );
+  }
   if (services.length === 0) {
     return (
       <div className="flex h-24 items-center justify-center rounded-md border bg-card text-sm text-muted-foreground">
@@ -47,7 +59,11 @@ export function ServicesList({ services, view, onOpen, emptyMessage }: ServicesL
   );
 }
 
-function ServicesTable({ services, onOpen }: Pick<ServicesListProps, "services" | "onOpen">) {
+function ServicesTable({
+  services,
+  onOpen,
+  loading = false,
+}: Pick<ServicesListProps, "services" | "onOpen"> & { loading?: boolean }) {
   const { t, i18n } = useTranslation();
 
   const columns = useMemo<ColumnDef<Service>[]>(
@@ -125,15 +141,23 @@ function ServicesTable({ services, onOpen }: Pick<ServicesListProps, "services" 
           ))}
         </TableHeader>
         <TableBody>
-          {table.getRowModel().rows.map((row) => (
-            <TableRow key={row.id} className="cursor-pointer" {...openProps(row.original, onOpen)}>
-              {row.getVisibleCells().map((cell) => (
-                <TableCell key={cell.id} className="py-3">
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </TableCell>
-              ))}
-            </TableRow>
-          ))}
+          {loading ? (
+            <TableSkeletonRows columns={columns.length} />
+          ) : (
+            table.getRowModel().rows.map((row) => (
+              <TableRow
+                key={row.id}
+                className="cursor-pointer"
+                {...openProps(row.original, onOpen)}
+              >
+                {row.getVisibleCells().map((cell) => (
+                  <TableCell key={cell.id} className="py-3">
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          )}
         </TableBody>
       </Table>
     </div>
@@ -144,7 +168,7 @@ function ServiceCards({ services, onOpen }: Pick<ServicesListProps, "services" |
   const { i18n } = useTranslation();
 
   return (
-    <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+    <ul className={CARD_GRID_CLASS}>
       {services.map((service) => (
         <li
           key={service.id}

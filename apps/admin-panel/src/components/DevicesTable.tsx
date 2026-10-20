@@ -13,6 +13,7 @@ import { ArrowDown, ArrowUp, Pencil, Trash2 } from "lucide-react";
 import { deviceLabel, type Device, type SortDir } from "@servicebook/schemas";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { TableSkeletonRows } from "./Skeletons";
 import { Button } from "./ui/button";
 import { Checkbox } from "./ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
@@ -30,6 +31,8 @@ type DevicesTableProps = {
   onOpen: (device: Device) => void;
   onEdit: (device: Device) => void;
   onDelete: (device: Device) => void;
+  /** The first page is still loading: placeholder rows show instead of the empty message. */
+  loading: boolean;
   emptyMessage: string;
 };
 
@@ -46,6 +49,7 @@ export function DevicesTable({
   onOpen,
   onEdit,
   onDelete,
+  loading,
   emptyMessage,
 }: DevicesTableProps) {
   const { t, i18n } = useTranslation();
@@ -187,7 +191,9 @@ export function DevicesTable({
           ))}
         </TableHeader>
         <TableBody>
-          {table.getRowModel().rows.length === 0 ? (
+          {table.getRowModel().rows.length === 0 && loading ? (
+            <TableSkeletonRows columns={columns.length} />
+          ) : table.getRowModel().rows.length === 0 ? (
             <TableRow>
               <TableCell
                 colSpan={columns.length}

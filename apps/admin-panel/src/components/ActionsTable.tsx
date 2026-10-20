@@ -10,6 +10,7 @@ import {
 import { Pencil, Trash2 } from "lucide-react";
 import type { Action } from "@servicebook/schemas";
 import { formatRsd } from "@/lib/format";
+import { TableSkeletonRows } from "./Skeletons";
 import { Button } from "./ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 
@@ -20,6 +21,8 @@ type ActionsTableProps = {
   search: string;
   onEdit: (action: Action) => void;
   onDelete: (action: Action) => void;
+  /** The price list is still loading: placeholder rows show instead of the empty message. */
+  loading: boolean;
   emptyMessage: string;
   noMatchesMessage: string;
 };
@@ -30,6 +33,7 @@ export function ActionsTable({
   search,
   onEdit,
   onDelete,
+  loading,
   emptyMessage,
   noMatchesMessage,
 }: ActionsTableProps) {
@@ -110,7 +114,9 @@ export function ActionsTable({
           ))}
         </TableHeader>
         <TableBody>
-          {rows.length === 0 ? (
+          {rows.length === 0 && loading ? (
+            <TableSkeletonRows columns={columns.length} />
+          ) : rows.length === 0 ? (
             <TableRow>
               <TableCell
                 colSpan={columns.length}

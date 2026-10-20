@@ -1,16 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Search } from "lucide-react";
+import { Plus } from "lucide-react";
 import type { Customer, PageSize, SortDir } from "@servicebook/schemas";
 import { useCustomersQuery, useDeleteCustomerMutation } from "@/lib/customers";
 import { useDrawerStack } from "@/lib/useDrawerStack";
+import { useSearching } from "@/lib/useSearching";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
 import { CustomerFormDialog } from "@/components/CustomerFormDialog";
 import { CustomersTable } from "@/components/CustomersTable";
 import { DrawerStack } from "@/components/DrawerStack";
+import { LoadingRegion } from "@/components/LoadingRegion";
 import { Pagination } from "@/components/Pagination";
+import { SearchInput } from "@/components/SearchInput";
 
 const SEARCH_DEBOUNCE_MS = 300;
 
@@ -31,15 +33,23 @@ export function CustomersPage() {
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
 
   // A new search starts from the first page.
+  const searchTyped = searchInput.trim();
   useEffect(() => {
+    if (searchTyped === search) return;
     const timeout = setTimeout(() => {
-      setSearch(searchInput.trim());
+      setSearch(searchTyped);
       setPage(1);
     }, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(timeout);
-  }, [searchInput]);
+  }, [searchTyped, search]);
 
-  const { data, isPending, isError } = useCustomersQuery({ search, page, pageSize, sortDir });
+  const { data, isPending, isPlaceholderData, isError } = useCustomersQuery({
+    search,
+    page,
+    pageSize,
+    sortDir,
+  });
+  const searching = useSearching(searchTyped, search, isPlaceholderData);
   const deleteCustomer = useDeleteCustomerMutation();
 
   // Deleting the last customer on a page leaves it empty: step back a page.
@@ -67,43 +77,33 @@ export function CustomersPage() {
         </Button>
       </div>
 
-      <div className="relative max-w-sm">
-        <Search
-          className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-          aria-hidden
-        />
-        <Input
-          type="search"
-          value={searchInput}
-          onChange={(event) => setSearchInput(event.target.value)}
-          placeholder={t("Search by name, phone or email")}
-          aria-label={t("Search customers")}
-          className="pl-9"
-        />
-      </div>
+      <SearchInput
+        value={searchInput}
+        onChange={setSearchInput}
+        placeholder={t("Search by name, phone or email")}
+        aria-label={t("Search customers")}
+        busy={searching}
+      />
 
       {isError ? (
         <p className="text-sm text-destructive">{t("Could not load customers.")}</p>
       ) : (
         <>
-          <CustomersTable
-            customers={data?.items ?? []}
-            sortDir={sortDir}
-            onSortDirChange={(next) => {
-              setSortDir(next);
-              setPage(1);
-            }}
-            onOpen={(customer) => drawers.open("customer", customer.id)}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            emptyMessage={
-              isPending
-                ? t("Loading…")
-                : search
-                  ? t("No customers match your search.")
-                  : t("No customers yet.")
-            }
-          />
+          <LoadingRegion refreshing={isPlaceholderData}>
+            <CustomersTable
+              customers={data?.items ?? []}
+              sortDir={sortDir}
+              onSortDirChange={(next) => {
+                setSortDir(next);
+                setPage(1);
+              }}
+              onOpen={(customer) => drawers.open("customer", customer.id)}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              loading={isPending}
+              emptyMessage={search ? t("No customers match your search.") : t("No customers yet.")}
+            />
+          </LoadingRegion>
           <Pagination
             page={page}
             pageSize={pageSize}

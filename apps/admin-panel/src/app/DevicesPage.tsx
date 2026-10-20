@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { RowSelectionState } from "@tanstack/react-table";
-import { Plus, Search, Trash2, X } from "lucide-react";
+import { Plus, Trash2, X } from "lucide-react";
 import {
   deviceLabel,
   type CustomerSummary,
@@ -16,14 +16,16 @@ import {
   useDevicesQuery,
 } from "@/lib/devices";
 import { useDrawerStack } from "@/lib/useDrawerStack";
+import { useSearching } from "@/lib/useSearching";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
 import { CustomerPicker } from "@/components/CustomerPicker";
 import { DeviceFormDialog } from "@/components/DeviceFormDialog";
 import { DevicesTable } from "@/components/DevicesTable";
 import { DrawerStack } from "@/components/DrawerStack";
+import { LoadingRegion } from "@/components/LoadingRegion";
 import { Pagination } from "@/components/Pagination";
+import { SearchInput } from "@/components/SearchInput";
 
 const SEARCH_DEBOUNCE_MS = 300;
 /** How many selected devices the bulk delete confirmation names before "and N more". */
@@ -50,13 +52,15 @@ export function DevicesPage() {
   const [confirmingBulkDelete, setConfirmingBulkDelete] = useState(false);
 
   // A new search starts from the first page.
+  const searchTyped = searchInput.trim();
   useEffect(() => {
+    if (searchTyped === search) return;
     const timeout = setTimeout(() => {
-      setSearch(searchInput.trim());
+      setSearch(searchTyped);
       setPage(1);
     }, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(timeout);
-  }, [searchInput]);
+  }, [searchTyped, search]);
 
   const query: DeviceListQuery = {
     search,
@@ -66,7 +70,8 @@ export function DevicesPage() {
     ownerId: owner?.id,
     generic: genericOnly ? "true" : undefined,
   };
-  const { data, isPending, isError } = useDevicesQuery(query);
+  const { data, isPending, isPlaceholderData, isError } = useDevicesQuery(query);
+  const searching = useSearching(searchTyped, search, isPlaceholderData);
   const deleteDevice = useDeleteDeviceMutation();
   const bulkDeleteDevices = useBulkDeleteDevicesMutation();
 
@@ -128,20 +133,13 @@ export function DevicesPage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <div className="relative w-full max-w-sm">
-          <Search
-            className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-            aria-hidden
-          />
-          <Input
-            type="search"
-            value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
-            placeholder={t("Search by manufacturer, model or serial number")}
-            aria-label={t("Search devices")}
-            className="pl-9"
-          />
-        </div>
+        <SearchInput
+          value={searchInput}
+          onChange={setSearchInput}
+          placeholder={t("Search by manufacturer, model or serial number")}
+          aria-label={t("Search devices")}
+          busy={searching}
+        />
         <CustomerPicker
           value={owner}
           onChange={(next) => {
@@ -187,31 +185,28 @@ export function DevicesPage() {
               </Button>
             </div>
           )}
-          <DevicesTable
-            devices={data?.items ?? []}
-            sortDir={sortDir}
-            rowSelection={rowSelection}
-            onRowSelectionChange={(updater) =>
-              setSelection({
-                scope: selectionScope,
-                rows: typeof updater === "function" ? updater(rowSelection) : updater,
-              })
-            }
-            onSortDirChange={(next) => {
-              setSortDir(next);
-              setPage(1);
-            }}
-            onOpen={(device) => drawers.open("device", device.id)}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            emptyMessage={
-              isPending
-                ? t("Loading…")
-                : isFiltered
-                  ? t("No devices match your search.")
-                  : t("No devices yet.")
-            }
-          />
+          <LoadingRegion refreshing={isPlaceholderData}>
+            <DevicesTable
+              devices={data?.items ?? []}
+              sortDir={sortDir}
+              rowSelection={rowSelection}
+              onRowSelectionChange={(updater) =>
+                setSelection({
+                  scope: selectionScope,
+                  rows: typeof updater === "function" ? updater(rowSelection) : updater,
+                })
+              }
+              onSortDirChange={(next) => {
+                setSortDir(next);
+                setPage(1);
+              }}
+              onOpen={(device) => drawers.open("device", device.id)}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              loading={isPending}
+              emptyMessage={isFiltered ? t("No devices match your search.") : t("No devices yet.")}
+            />
+          </LoadingRegion>
           <Pagination
             page={page}
             pageSize={pageSize}

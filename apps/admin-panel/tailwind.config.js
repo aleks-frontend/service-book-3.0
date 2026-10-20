@@ -53,6 +53,16 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      keyframes: {
+        // A bar a third as wide as its track, sweeping across it.
+        progress: {
+          from: { transform: "translateX(-100%)" },
+          to: { transform: "translateX(300%)" },
+        },
+      },
+      animation: {
+        progress: "progress 1.2s ease-in-out infinite",
+      },
     },
   },
   plugins: [tailwindcssAnimate],
