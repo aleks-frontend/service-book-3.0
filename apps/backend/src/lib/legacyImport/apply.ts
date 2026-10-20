@@ -1,6 +1,7 @@
+import { randomUUID } from "node:crypto";
 import { plainDateToUtc } from "@servicebook/schemas";
 import { prisma } from "../prisma.js";
-import { newPublicToken, nextSequence } from "../serviceNumbers.js";
+import { newPublicToken, reserveSequences } from "../serviceNumbers.js";
 import type { ImportPlan, PlannedService } from "./plan.js";
 
 /** Ample for the whole export; the default five seconds is not. */
@@ -15,6 +16,29 @@ function lookup(ids: Ids, legacyId: string) {
   return id;
 }
 
+/**
+ * Splits planned records into those imported before, with their ids, and new
+ * ones, given fresh ids, so the new ones can be created in one query.
+ */
+function assignIds<T extends { legacyId: string }>(
+  records: T[],
+  imported: { id: string; legacyId: string | null }[],
+) {
+  const known = new Map(imported.map(({ id, legacyId }) => [legacyId, id]));
+  const ids: Ids = new Map();
+  const created: (T & { id: string })[] = [];
+  const updated: (T & { id: string })[] = [];
+  for (const record of records) {
+    const id = known.get(record.legacyId);
+    const withId = { ...record, id: id ?? randomUUID() };
+    (id ? updated : created).push(withId);
+    ids.set(record.legacyId, withId.id);
+  }
+  return { ids, created, updated };
+}
+
+const importedOnly = { where: { legacyId: { not: null } }, select: { id: true, legacyId: true } };
+
 /** What the legacy data decides about a service: everything but its number and token. */
 function serviceData(service: PlannedService, ids: { customers: Ids; devices: Ids; actions: Ids }) {
   return {
@@ -22,11 +46,23 @@ function serviceData(service: PlannedService, ids: { customers: Ids; devices: Id
     description: service.description,
     status: service.status,
     customerId: lookup(ids.customers, service.customerLegacyId),
+  };
+}
+
+/** A service's attached devices, lines and legacy remarks, as rows of their own tables. */
+function serviceChildren(
+  serviceId: string,
+  service: PlannedService,
+  ids: { devices: Ids; actions: Ids },
+) {
+  return {
     devices: service.deviceLegacyIds.map((legacyId, position) => ({
+      serviceId,
       deviceId: lookup(ids.devices, legacyId),
       position,
     })),
     lines: service.lines.map(({ type, label, quantity, unitPrice, ...ref }, position) => ({
+      serviceId,
       type,
       label,
       quantity,
@@ -36,6 +72,7 @@ function serviceData(service: PlannedService, ids: { customers: Ids; devices: Id
       deviceId: "deviceLegacyId" in ref ? lookup(ids.devices, ref.deviceLegacyId) : null,
     })),
     log: service.remarks.map((text) => ({
+      serviceId,
       type: "LEGACY_REMARK" as const,
       text,
       createdAt: new Date(service.loggedAt),
@@ -45,86 +82,82 @@ function serviceData(service: PlannedService, ids: { customers: Ids; devices: Id
 
 /**
  * Writes the plan in one transaction, upserting every record by legacy ID.
- * An imported service keeps its number and public token; a new one gets the
- * next number of its year, so numbers follow the plan's date order and the
- * counters end past them. Its attached devices, lines and legacy remarks are
- * replaced by the legacy ones; staff notes and status changes stay.
+ * New records are created a table at a time, so a first import is a few
+ * dozen queries however large the export (production's database is far
+ * enough away that one query per record outlasts the timeout). An imported
+ * service keeps its number and public token; new ones are numbered in the
+ * plan's date order from their year's counter, so the counters end past them.
+ * Attached devices, lines and legacy remarks are replaced by the legacy ones;
+ * staff notes and status changes stay.
  */
 export async function applyImportPlan(plan: ImportPlan) {
   await prisma.$transaction(
     async (tx) => {
-      const ids = { customers: new Map(), actions: new Map(), devices: new Map() } satisfies Record<
-        string,
-        Ids
-      >;
-
-      for (const { legacyId, ...data } of plan.customers) {
-        const { id } = await tx.customer.upsert({
-          where: { legacyId },
-          create: { legacyId, ...data },
-          update: data,
-          select: { id: true },
-        });
-        ids.customers.set(legacyId, id);
+      const customers = assignIds(plan.customers, await tx.customer.findMany(importedOnly));
+      await tx.customer.createMany({ data: customers.created });
+      for (const { id, ...data } of customers.updated) {
+        await tx.customer.update({ where: { id }, data });
       }
 
-      for (const { legacyId, ...data } of plan.actions) {
-        const { id } = await tx.action.upsert({
-          where: { legacyId },
-          create: { legacyId, ...data },
-          update: data,
-          select: { id: true },
-        });
-        ids.actions.set(legacyId, id);
+      const actions = assignIds(plan.actions, await tx.action.findMany(importedOnly));
+      await tx.action.createMany({ data: actions.created });
+      for (const { id, ...data } of actions.updated) {
+        await tx.action.update({ where: { id }, data });
       }
 
-      for (const { legacyId, ownerLegacyId, ...rest } of plan.devices) {
-        const data = {
-          ...rest,
-          ownerId: ownerLegacyId ? lookup(ids.customers, ownerLegacyId) : null,
-        };
-        const { id } = await tx.device.upsert({
-          where: { legacyId },
-          create: { legacyId, ...data },
-          update: data,
-          select: { id: true },
-        });
-        ids.devices.set(legacyId, id);
+      const devices = assignIds(
+        plan.devices.map(({ ownerLegacyId, ...device }) => ({
+          ...device,
+          ownerId: ownerLegacyId ? lookup(customers.ids, ownerLegacyId) : null,
+        })),
+        await tx.device.findMany(importedOnly),
+      );
+      await tx.device.createMany({ data: devices.created });
+      for (const { id, ...data } of devices.updated) {
+        await tx.device.update({ where: { id }, data });
       }
 
-      for (const service of plan.services) {
-        const { devices, lines, log, ...data } = serviceData(service, ids);
-        const existing = await tx.service.findUnique({
-          where: { legacyId: service.legacyId },
-          select: { id: true },
-        });
+      const ids = { customers: customers.ids, actions: actions.ids, devices: devices.ids };
+      const services = assignIds(plan.services, await tx.service.findMany(importedOnly));
 
-        if (existing) {
-          await tx.service.update({
-            where: { id: existing.id },
-            data: {
-              ...data,
-              devices: { deleteMany: {}, create: devices },
-              lines: { deleteMany: {}, create: lines },
-              log: { deleteMany: { type: "LEGACY_REMARK" }, create: log },
-            },
-          });
-        } else {
-          const year = data.date.getUTCFullYear();
-          await tx.service.create({
-            data: {
-              ...data,
-              legacyId: service.legacyId,
-              year,
-              sequence: await nextSequence(tx, year),
-              publicToken: newPublicToken(),
-              devices: { create: devices },
-              lines: { create: lines },
-              log: { create: log },
-            },
-          });
-        }
+      const updatedIds = services.updated.map(({ id }) => id);
+      for (const service of services.updated) {
+        await tx.service.update({ where: { id: service.id }, data: serviceData(service, ids) });
       }
+      await tx.serviceDevice.deleteMany({ where: { serviceId: { in: updatedIds } } });
+      await tx.serviceLine.deleteMany({ where: { serviceId: { in: updatedIds } } });
+      await tx.serviceLogEntry.deleteMany({
+        where: { serviceId: { in: updatedIds }, type: "LEGACY_REMARK" },
+      });
+
+      const created = services.created.map((service) => ({
+        id: service.id,
+        legacyId: service.legacyId,
+        ...serviceData(service, ids),
+      }));
+      const nextSequence = new Map<number, number>();
+      for (const { date } of created) {
+        const year = date.getUTCFullYear();
+        nextSequence.set(year, (nextSequence.get(year) ?? 0) + 1);
+      }
+      for (const [year, count] of nextSequence) {
+        nextSequence.set(year, await reserveSequences(tx, year, count));
+      }
+      await tx.service.createMany({
+        data: created.map((service) => {
+          const year = service.date.getUTCFullYear();
+          const sequence = nextSequence.get(year)!;
+          nextSequence.set(year, sequence + 1);
+          return { ...service, year, sequence, publicToken: newPublicToken() };
+        }),
+      });
+
+      const children = [...services.updated, ...services.created].map((service) =>
+        serviceChildren(service.id, service, ids),
+      );
+      await tx.serviceDevice.createMany({ data: children.flatMap(({ devices }) => devices) });
+      await tx.serviceLine.createMany({ data: children.flatMap(({ lines }) => lines) });
+      await tx.serviceLogEntry.createMany({ data: children.flatMap(({ log }) => log) });
     },
     { timeout: TRANSACTION_TIMEOUT_MS, maxWait: TRANSACTION_TIMEOUT_MS },
   );

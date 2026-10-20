@@ -12,10 +12,15 @@ export function newPublicToken() {
  * never get the same number.
  */
 export async function nextSequence(tx: Prisma.TransactionClient, year: number) {
+  return reserveSequences(tx, year, 1);
+}
+
+/** Reserves `count` consecutive sequence numbers of `year` in one query, returning the first. */
+export async function reserveSequences(tx: Prisma.TransactionClient, year: number, count: number) {
   const [{ last }] = await tx.$queryRaw<{ last: number }[]>`
-    INSERT INTO "service_number_counter" ("year", "last") VALUES (${year}, 1)
-    ON CONFLICT ("year") DO UPDATE SET "last" = "service_number_counter"."last" + 1
+    INSERT INTO "service_number_counter" ("year", "last") VALUES (${year}, ${count})
+    ON CONFLICT ("year") DO UPDATE SET "last" = "service_number_counter"."last" + ${count}
     RETURNING "last"
   `;
-  return last;
+  return last - count + 1;
 }

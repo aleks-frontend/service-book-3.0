@@ -219,6 +219,45 @@ describe("legacy import", () => {
     ]);
   });
 
+  it("refreshes records whose export changed when run again", async () => {
+    const { agent } = await authenticatedAgent();
+    await importLegacy(fixture, { dryRun: false });
+
+    const changed = structuredClone(fixture) as {
+      ssot: Record<string, Record<string, Record<string, unknown>>>;
+    };
+    const { customers, actions, devices, services } = changed.ssot;
+    customers["1570000000001"].name = "Petar P. Petrović";
+    actions["1570000000101"].price = 1200;
+    devices["1570000000201"].serial = "R58M999";
+    Object.assign(services["1735800000000"], {
+      description: "Razbijen ekran i kamera",
+      status: "completed",
+      remark: "Klijent javio da kamera ne radi",
+      actions: [{ rowId: 1, actionId: "1570000000101", quantity: 2, price: 1200 }],
+    });
+    await importLegacy(changed, { dryRun: false });
+
+    expect(await counts(agent)).toEqual({ customers: 4, devices: 7, actions: 4, services: 5 });
+    const service = await findService(agent, "2025-0001");
+    expect(service).toMatchObject({
+      description: "Razbijen ekran i kamera",
+      status: "COMPLETED",
+      customer: { name: "Petar P. Petrović" },
+      devices: [{ serialNumber: "R58M999" }],
+      total: 2400,
+    });
+    expect(
+      (await get(agent, `/api/services/${service.id}/log`)).map(
+        ({ text }: { text: string }) => text,
+      ),
+    ).toEqual(["Klijent javio da kamera ne radi"]);
+    const action = (await get(agent, "/api/actions")).find(
+      ({ name }: { name: string }) => name === "Dijagnostika",
+    );
+    expect(action.price).toBe(1200);
+  });
+
   it("lets services created after the import continue each year's numbering", async () => {
     const { agent } = await authenticatedAgent();
     await importLegacy(fixture, { dryRun: false });
