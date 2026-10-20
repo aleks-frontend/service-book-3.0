@@ -8,6 +8,7 @@ import {
 } from "@servicebook/schemas";
 import { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma.js";
+import { findCustomerIdsByPhone, isPhoneTerm } from "../lib/phoneSearch.js";
 import { findServiceHistory } from "../lib/serviceRows.js";
 import {
   hideLegacyId,
@@ -30,11 +31,16 @@ customersRouter.get("/", async (req, res) => {
   }
 
   const { page, pageSize, search, sortDir } = parsed.data;
+  // Prisma can't compare phones by their digits, so those matches come back as ids.
+  const phoneMatches = search && isPhoneTerm(search) ? await findCustomerIdsByPhone(search) : [];
   const where: Prisma.CustomerWhereInput = search
     ? {
-        OR: (["name", "phone", "email"] as const).map((field) => ({
-          [field]: { contains: search, mode: "insensitive" },
-        })),
+        OR: [
+          ...(["name", "phone", "email"] as const).map((field) => ({
+            [field]: { contains: search, mode: "insensitive" as const },
+          })),
+          { id: { in: phoneMatches } },
+        ],
       }
     : {};
 

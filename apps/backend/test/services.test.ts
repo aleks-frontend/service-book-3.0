@@ -547,6 +547,7 @@ describe("services: search, status filter and sort", () => {
     expect(await listed(agent, { search: "0611112233" })).toEqual(["2026-0001", "2025-0001"]);
     expect(await listed(agent, { search: "061-111-2233" })).toEqual(["2026-0001", "2025-0001"]);
     expect(await listed(agent, { search: "062222" })).toEqual(["2026-0002"]);
+    expect(await listed(agent, { search: "+381611112233" })).toEqual(["2026-0001", "2025-0001"]);
   });
 
   it("searches the names of attached devices, manufacturer and model alike", async () => {

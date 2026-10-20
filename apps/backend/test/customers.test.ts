@@ -22,6 +22,10 @@ async function createNumberedCustomers(agent: TestAgent, count: number) {
   }
 }
 
+function searchCustomers(agent: TestAgent, term: string) {
+  return agent.get(`/api/customers?search=${encodeURIComponent(term)}`);
+}
+
 function names(response: { body: { items: { name: string }[] } }) {
   return response.body.items.map(({ name }) => name);
 }
@@ -265,6 +269,55 @@ describe("customers: paged list", () => {
     expect(names(byPhone)).toEqual(["Ana Kovač"]);
     expect(names(byEmail)).toEqual(["Servis Plus d.o.o."]);
     expect(noMatch.body).toMatchObject({ items: [], total: 0 });
+  });
+
+  it("finds a +381 phone by its digits, with or without the country code", async () => {
+    const { agent } = await authenticatedAgent();
+    await agent.post("/api/customers").send(MARKO);
+    await agent.post("/api/customers").send({ name: "Servis Plus d.o.o.", phone: "024555666" });
+
+    for (const term of ["0641234567", "064 123", "64123", "+38164123"]) {
+      expect(names(await searchCustomers(agent, term)), term).toEqual(["Marko Marković"]);
+    }
+    expect(names(await searchCustomers(agent, "065 123"))).toEqual([]);
+  });
+
+  it("finds a national phone by its digits, ignoring separators and matching +381", async () => {
+    const { agent } = await authenticatedAgent();
+    await agent.post("/api/customers").send({ name: "Ana Kovač", phone: "064/123-456" });
+    await agent.post("/api/customers").send({ name: "Servis Plus d.o.o.", phone: "024555666" });
+
+    for (const term of ["064123456", "+38164123456"]) {
+      expect(names(await searchCustomers(agent, term)), term).toEqual(["Ana Kovač"]);
+    }
+  });
+
+  it("reads a +381 term as the start of a number, not anywhere in it", async () => {
+    const { agent } = await authenticatedAgent();
+    await agent.post("/api/customers").send({ name: "Ana Kovač", phone: "064 1206 333" });
+    await agent.post("/api/customers").send({ name: "Bojan Ilić", phone: "011 333 0644" });
+
+    expect(names(await searchCustomers(agent, "+3816"))).toEqual(["Ana Kovač"]);
+    expect(names(await searchCustomers(agent, "+381 64 1206"))).toEqual(["Ana Kovač"]);
+  });
+
+  it("leaves stored phones as entered when searching by digits", async () => {
+    const { agent } = await authenticatedAgent();
+    await agent.post("/api/customers").send(MARKO);
+
+    const response = await searchCustomers(agent, "0641234567");
+
+    expect(response.body.items[0].phone).toBe("+381 64 123 4567");
+  });
+
+  it("does not match phones by the digits of a name search", async () => {
+    const { agent } = await authenticatedAgent();
+    await agent.post("/api/customers").send({ name: "Customer 01", phone: "0600000099" });
+    await agent.post("/api/customers").send({ name: "Ana Kovač", phone: "0601000000" });
+
+    const response = await searchCustomers(agent, "customer 01");
+
+    expect(names(response)).toEqual(["Customer 01"]);
   });
 
   it("pages through search results with the filtered total", async () => {

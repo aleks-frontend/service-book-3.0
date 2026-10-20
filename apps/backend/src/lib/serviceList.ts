@@ -7,6 +7,7 @@ import {
   type SortDir,
 } from "@servicebook/schemas";
 import { Prisma } from "../generated/prisma/client.js";
+import { isPhoneTerm, matchesPhoneDigits } from "./phoneSearch.js";
 import { prisma } from "./prisma.js";
 
 /** What one page of the services list is drawn from, already validated. */
@@ -105,17 +106,14 @@ function afterCursor(columns: SortColumn[], values: CursorValue[]) {
 /** The service number as shown, `YYYY-NNNN`; see `formatServiceNumber`. */
 const serviceNumber = Prisma.sql`(s."year"::text || '-' || lpad(s."sequence"::text, greatest(4, length(s."sequence"::text)), '0'))`;
 
-/** A search word that could be part of a phone number: digits and the usual separators. */
-const PHONE_WORD = /^[\d+()./-]*\d[\d+()./-]*$/;
-
 /**
  * One search word in any searched field; `%` and `_` in it are taken
  * literally. A phone matches on its digits alone, however either was typed.
  */
 function matchesWord(word: string) {
   const pattern = `%${word.replace(/[\\%_]/g, "\\$&")}%`;
-  const phoneDigits = PHONE_WORD.test(word)
-    ? Prisma.sql`OR regexp_replace(c."phone", '[^0-9]', '', 'g') LIKE ${`%${word.replace(/\D/g, "")}%`}`
+  const phoneDigits = isPhoneTerm(word)
+    ? Prisma.sql`OR ${matchesPhoneDigits(Prisma.sql`c."phone"`, word)}`
     : Prisma.empty;
   return Prisma.sql`(
     ${serviceNumber} ILIKE ${pattern}
