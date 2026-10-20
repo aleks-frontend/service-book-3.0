@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { LoadingRegion } from "@/components/LoadingRegion";
+import { ChartSkeleton, Skeleton } from "@/components/Skeletons";
 import { StatusBadge } from "@/components/StatusBadge";
 
 const BUCKET_LABELS: Record<EarningsBucket, string> = {
@@ -59,7 +60,7 @@ function EarningsCard() {
 
   const query = earningsQuery(from, to, bucket);
   const daysDisabled = !query || tooManyDays(from, to);
-  const { data, isPlaceholderData, isError } = useEarningsQuery(query);
+  const { data, isPending, isPlaceholderData, isError } = useEarningsQuery(query);
 
   return (
     <section aria-labelledby={id} className="space-y-4 rounded-md border bg-card p-4">
@@ -67,12 +68,16 @@ function EarningsCard() {
         <h2 id={id} className="text-lg font-semibold">
           {t("Earnings")}
         </h2>
-        {query && data && (
-          <p className="text-sm text-muted-foreground">
+        {query && !isError && (
+          <p className="flex items-baseline gap-1 text-sm text-muted-foreground">
             {t("Total")}:{" "}
-            <span className="text-xl font-semibold tabular-nums text-foreground">
-              {formatRsd(data.earnings, i18n.language)}
-            </span>
+            {data ? (
+              <span className="text-xl font-semibold tabular-nums text-foreground">
+                {formatRsd(data.earnings, i18n.language)}
+              </span>
+            ) : (
+              <Skeleton className="h-6 w-32 self-center" />
+            )}
           </p>
         )}
       </div>
@@ -135,39 +140,43 @@ function EarningsCard() {
       ) : (
         <LoadingRegion refreshing={isPlaceholderData}>
           <figure aria-label={t("Earnings chart")} className="h-72">
-            {data && (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data.buckets} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
-                  <CartesianGrid vertical={false} className="stroke-border" />
-                  <XAxis
-                    dataKey="period"
-                    tickFormatter={(period: string) => formatPeriod(period, i18n.language)}
-                    tickLine={false}
-                    fontSize={12}
-                  />
-                  <YAxis
-                    tickFormatter={(amount: number) => formatAmount(amount, i18n.language)}
-                    tickLine={false}
-                    axisLine={false}
-                    width={80}
-                    fontSize={12}
-                  />
-                  <Tooltip
-                    labelFormatter={(period) => formatPeriod(String(period), i18n.language)}
-                    formatter={(earnings) => [
-                      formatRsd(Number(earnings), i18n.language),
-                      t("Earnings"),
-                    ]}
-                    cursor={{ className: "fill-muted" }}
-                  />
-                  <Bar
-                    dataKey="earnings"
-                    fill="hsl(var(--primary))"
-                    radius={[4, 4, 0, 0]}
-                    maxBarSize={64}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+            {isPending ? (
+              <ChartSkeleton />
+            ) : (
+              data && (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={data.buckets} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
+                    <CartesianGrid vertical={false} className="stroke-border" />
+                    <XAxis
+                      dataKey="period"
+                      tickFormatter={(period: string) => formatPeriod(period, i18n.language)}
+                      tickLine={false}
+                      fontSize={12}
+                    />
+                    <YAxis
+                      tickFormatter={(amount: number) => formatAmount(amount, i18n.language)}
+                      tickLine={false}
+                      axisLine={false}
+                      width={80}
+                      fontSize={12}
+                    />
+                    <Tooltip
+                      labelFormatter={(period) => formatPeriod(String(period), i18n.language)}
+                      formatter={(earnings) => [
+                        formatRsd(Number(earnings), i18n.language),
+                        t("Earnings"),
+                      ]}
+                      cursor={{ className: "fill-muted" }}
+                    />
+                    <Bar
+                      dataKey="earnings"
+                      fill="hsl(var(--primary))"
+                      radius={[4, 4, 0, 0]}
+                      maxBarSize={64}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              )
             )}
           </figure>
         </LoadingRegion>
@@ -179,7 +188,7 @@ function EarningsCard() {
 function StatusCountsCard() {
   const { t } = useTranslation();
   const id = useId();
-  const { data, isError } = useStatusCountsQuery();
+  const { data, isPending, isError } = useStatusCountsQuery();
 
   return (
     <section aria-labelledby={id} className="space-y-4 rounded-md border bg-card p-4">
@@ -189,13 +198,20 @@ function StatusCountsCard() {
       {isError ? (
         <p className="text-sm text-destructive">{t("Could not load the status counts.")}</p>
       ) : (
-        <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <dl aria-busy={isPending} className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {STATUSES.map((status) => (
             <div key={status} className="space-y-1 rounded-md border p-3">
               <dt>
                 <StatusBadge status={status} />
               </dt>
-              <dd className="text-2xl font-semibold tabular-nums">{data?.[status] ?? "–"}</dd>
+              <dd className="text-2xl font-semibold tabular-nums">
+                {data ? (
+                  data[status]
+                ) : (
+                  // Inline, so the line keeps the number's height and the card doesn't grow.
+                  <Skeleton className="inline-block h-6 w-12 align-middle" />
+                )}
+              </dd>
             </div>
           ))}
         </dl>
