@@ -31,7 +31,11 @@ npm run import:legacy -w @servicebook/backend -- <export.json> --dry-run   # rep
 npm run import:legacy -w @servicebook/backend -- <export.json>             # one transaction
 ```
 
+Instead of a file, the import also takes the database's REST URL (`https://servicebook-fa47f.firebaseio.com/.json`), readable until its rules are locked.
+
 The report lists the counts, every anomaly (imported, but not quite as it was) and every skipped record. Re-running is safe: records are upserted by legacy ID, imported services keep their numbers and public tokens, and their attached devices, lines and legacy remarks are refreshed from the export. Never commit a real export; the tests use the anonymised `apps/backend/test/fixtures/legacy/firebase-export.json`.
+
+The production cutover (#18) is a wizard: `scripts/cutover.sh` walks through freezing the old app, importing into production, the spot-checks and locking Firebase.
 
 ## Scripts
 

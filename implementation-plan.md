@@ -72,6 +72,8 @@ Empty-string arrays are treated as empty. Public tokens are generated freshly. T
 
 ### Cutover checklist (#18)
 
+`scripts/cutover.sh` walks through these steps.
+
 1. Announce a cutover window and freeze writes in the old app.
 2. Take the final Firebase export, then run the import in dry-run against production and review the report.
 3. Run the real import, then spot-check counts, sample services and totals against the old app.
