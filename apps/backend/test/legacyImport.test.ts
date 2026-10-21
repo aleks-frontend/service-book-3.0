@@ -25,7 +25,7 @@ async function counts(agent: TestAgent) {
   return {
     customers: customers.total,
     devices: devices.total,
-    actions: actions.length,
+    actions: actions.total,
     services: services.items.length,
   };
 }
@@ -252,10 +252,8 @@ describe("legacy import", () => {
         ({ text }: { text: string }) => text,
       ),
     ).toEqual(["Klijent javio da kamera ne radi"]);
-    const action = (await get(agent, "/api/actions")).find(
-      ({ name }: { name: string }) => name === "Dijagnostika",
-    );
-    expect(action.price).toBe(1200);
+    const { items: diagnostics } = await get(agent, "/api/actions?search=Dijagnostika");
+    expect(diagnostics).toEqual([expect.objectContaining({ name: "Dijagnostika", price: 1200 })]);
   });
 
   it("lets services created after the import continue each year's numbering", async () => {

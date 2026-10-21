@@ -3,14 +3,14 @@ import { useTranslation } from "react-i18next";
 import {
   flexRender,
   getCoreRowModel,
-  getFilteredRowModel,
   useReactTable,
   type ColumnDef,
   type OnChangeFn,
   type RowSelectionState,
+  type SortingState,
 } from "@tanstack/react-table";
-import { Pencil, Trash2 } from "lucide-react";
-import type { Action } from "@servicebook/schemas";
+import { ArrowDown, ArrowUp, Pencil, Trash2 } from "lucide-react";
+import type { Action, SortDir } from "@servicebook/schemas";
 import { formatRsd } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { SELECT_COLUMN_CLASS, selectColumn } from "./selectColumn";
@@ -19,51 +19,58 @@ import { Button } from "./ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 
 type ActionsTableProps = {
-  /** The whole price list, already sorted by name. */
   actions: Action[];
-  /** Filters the list by name, ignoring case. */
-  search: string;
+  sortDir: SortDir;
+  onSortDirChange: (sortDir: SortDir) => void;
   /** The checked rows, keyed by action id. */
   rowSelection: RowSelectionState;
   onRowSelectionChange: OnChangeFn<RowSelectionState>;
   onEdit: (action: Action) => void;
   onDelete: (action: Action) => void;
-  /** The price list is still loading: placeholder rows show instead of the empty message. */
+  /** The first page is still loading: placeholder rows show instead of the empty message. */
   loading: boolean;
   emptyMessage: string;
-  noMatchesMessage: string;
 };
 
 /**
- * The price list. Unlike customers, it is short enough to search client-side;
- * the header checkbox selects the rows matching the search.
+ * One page of the price list. Paging, search and sorting happen on the server;
+ * the header checkbox selects the rows on this page only.
  */
 export function ActionsTable({
   actions,
-  search,
+  sortDir,
+  onSortDirChange,
   rowSelection,
   onRowSelectionChange,
   onEdit,
   onDelete,
   loading,
   emptyMessage,
-  noMatchesMessage,
 }: ActionsTableProps) {
   const { t, i18n } = useTranslation();
 
   const columns = useMemo<ColumnDef<Action>[]>(
     () => [
-      {
-        ...selectColumn<Action>(t, {
-          name: (action) => action.name,
-          selectAllLabel: t("Select all shown"),
-        }),
-        enableGlobalFilter: false,
-      },
+      selectColumn<Action>(t, {
+        name: (action) => action.name,
+        selectAllLabel: t("Select all on this page"),
+      }),
       {
         accessorKey: "name",
-        // A thing's name, which Serbian words differently from a person's.
-        header: t("Name", { context: "action" }),
+        header: ({ column }) => {
+          const SortIcon = column.getIsSorted() === "desc" ? ArrowDown : ArrowUp;
+          return (
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 hover:text-foreground"
+              onClick={() => column.toggleSorting()}
+            >
+              {/* A thing's name, which Serbian words differently from a person's. */}
+              {t("Name", { context: "action" })}
+              <SortIcon className="h-3.5 w-3.5" aria-hidden />
+            </button>
+          );
+        },
         cell: ({ getValue }) => <span className="font-medium">{getValue<string>()}</span>,
       },
       {
@@ -74,7 +81,7 @@ export function ActionsTable({
             {formatRsd(getValue<number>(), i18n.language)}
           </div>
         ),
-        enableGlobalFilter: false,
+        enableSorting: false,
       },
       {
         id: "rowActions",
@@ -106,15 +113,22 @@ export function ActionsTable({
     [t, i18n.language, onEdit, onDelete],
   );
 
+  const sorting: SortingState = [{ id: "name", desc: sortDir === "desc" }];
+
   const table = useReactTable({
     data: actions,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     getRowId: (action) => action.id,
-    globalFilterFn: "includesString",
-    state: { globalFilter: search.trim(), rowSelection },
+    manualSorting: true,
+    manualPagination: true,
+    enableSortingRemoval: false,
+    state: { sorting, rowSelection },
     onRowSelectionChange,
+    onSortingChange: (updater) => {
+      const next = typeof updater === "function" ? updater(sorting) : updater;
+      onSortDirChange(next[0]?.desc ? "desc" : "asc");
+    },
   });
 
   const rows = table.getRowModel().rows;
@@ -129,6 +143,13 @@ export function ActionsTable({
                 <TableHead
                   key={header.id}
                   className={cn(header.column.id === "select" && SELECT_COLUMN_CLASS)}
+                  aria-sort={
+                    header.column.getIsSorted()
+                      ? header.column.getIsSorted() === "desc"
+                        ? "descending"
+                        : "ascending"
+                      : undefined
+                  }
                 >
                   {flexRender(header.column.columnDef.header, header.getContext())}
                 </TableHead>
@@ -145,7 +166,7 @@ export function ActionsTable({
                 colSpan={columns.length}
                 className="h-24 text-center text-muted-foreground"
               >
-                {actions.length === 0 ? emptyMessage : noMatchesMessage}
+                {emptyMessage}
               </TableCell>
             </TableRow>
           ) : (

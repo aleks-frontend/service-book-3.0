@@ -19,6 +19,14 @@ async function createNumberedActions(agent: TestAgent, count: number) {
   return ids;
 }
 
+function names(response: { body: { items: { name: string }[] } }) {
+  return response.body.items.map(({ name }) => name);
+}
+
+function ids(response: { body: { items: { id: string }[] } }) {
+  return response.body.items.map(({ id }) => id);
+}
+
 describe("actions: create and read", () => {
   it("is only reachable by a logged-in staff member", async () => {
     const response = await request(createApp()).get("/api/actions");
@@ -91,32 +99,133 @@ describe("actions: create and read", () => {
   });
 });
 
-describe("actions: full list", () => {
-  it("returns every action, sorted by name, without paging", async () => {
+describe("actions: paged list", () => {
+  it("returns the first 10 actions by name with the total count", async () => {
     const { agent } = await authenticatedAgent();
-    // More than the largest page size, so a paged response would cut it short.
-    for (let n = 60; n >= 1; n--) {
-      await agent
-        .post("/api/actions")
-        .send({ name: `Action ${String(n).padStart(2, "0")}`, price: n * 100 });
-    }
+    await createNumberedActions(agent, 12);
 
     const response = await agent.get("/api/actions");
 
     expect(response.status).toBe(200);
-    expect(response.body).toHaveLength(60);
-    expect(response.body[0]).toMatchObject({ name: "Action 01", price: 100 });
-    expect(response.body[59]).toMatchObject({ name: "Action 60", price: 6000 });
-    expect(response.body[0]).not.toHaveProperty("legacyId");
+    expect(response.body).toMatchObject({ total: 12, page: 1, pageSize: 10 });
+    expect(names(response)).toEqual([
+      "Action 01",
+      "Action 02",
+      "Action 03",
+      "Action 04",
+      "Action 05",
+      "Action 06",
+      "Action 07",
+      "Action 08",
+      "Action 09",
+      "Action 10",
+    ]);
+    expect(response.body.items[0]).not.toHaveProperty("legacyId");
   });
 
-  it("returns an empty list when there are no actions", async () => {
+  it("returns later pages by offset", async () => {
+    const { agent } = await authenticatedAgent();
+    await createNumberedActions(agent, 12);
+
+    const response = await agent.get("/api/actions?page=2&pageSize=10");
+
+    expect(response.body).toMatchObject({ total: 12, page: 2, pageSize: 10 });
+    expect(names(response)).toEqual(["Action 11", "Action 12"]);
+  });
+
+  it("supports 25 and 50 rows per page", async () => {
+    const { agent } = await authenticatedAgent();
+    await createNumberedActions(agent, 55);
+
+    const page25 = await agent.get("/api/actions?pageSize=25&page=3");
+    const page50 = await agent.get("/api/actions?pageSize=50");
+
+    expect(page25.body).toMatchObject({ total: 55, page: 3, pageSize: 25 });
+    expect(names(page25)).toEqual([
+      "Action 51",
+      "Action 52",
+      "Action 53",
+      "Action 54",
+      "Action 55",
+    ]);
+    expect(page50.body.items).toHaveLength(50);
+    expect(names(page50).at(-1)).toBe("Action 50");
+  });
+
+  it("rejects other page sizes and invalid pages with 400", async () => {
+    const { agent } = await authenticatedAgent();
+
+    expect((await agent.get("/api/actions?pageSize=20")).status).toBe(400);
+    expect((await agent.get("/api/actions?pageSize=1000")).status).toBe(400);
+    expect((await agent.get("/api/actions?page=0")).status).toBe(400);
+    expect((await agent.get("/api/actions?page=abc")).status).toBe(400);
+  });
+
+  it("sorts by name in either direction, breaking ties by id", async () => {
+    const { agent } = await authenticatedAgent();
+    await createNumberedActions(agent, 3);
+    const twins = await Promise.all(
+      [1000, 2000].map(async (price) => {
+        const { body } = await agent.post("/api/actions").send({ name: "Cleaning", price });
+        return body.id as string;
+      }),
+    );
+    const twinsById = [...twins].sort();
+
+    const ascending = await agent.get("/api/actions?sortDir=asc");
+    const descending = await agent.get("/api/actions?sortDir=desc");
+
+    expect(names(ascending)).toEqual([
+      "Action 01",
+      "Action 02",
+      "Action 03",
+      "Cleaning",
+      "Cleaning",
+    ]);
+    expect(names(descending)).toEqual([
+      "Cleaning",
+      "Cleaning",
+      "Action 03",
+      "Action 02",
+      "Action 01",
+    ]);
+    // Repeated names keep the same order either way, so pages stay stable.
+    expect(ids(ascending).slice(3)).toEqual(twinsById);
+    expect(ids(descending).slice(0, 2)).toEqual(twinsById);
+  });
+
+  it("searches by part of the name, ignoring case", async () => {
+    const { agent } = await authenticatedAgent();
+    await agent.post("/api/actions").send(SCREEN_REPLACEMENT);
+    await agent.post("/api/actions").send({ name: "Screen protector", price: 800 });
+    await agent.post("/api/actions").send({ name: "Cleaning", price: 1000 });
+
+    const response = await agent.get("/api/actions?search=SCREEN");
+    const middle = await agent.get("/api/actions?search=protect");
+
+    expect(response.body.total).toBe(2);
+    expect(names(response)).toEqual(["Screen protector", "Screen replacement"]);
+    expect(names(middle)).toEqual(["Screen protector"]);
+  });
+
+  it("pages through search results with the filtered total", async () => {
+    const { agent } = await authenticatedAgent();
+    await createNumberedActions(agent, 12);
+    await agent.post("/api/actions").send({ name: "Cleaning", price: 1000 });
+
+    const response = await agent.get("/api/actions?search=action&page=2");
+
+    expect(response.body).toMatchObject({ total: 12, page: 2 });
+    expect(names(response)).toEqual(["Action 11", "Action 12"]);
+  });
+
+  it("returns an empty page when there are no actions", async () => {
     const { agent } = await authenticatedAgent();
 
     const response = await agent.get("/api/actions");
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual([]);
+    expect(response.body).toEqual({ items: [], total: 0, page: 1, pageSize: 10 });
   });
 });
 
@@ -175,7 +284,7 @@ describe("actions: update and delete", () => {
     expect(deleted.status).toBe(204);
     expect((await agent.get(`/api/actions/${action.id}`)).status).toBe(404);
     const list = await agent.get("/api/actions");
-    expect(list.body.map(({ name }: { name: string }) => name)).toEqual(["Cleaning"]);
+    expect(names(list)).toEqual(["Cleaning"]);
   });
 
   it("returns 404 when deleting an unknown action", async () => {
@@ -207,7 +316,7 @@ describe("actions: bulk delete", () => {
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ deletedIds: [first, second], inUseIds: [] });
     const list = await agent.get("/api/actions");
-    expect(list.body.map(({ id }: { id: string }) => id)).toEqual([kept]);
+    expect(ids(list)).toEqual([kept]);
   });
 
   it("skips ids that name no action", async () => {

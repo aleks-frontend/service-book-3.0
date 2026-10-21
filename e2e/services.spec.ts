@@ -136,6 +136,11 @@ test("a work line starts at the action's price, and the total follows quantity a
     (await page.request.post(path, { data })).json();
   const customer = await post("/api/customers", { name: "Milan Milić", phone: "0634" });
   const device = await post("/api/devices", { model: "Pixel 7", ownerId: customer.id });
+  // More actions sorting before it than the picker shows at once, so typing has
+  // to find it on the server.
+  for (let n = 1; n <= 11; n++) {
+    await post("/api/actions", { name: `Antena ${n}`, price: 100 });
+  }
   await post("/api/actions", { name: "Zamena ekrana", price: 4500 });
   const service = await post("/api/services", {
     customerId: customer.id,
@@ -235,7 +240,9 @@ test("an action or device missing from the pickers is created from the add-line 
   await expect(drawer.getByTestId("service-line")).toContainText("USB-C punjač");
   await expect(drawer.getByTestId("service-total")).toHaveText("900 RSD");
   // The action is in the price list for the next service.
-  const actions = await (await page.request.get("/api/actions")).json();
+  const { items: actions } = await (
+    await page.request.get("/api/actions?search=Čišćenje tastature")
+  ).json();
   expect(actions).toContainEqual(
     expect.objectContaining({ name: "Čišćenje tastature", price: 1200 }),
   );

@@ -118,7 +118,6 @@
   "Devices deleted: {{count}}": "Devices deleted: {{count}}",
   "Devices deleted: {{deleted}}. Kept because they are in use: {{inUse}}.": "Devices deleted: {{deleted}}. Kept because they are in use: {{inUse}}.",
   "Could not delete the devices. Please try again.": "Could not delete the devices. Please try again.",
-  "Select all shown": "Select all shown",
   "Delete selected customers ({{count}})?": "Delete selected customers ({{count}})?",
   "These customers will be permanently deleted: {{names}}.": "These customers will be permanently deleted: {{names}}.",
   "Customers deleted: {{count}}": "Customers deleted: {{count}}",

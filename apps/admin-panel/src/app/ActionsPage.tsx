@@ -1,7 +1,7 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus } from "lucide-react";
-import type { Action } from "@servicebook/schemas";
+import type { Action, ActionListQuery, PageSize, SortDir } from "@servicebook/schemas";
 import {
   useActionsQuery,
   useBulkDeleteActionsMutation,
@@ -9,12 +9,17 @@ import {
 } from "@/lib/actions";
 import { namesSummary } from "@/lib/bulkDelete";
 import { useScopedRowSelection } from "@/lib/useScopedRowSelection";
+import { useSearching } from "@/lib/useSearching";
 import { Button } from "@/components/ui/button";
 import { ActionFormDialog } from "@/components/ActionFormDialog";
 import { ActionsTable } from "@/components/ActionsTable";
 import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
+import { LoadingRegion } from "@/components/LoadingRegion";
+import { Pagination } from "@/components/Pagination";
 import { SearchInput } from "@/components/SearchInput";
 import { SelectionBar } from "@/components/SelectionBar";
+
+const SEARCH_DEBOUNCE_MS = 300;
 
 /** The create/edit dialog is either closed, creating, or editing one action. */
 type FormState = { open: false } | { open: true; action?: Action };
@@ -22,21 +27,44 @@ type FormState = { open: false } | { open: true; action?: Action };
 export function ActionsPage() {
   const { t } = useTranslation();
 
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<PageSize>(10);
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+
   const [form, setForm] = useState<FormState>({ open: false });
   const [actionToDelete, setActionToDelete] = useState<Action | null>(null);
   const [confirmingBulkDelete, setConfirmingBulkDelete] = useState(false);
 
-  const { data, isPending, isError } = useActionsQuery();
+  // A new search starts from the first page.
+  const searchTyped = searchInput.trim();
+  useEffect(() => {
+    if (searchTyped === search) return;
+    const timeout = setTimeout(() => {
+      setSearch(searchTyped);
+      setPage(1);
+    }, SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timeout);
+  }, [searchTyped, search]);
+
+  const query: ActionListQuery = { search, page, pageSize, sortDir };
+  const { data, isPending, isPlaceholderData, isError } = useActionsQuery(query);
+  const searching = useSearching(searchTyped, search, isPlaceholderData);
   const deleteAction = useDeleteActionMutation();
   const bulkDeleteActions = useBulkDeleteActionsMutation();
 
-  // Checked rows belong to the search they were checked under, so rows hidden
-  // by a new search are never deleted unseen.
+  // Checked rows belong to the page they were checked on: another page, page
+  // size, search or sort starts with nothing selected.
   const { rowSelection, onRowSelectionChange, clearSelection } = useScopedRowSelection(
-    search.trim(),
+    JSON.stringify(query),
   );
-  const selectedActions = (data ?? []).filter((action) => rowSelection[action.id]);
+  const selectedActions = (data?.items ?? []).filter((action) => rowSelection[action.id]);
+
+  // Deleting the last action on a page leaves it empty: step back a page.
+  useEffect(() => {
+    if (data && data.items.length === 0 && page > 1) setPage(page - 1);
+  }, [data, page]);
 
   const handleEdit = useCallback((action: Action) => setForm({ open: true, action }), []);
   const handleDelete = useCallback((action: Action) => setActionToDelete(action), []);
@@ -69,10 +97,11 @@ export function ActionsPage() {
       </div>
 
       <SearchInput
-        value={search}
-        onChange={setSearch}
+        value={searchInput}
+        onChange={setSearchInput}
         placeholder={t("Search by name")}
         aria-label={t("Search actions")}
+        busy={searching}
       />
 
       {isError ? (
@@ -84,16 +113,31 @@ export function ActionsPage() {
             onDelete={() => setConfirmingBulkDelete(true)}
             onClear={clearSelection}
           />
-          <ActionsTable
-            actions={data ?? []}
-            search={search}
-            rowSelection={rowSelection}
-            onRowSelectionChange={onRowSelectionChange}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            loading={isPending}
-            emptyMessage={t("No actions yet.")}
-            noMatchesMessage={t("No actions match your search.")}
+          <LoadingRegion refreshing={isPlaceholderData}>
+            <ActionsTable
+              actions={data?.items ?? []}
+              sortDir={sortDir}
+              onSortDirChange={(next) => {
+                setSortDir(next);
+                setPage(1);
+              }}
+              rowSelection={rowSelection}
+              onRowSelectionChange={onRowSelectionChange}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              loading={isPending}
+              emptyMessage={search ? t("No actions match your search.") : t("No actions yet.")}
+            />
+          </LoadingRegion>
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            total={data?.total ?? 0}
+            onPageChange={setPage}
+            onPageSizeChange={(next) => {
+              setPageSize(next);
+              setPage(1);
+            }}
           />
         </>
       )}

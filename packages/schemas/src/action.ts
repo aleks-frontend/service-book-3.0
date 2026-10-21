@@ -1,5 +1,7 @@
 import { z } from "zod";
+import { sortDirSchema } from "./fields.js";
 import { rsdAmountSchema } from "./money.js";
+import { pageQuerySchema } from "./pagination.js";
 
 /** What staff members enter when creating or editing an action. */
 export const actionInputSchema = z.object({
@@ -19,3 +21,11 @@ export const actionSchema = z.object({
 });
 
 export type Action = z.infer<typeof actionSchema>;
+
+/** `GET /api/actions`: search matches part of the name; the list is sorted by name. */
+export const actionListQuerySchema = pageQuerySchema.extend({
+  search: z.string().trim().optional(),
+  sortDir: sortDirSchema.default("asc"),
+});
+
+export type ActionListQuery = z.input<typeof actionListQuerySchema>;

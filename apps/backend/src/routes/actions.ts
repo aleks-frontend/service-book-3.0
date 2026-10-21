@@ -1,5 +1,11 @@
 import { Router } from "express";
-import { actionInputSchema, type Action } from "@servicebook/schemas";
+import {
+  actionInputSchema,
+  actionListQuerySchema,
+  type Action,
+  type Page,
+} from "@servicebook/schemas";
+import { Prisma } from "../generated/prisma/client.js";
 import { bulkDeleteHandler } from "../lib/bulkDelete.js";
 import { prisma } from "../lib/prisma.js";
 import {
@@ -15,14 +21,32 @@ export const actionsRouter = Router();
 
 const LABEL = "Action";
 
-// The price list is short, so it is sent whole and searched in the admin panel.
-actionsRouter.get("/", async (_req, res) => {
-  const actions: Action[] = await prisma.action.findMany({
-    // The id tie-break keeps the order stable when names repeat.
-    orderBy: [{ name: "asc" }, { id: "asc" }],
-    omit: hideLegacyId,
-  });
-  res.json(actions);
+actionsRouter.get("/", async (req, res) => {
+  const parsed = actionListQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid query", details: parsed.error.flatten() });
+    return;
+  }
+
+  const { page, pageSize, search, sortDir } = parsed.data;
+  const where: Prisma.ActionWhereInput = search
+    ? { name: { contains: search, mode: "insensitive" } }
+    : {};
+
+  const [items, total] = await Promise.all([
+    prisma.action.findMany({
+      where,
+      // The id tie-break keeps pages stable when names repeat.
+      orderBy: [{ name: sortDir }, { id: "asc" }],
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      omit: hideLegacyId,
+    }),
+    prisma.action.count({ where }),
+  ]);
+
+  const result: Page<Action> = { items, total, page, pageSize };
+  res.json(result);
 });
 
 actionsRouter.post("/", async (req, res) => {

@@ -1,19 +1,22 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
-import type { Action, ActionInput } from "@servicebook/schemas";
+import type { Action, ActionInput, ActionListQuery, Page } from "@servicebook/schemas";
 import { useBulkDeleteMutation } from "./bulkDelete";
-import { request, type HttpError } from "./http";
+import { request, toSearchParams, type HttpError } from "./http";
 
 const actionKeys = {
   all: ["actions"] as const,
+  list: (query: ActionListQuery) => ["actions", "list", query] as const,
 };
 
-/** The whole price list, sorted by name; searching it happens client-side. */
-export function useActionsQuery() {
+/** One page of the price list; keeps showing the previous page while the next one loads. */
+export function useActionsQuery(query: ActionListQuery, { enabled = true } = {}) {
   return useQuery({
-    queryKey: actionKeys.all,
-    queryFn: () => request<Action[]>("/actions"),
+    queryKey: actionKeys.list(query),
+    queryFn: () => request<Page<Action>>(`/actions?${toSearchParams(query)}`),
+    placeholderData: keepPreviousData,
+    enabled,
   });
 }
 
@@ -53,7 +56,7 @@ export function useDeleteActionMutation() {
   });
 }
 
-/** Deletes any number of actions, in batches; actions still in use are kept and counted. */
+/** Deletes any number of actions; actions still in use are kept and counted. */
 export function useBulkDeleteActionsMutation() {
   const { t } = useTranslation();
 

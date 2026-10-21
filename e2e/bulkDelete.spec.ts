@@ -45,27 +45,39 @@ test("customers on a page can be deleted together, keeping one who owns a device
   await expect(page.getByText("Izabrano:")).toBeHidden();
 });
 
-test("the actions matching a search can be deleted together, more than one request's worth", async ({
-  page,
-}) => {
+test("the actions on a page can be deleted together", async ({ page }) => {
   await logIn(page);
   await expect(page).toHaveURL("/services");
-  for (let n = 1; n <= 52; n++) {
-    await post(page, "/api/actions", { name: `Bulk action ${n}`, price: 100 });
+  // More than one page at the default ten rows per page.
+  for (let n = 1; n <= 12; n++) {
+    await post(page, "/api/actions", {
+      name: `Bulk action ${String(n).padStart(2, "0")}`,
+      price: 100,
+    });
   }
-  await post(page, "/api/actions", { name: "Kept cleaning", price: 100 });
 
   await page.goto("/actions");
   await page.getByLabel("Pretraga usluga").fill("Bulk action");
-  await page.getByRole("checkbox", { name: "Izaberi sve prikazane" }).check();
-  await expect(page.getByText("Izabrano: 52")).toBeVisible();
+  // The search is debounced; a new search clears the selection, so wait for it to run.
+  await expect(page.getByRole("status")).toHaveText("");
+  await expect(page.getByText("1–10 od 12")).toBeVisible();
+  const selectPage = page.getByRole("checkbox", { name: "Izaberi sve na ovoj strani" });
+  await selectPage.check();
+  await expect(page.getByText("Izabrano: 10")).toBeVisible();
 
+  // Another page starts with nothing selected.
+  await page.getByRole("button", { name: "Sledeća strana" }).click();
+  await expect(page.getByText("11–12 od 12")).toBeVisible();
+  await expect(page.getByText("Izabrano:")).toBeHidden();
+  await page.getByRole("button", { name: "Prethodna strana" }).click();
+  await expect(page.getByText("1–10 od 12")).toBeVisible();
+
+  await selectPage.check();
   await page.getByRole("button", { name: "Obriši izabrano" }).click();
-  await expect(page.getByText("i još 49", { exact: false })).toBeVisible();
-  await confirmDelete(page, "Obrisati izabrane usluge (52)?");
+  await expect(page.getByText("i još 7", { exact: false })).toBeVisible();
+  await confirmDelete(page, "Obrisati izabrane usluge (10)?");
 
-  await expect(page.getByText("Obrisano usluga: 52")).toBeVisible();
-  await page.getByLabel("Pretraga usluga").fill("");
-  await expect(page.getByRole("row", { name: /Kept cleaning/ })).toBeVisible();
-  await expect(page.getByRole("row", { name: /Bulk action/ })).toHaveCount(0);
+  await expect(page.getByText("Obrisano usluga: 10")).toBeVisible();
+  await expect(page.getByText("1–2 od 2")).toBeVisible();
+  await expect(page.getByRole("row", { name: /Bulk action 1[12]/ })).toHaveCount(2);
 });

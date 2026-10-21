@@ -118,7 +118,6 @@
   "Devices deleted: {{count}}": "Törölt eszközök: {{count}}",
   "Devices deleted: {{deleted}}. Kept because they are in use: {{inUse}}.": "Törölt eszközök: {{deleted}}. Használatban vannak, ezért megmaradtak: {{inUse}}.",
   "Could not delete the devices. Please try again.": "Az eszközök törlése nem sikerült. Próbálja újra.",
-  "Select all shown": "Az összes látható kijelölése",
   "Delete selected customers ({{count}})?": "Törli a kijelölt ügyfeleket ({{count}})?",
   "These customers will be permanently deleted: {{names}}.": "Ezek az ügyfelek véglegesen törlődnek: {{names}}.",
   "Customers deleted: {{count}}": "Törölt ügyfelek: {{count}}",
