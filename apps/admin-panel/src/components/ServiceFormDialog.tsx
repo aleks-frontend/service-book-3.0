@@ -33,9 +33,7 @@ export function ServiceFormDialog({ open, onOpenChange, service }: ServiceFormDi
   const saveService = useSaveServiceMutation();
   const intakeReceipt = useDownloadIntakeReceiptMutation();
   const formId = service ? "service-edit-form" : "service-create-form";
-  // Kept after the offer closes, so its text doesn't go blank while it animates out.
   const [created, setCreated] = useState<ServiceDetail>();
-  const [offeringReceipt, setOfferingReceipt] = useState(false);
 
   return (
     <>
@@ -55,10 +53,7 @@ export function ServiceFormDialog({ open, onOpenChange, service }: ServiceFormDi
                 {
                   onSuccess: (saved) => {
                     onOpenChange(false);
-                    if (!service) {
-                      setCreated(saved);
-                      setOfferingReceipt(true);
-                    }
+                    if (!service) setCreated(saved);
                   },
                 },
               )
@@ -78,17 +73,16 @@ export function ServiceFormDialog({ open, onOpenChange, service }: ServiceFormDi
       </Dialog>
 
       <OfferDocumentDialog
-        open={offeringReceipt}
-        onOpenChange={setOfferingReceipt}
+        service={created}
+        onClose={() => setCreated(undefined)}
         title={t("Print the intake receipt?")}
-        description={t(
-          "Service {{number}} is created. Download the intake receipt for the customer?",
-          {
-            number: created?.number ?? "",
-          },
-        )}
+        description={({ number }) =>
+          t("Service {{number}} is created. Download the intake receipt for the customer?", {
+            number,
+          })
+        }
         confirmLabel={t("Download")}
-        onConfirm={() => created && intakeReceipt.mutate(created)}
+        onConfirm={(offered) => intakeReceipt.mutate(offered)}
       />
     </>
   );

@@ -1,8 +1,30 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+import { today } from "./dates.js";
 import { dataUrl, IMAGES, readDownload } from "./documents.js";
 import { logIn } from "./logIn.js";
 
 // The UI defaults to Serbian (sr).
+
+/** Calls the API as the logged-in staff member and returns the parsed response. */
+async function send(page: Page, method: "post" | "put", path: string, data: object) {
+  const response = await page.request[method](path, { data });
+  expect(response.ok()).toBe(true);
+  return response.json();
+}
+
+/** Registers a service, dated today, for a new customer's new device. */
+async function createService(page: Page, customerName: string, model: string) {
+  const customer = await send(page, "post", "/api/customers", {
+    name: customerName,
+    phone: "0601",
+  });
+  const device = await send(page, "post", "/api/devices", { model, ownerId: customer.id });
+  return send(page, "post", "/api/services", {
+    customerId: customer.id,
+    deviceIds: [device.id],
+    date: today(),
+  });
+}
 
 test("a staff member writes the customer report and prints the service report, in the UI language, with a QR code of its public link", async ({
   page,
@@ -11,12 +33,7 @@ test("a staff member writes the customer report and prints the service report, i
   await logIn(page);
   await expect(page).toHaveURL("/services");
 
-  const send = async (method: "post" | "put", path: string, data: object) => {
-    const response = await page.request[method](path, { data });
-    expect(response.ok()).toBe(true);
-    return response.json();
-  };
-  await send("put", "/api/settings", {
+  await send(page, "put", "/api/settings", {
     name: "Servis Lisztrapszódia",
     address: "Glavna 1, Subotica",
     phone: "024 123 456",
@@ -25,23 +42,34 @@ test("a staff member writes the customer report and prints the service report, i
     logo: await dataUrl(`${IMAGES}/logo.png`, "image/png"),
     signature: await dataUrl(`${IMAGES}/signature.jpg`, "image/jpeg"),
   });
-  const customer = await send("post", "/api/customers", { name: "Đorđe Živković", phone: "0657" });
-  const device = await send("post", "/api/devices", {
+  const customer = await send(page, "post", "/api/customers", {
+    name: "Đorđe Živković",
+    phone: "0657",
+  });
+  const device = await send(page, "post", "/api/devices", {
     manufacturer: "Lenovo",
     model: "ThinkPad T14",
     serialNumber: "PF-3K2L9",
     ownerId: customer.id,
   });
-  const charger = await send("post", "/api/devices", { model: "USB-C punjač 65W" });
-  const action = await send("post", "/api/actions", { name: "Čišćenje ventilatora", price: 2500 });
-  const service = await send("post", "/api/services", {
+  const charger = await send(page, "post", "/api/devices", { model: "USB-C punjač 65W" });
+  const action = await send(page, "post", "/api/actions", {
+    name: "Čišćenje ventilatora",
+    price: 2500,
+  });
+  const service = await send(page, "post", "/api/services", {
     customerId: customer.id,
     deviceIds: [device.id],
     date: "2026-03-07",
   });
   const lines = `/api/services/${service.id}/lines`;
-  await send("post", lines, { type: "WORK", actionId: action.id, quantity: 2 });
-  await send("post", lines, { type: "SALE", deviceId: charger.id, quantity: 1, unitPrice: 3200 });
+  await send(page, "post", lines, { type: "WORK", actionId: action.id, quantity: 2 });
+  await send(page, "post", lines, {
+    type: "SALE",
+    deviceId: charger.id,
+    quantity: 1,
+    unitPrice: 3200,
+  });
 
   // The customer report is written in its tab and kept across a reload.
   await page.goto(`/services?service=${service.id}`);
@@ -131,20 +159,7 @@ test("a staff member writes the customer report and prints the service report, i
 test("completing a service from the list offers its service report", async ({ page }) => {
   await logIn(page);
   await expect(page).toHaveURL("/services");
-  const send = async (path: string, data: object) => {
-    const response = await page.request.post(path, { data });
-    expect(response.ok()).toBe(true);
-    return response.json();
-  };
-  const customer = await send("/api/customers", { name: "Jelena Ilić", phone: "0601" });
-  const device = await send("/api/devices", { model: "Pixel 7", ownerId: customer.id });
-  const now = new Date();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const service = await send("/api/services", {
-    customerId: customer.id,
-    deviceIds: [device.id],
-    date: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`,
-  });
+  const service = await createService(page, "Jelena Ilić", "Pixel 7");
   await page.reload();
 
   // The list opens in cards; choosing Completed on one saves it, then offers the report.
@@ -163,4 +178,58 @@ test("completing a service from the list offers its service report", async ({ pa
   expect(pdf.text).toContain("Ime Jelena Ilić");
   // The prompt sits over the list; the service did not open.
   await expect(page).toHaveURL("/services");
+});
+
+test("completing a service in a list filtered to another status still offers its report", async ({
+  page,
+}) => {
+  await logIn(page);
+  await expect(page).toHaveURL("/services");
+  const service = await createService(page, "Nikola Tesić", "Moto G54");
+  await page.reload();
+
+  await page.getByRole("combobox", { name: "Filtriraj po statusu" }).click();
+  await page.getByRole("option", { name: "Primljen" }).click();
+  const card = page.getByRole("listitem").filter({ hasText: service.number });
+  await card.getByRole("button", { name: /Promeni status/ }).click();
+  await page.getByRole("menuitemradio", { name: "Završen" }).click();
+
+  // The completed service leaves the filtered list, but the offer stays.
+  const prompt = page.getByRole("dialog", { name: "Odštampati izveštaj o servisu?" });
+  await expect(prompt).toContainText(`Servis ${service.number} je završen.`);
+  await expect(card).toHaveCount(0);
+  await expect(prompt).toBeVisible();
+  const download = page.waitForEvent("download");
+  await prompt.getByRole("button", { name: "Generiši" }).click();
+  await expect(prompt).toBeHidden();
+  expect((await download).suggestedFilename()).toBe(`izvestaj-o-servisu-${service.number}.pdf`);
+  const pdf = await readDownload(await download);
+  expect(pdf.text).toContain("Ime Nikola Tesić");
+});
+
+test("delivering a completed service offers no report", async ({ page }) => {
+  await logIn(page);
+  await expect(page).toHaveURL("/services");
+  const service = await createService(page, "Vesna Marić", "iPad Air");
+  await send(page, "put", `/api/services/${service.id}/status`, { status: "COMPLETED" });
+  await page.reload();
+
+  let downloaded = false;
+  page.on("download", () => (downloaded = true));
+  const card = page.getByRole("listitem").filter({ hasText: service.number });
+  const saved = page.waitForResponse((response) =>
+    response.url().endsWith(`/api/services/${service.id}/status`),
+  );
+  // The list refetches before the change's own success handler runs.
+  const refetched = page.waitForResponse(
+    (response) => /\/api\/services\?/.test(response.url()) && response.request().method() === "GET",
+  );
+  await card.getByRole("button", { name: /Promeni status/ }).click();
+  await page.getByRole("menuitemradio", { name: "Isporučen" }).click();
+  expect((await saved).ok()).toBe(true);
+  await refetched;
+
+  await expect(card.getByRole("button", { name: /Promeni status/ })).toHaveText("Isporučen");
+  await expect(page.getByRole("dialog", { name: "Odštampati izveštaj o servisu?" })).toBeHidden();
+  expect(downloaded).toBe(false);
 });
