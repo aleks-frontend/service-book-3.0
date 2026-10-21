@@ -268,5 +268,8 @@
   "Services by status": "Servisi po statusu",
   "Could not load the earnings.": "Zarada nije mogla da se učita.",
   "Could not load the status counts.": "Broj servisa po statusu nije mogao da se učita.",
-  "Choose a start date on or before the end date.": "Izaberite početni datum koji nije posle krajnjeg."
+  "Choose a start date on or before the end date.": "Izaberite početni datum koji nije posle krajnjeg.",
+  "Service not found": "Servis nije pronađen",
+  "Could not load the service": "Servis nije mogao da se učita",
+  "Check the link, or ask the shop for a new one.": "Proverite link ili zatražite novi od servisa."
 }

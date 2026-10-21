@@ -8,6 +8,7 @@ import { customersRouter } from "./routes/customers.js";
 import { debugRouter } from "./routes/debug.js";
 import { devicesRouter } from "./routes/devices.js";
 import { meRouter } from "./routes/me.js";
+import { publicServicesRouter } from "./routes/publicServices.js";
 import { servicesRouter } from "./routes/services.js";
 import { settingsRouter } from "./routes/settings.js";
 import { statisticsRouter } from "./routes/statistics.js";
@@ -27,7 +28,11 @@ export function createApp({ adminPanelDir }: AppOptions = {}) {
   // before express.json() consumes it.
   app.all("/api/auth/*splat", toNodeHandler(auth));
 
-  // Every /api route other than /api/auth requires a logged-in staff member.
+  // The public status page (/s/<publicToken>) reads a service without a session.
+  // It takes no body, so it is mounted before any is parsed.
+  app.use("/api/public", publicServicesRouter);
+
+  // Every /api route other than /api/auth and /api/public requires a logged-in staff member.
   // Checked before any body is parsed, so no one else can send a large one.
   app.use("/api", requireAuth);
 

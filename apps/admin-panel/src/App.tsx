@@ -8,6 +8,7 @@ import { ActionsPage } from "./app/ActionsPage";
 import { CustomersPage } from "./app/CustomersPage";
 import { DevicesPage } from "./app/DevicesPage";
 import { PlaceholderPage } from "./app/PlaceholderPage";
+import { PublicServicePage } from "./app/PublicServicePage";
 import { ServicesPage } from "./app/ServicesPage";
 import { SettingsPage } from "./app/SettingsPage";
 import { StatisticsPage } from "./app/StatisticsPage";
@@ -37,6 +38,8 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          {/* The public link on printed documents; no login (ADR-0001). */}
+          <Route path="/s/:publicToken" element={<PublicServicePage />} />
           <Route element={<RequireAuth />}>
             <Route element={<AppLayout />}>
               <Route index element={<Navigate to="/services" replace />} />

@@ -268,5 +268,8 @@
   "Services by status": "Services by status",
   "Could not load the earnings.": "Could not load the earnings.",
   "Could not load the status counts.": "Could not load the status counts.",
-  "Choose a start date on or before the end date.": "Choose a start date on or before the end date."
+  "Choose a start date on or before the end date.": "Choose a start date on or before the end date.",
+  "Service not found": "Service not found",
+  "Could not load the service": "Could not load the service",
+  "Check the link, or ask the shop for a new one.": "Check the link, or ask the shop for a new one."
 }
