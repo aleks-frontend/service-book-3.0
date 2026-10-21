@@ -275,5 +275,8 @@
   "Not now": "Ne sada",
   "Download": "Preuzmi",
   "Print the intake receipt?": "Odštampati prijemnicu?",
-  "Service {{number}} is created. Download the intake receipt for the customer?": "Servis {{number}} je kreiran. Preuzeti prijemnicu za mušteriju?"
+  "Service {{number}} is created. Download the intake receipt for the customer?": "Servis {{number}} je kreiran. Preuzeti prijemnicu za mušteriju?",
+  "Generate": "Generiši",
+  "Print the service report?": "Odštampati izveštaj o servisu?",
+  "Service {{number}} is completed. Generate the service report for the customer?": "Servis {{number}} je završen. Generisati izveštaj o servisu za mušteriju?"
 }

@@ -275,5 +275,8 @@
   "Not now": "Not now",
   "Download": "Download",
   "Print the intake receipt?": "Print the intake receipt?",
-  "Service {{number}} is created. Download the intake receipt for the customer?": "Service {{number}} is created. Download the intake receipt for the customer?"
+  "Service {{number}} is created. Download the intake receipt for the customer?": "Service {{number}} is created. Download the intake receipt for the customer?",
+  "Generate": "Generate",
+  "Print the service report?": "Print the service report?",
+  "Service {{number}} is completed. Generate the service report for the customer?": "Service {{number}} is completed. Generate the service report for the customer?"
 }
