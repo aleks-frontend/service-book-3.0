@@ -13,13 +13,10 @@ import { ArrowDown, ArrowUp, Pencil, Trash2 } from "lucide-react";
 import { deviceLabel, type Device, type SortDir } from "@servicebook/schemas";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { SELECT_COLUMN_CLASS, selectColumn } from "./selectColumn";
 import { TableSkeletonRows } from "./Skeletons";
 import { Button } from "./ui/button";
-import { Checkbox } from "./ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
-
-/** Shrinks the checkbox column to the checkbox; the next column's padding spaces it. */
-const SELECT_COLUMN_CLASS = "w-px pr-0";
 
 type DevicesTableProps = {
   devices: Device[];
@@ -56,27 +53,10 @@ export function DevicesTable({
 
   const columns = useMemo<ColumnDef<Device>[]>(
     () => [
-      {
-        id: "select",
-        header: ({ table }) => (
-          <Checkbox
-            checked={table.getIsAllPageRowsSelected()}
-            indeterminate={table.getIsSomePageRowsSelected()}
-            onChange={table.getToggleAllPageRowsSelectedHandler()}
-            aria-label={t("Select all on this page")}
-          />
-        ),
-        cell: ({ row }) => (
-          // Keep the row's own click (open the drawer) from firing as well.
-          <div onClick={(event) => event.stopPropagation()}>
-            <Checkbox
-              checked={row.getIsSelected()}
-              onChange={row.getToggleSelectedHandler()}
-              aria-label={t("Select {{name}}", { name: deviceLabel(row.original) })}
-            />
-          </div>
-        ),
-      },
+      selectColumn<Device>(t, {
+        name: deviceLabel,
+        selectAllLabel: t("Select all on this page"),
+      }),
       {
         id: "device",
         accessorFn: deviceLabel,

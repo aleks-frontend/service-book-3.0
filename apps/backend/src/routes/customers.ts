@@ -7,6 +7,7 @@ import {
   type Service,
 } from "@servicebook/schemas";
 import { Prisma } from "../generated/prisma/client.js";
+import { bulkDeleteHandler } from "../lib/bulkDelete.js";
 import { prisma } from "../lib/prisma.js";
 import { findCustomerIdsByPhone, isPhoneTerm } from "../lib/phoneSearch.js";
 import { findServiceHistory } from "../lib/serviceRows.js";
@@ -67,6 +68,11 @@ customersRouter.post("/", async (req, res) => {
   const customer: Customer = await prisma.customer.create({ data: input, omit: hideLegacyId });
   res.status(201).json(customer);
 });
+
+customersRouter.post(
+  "/bulk-delete",
+  bulkDeleteHandler(LABEL, (id) => prisma.customer.delete({ where: { id } })),
+);
 
 customersRouter.get("/:id", async (req, res) => {
   const id = idParam(req, res, LABEL);

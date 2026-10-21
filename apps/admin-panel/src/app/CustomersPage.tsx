@@ -1,9 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus } from "lucide-react";
-import type { Customer, PageSize, SortDir } from "@servicebook/schemas";
-import { useCustomersQuery, useDeleteCustomerMutation } from "@/lib/customers";
+import type { Customer, CustomerListQuery, PageSize, SortDir } from "@servicebook/schemas";
+import { namesSummary } from "@/lib/bulkDelete";
+import {
+  useBulkDeleteCustomersMutation,
+  useCustomersQuery,
+  useDeleteCustomerMutation,
+} from "@/lib/customers";
 import { useDrawerStack } from "@/lib/useDrawerStack";
+import { useScopedRowSelection } from "@/lib/useScopedRowSelection";
 import { useSearching } from "@/lib/useSearching";
 import { Button } from "@/components/ui/button";
 import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
@@ -13,6 +19,7 @@ import { DrawerStack } from "@/components/DrawerStack";
 import { LoadingRegion } from "@/components/LoadingRegion";
 import { Pagination } from "@/components/Pagination";
 import { SearchInput } from "@/components/SearchInput";
+import { SelectionBar } from "@/components/SelectionBar";
 
 const SEARCH_DEBOUNCE_MS = 300;
 
@@ -31,6 +38,7 @@ export function CustomersPage() {
   const drawers = useDrawerStack();
   const [form, setForm] = useState<FormState>({ open: false });
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
+  const [confirmingBulkDelete, setConfirmingBulkDelete] = useState(false);
 
   // A new search starts from the first page.
   const searchTyped = searchInput.trim();
@@ -43,14 +51,18 @@ export function CustomersPage() {
     return () => clearTimeout(timeout);
   }, [searchTyped, search]);
 
-  const { data, isPending, isPlaceholderData, isError } = useCustomersQuery({
-    search,
-    page,
-    pageSize,
-    sortDir,
-  });
+  const query: CustomerListQuery = { search, page, pageSize, sortDir };
+  const { data, isPending, isPlaceholderData, isError } = useCustomersQuery(query);
   const searching = useSearching(searchTyped, search, isPlaceholderData);
   const deleteCustomer = useDeleteCustomerMutation();
+  const bulkDeleteCustomers = useBulkDeleteCustomersMutation();
+
+  // Checked rows belong to the page they were checked on: another page, page
+  // size, search or sort starts with nothing selected.
+  const { rowSelection, onRowSelectionChange, clearSelection } = useScopedRowSelection(
+    JSON.stringify(query),
+  );
+  const selectedCustomers = (data?.items ?? []).filter((customer) => rowSelection[customer.id]);
 
   // Deleting the last customer on a page leaves it empty: step back a page.
   useEffect(() => {
@@ -65,6 +77,18 @@ export function CustomersPage() {
     deleteCustomer.mutate(customerToDelete.id, {
       onSuccess: () => setCustomerToDelete(null),
     });
+  }
+
+  function confirmBulkDelete() {
+    bulkDeleteCustomers.mutate(
+      selectedCustomers.map((customer) => customer.id),
+      {
+        onSuccess: () => {
+          clearSelection();
+          setConfirmingBulkDelete(false);
+        },
+      },
+    );
   }
 
   return (
@@ -89,10 +113,17 @@ export function CustomersPage() {
         <p className="text-sm text-destructive">{t("Could not load customers.")}</p>
       ) : (
         <>
+          <SelectionBar
+            count={selectedCustomers.length}
+            onDelete={() => setConfirmingBulkDelete(true)}
+            onClear={clearSelection}
+          />
           <LoadingRegion refreshing={isPlaceholderData}>
             <CustomersTable
               customers={data?.items ?? []}
               sortDir={sortDir}
+              rowSelection={rowSelection}
+              onRowSelectionChange={onRowSelectionChange}
               onSortDirChange={(next) => {
                 setSortDir(next);
                 setPage(1);
@@ -134,6 +165,20 @@ export function CustomersPage() {
         })}
         isDeleting={deleteCustomer.isPending}
         onConfirm={confirmDelete}
+      />
+
+      <ConfirmDeleteDialog
+        open={confirmingBulkDelete}
+        onOpenChange={setConfirmingBulkDelete}
+        title={t("Delete selected customers ({{count}})?", { count: selectedCustomers.length })}
+        description={t("These customers will be permanently deleted: {{names}}.", {
+          names: namesSummary(
+            selectedCustomers.map((customer) => customer.name),
+            t,
+          ),
+        })}
+        isDeleting={bulkDeleteCustomers.isPending}
+        onConfirm={confirmBulkDelete}
       />
     </section>
   );

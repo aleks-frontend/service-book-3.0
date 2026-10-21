@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { actionInputSchema, type Action } from "@servicebook/schemas";
+import { bulkDeleteHandler } from "../lib/bulkDelete.js";
 import { prisma } from "../lib/prisma.js";
 import {
   hideLegacyId,
@@ -31,6 +32,11 @@ actionsRouter.post("/", async (req, res) => {
   const action: Action = await prisma.action.create({ data: input, omit: hideLegacyId });
   res.status(201).json(action);
 });
+
+actionsRouter.post(
+  "/bulk-delete",
+  bulkDeleteHandler(LABEL, (id) => prisma.action.delete({ where: { id } })),
+);
 
 actionsRouter.get("/:id", async (req, res) => {
   const id = idParam(req, res, LABEL);

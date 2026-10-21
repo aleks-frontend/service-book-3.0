@@ -451,10 +451,12 @@ describe("service lines: what they refer to", () => {
     });
 
     const action = await agent.delete(`/api/actions/${screen.id}`);
+    const bulk = await agent.post("/api/actions/bulk-delete").send({ ids: [screen.id] });
     const device = await agent.delete(`/api/devices/${cable.id}`);
 
     expect(action.status).toBe(409);
     expect(action.body.code).toBe("ACTION_IN_USE");
+    expect(bulk.body).toEqual({ deletedIds: [], inUseIds: [screen.id] });
     expect(device.status).toBe(409);
     expect(device.body.code).toBe("DEVICE_IN_USE");
 

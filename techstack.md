@@ -68,7 +68,7 @@ Domain vocabulary is in [`GLOSSARY.md`](./GLOSSARY.md), and architectural decisi
 
 - **Vitest + Supertest:** the primary seam. They exercise the HTTP API end to end against a real Postgres test database (`servicebook_test`), reset between tests, with an authenticated agent for a seeded staff member.
 - **Legacy import:** run against an anonymised Firebase fixture committed to the repo, with results asserted through the HTTP API. The real export is never committed.
-- **Playwright:** a thin end-to-end layer covering login and the redirect to login when logged out, creating a service through the "Add" modal, the `?service=` drawer (deep link and back button), and generating an intake receipt.
+- **Playwright:** a thin end-to-end layer covering login and the redirect to login when logged out, creating a service through the "Add" modal, the `?service=` drawer (deep link and back button), generating an intake receipt, and bulk deleting customers and actions (including a selection sent in more than one batch).
 - **Not tested separately:** React components, PDF layouts and internal helpers. They are covered through the seams above.
 - **Development style:** test-first at these seams.
 

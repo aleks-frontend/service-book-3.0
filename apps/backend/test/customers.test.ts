@@ -12,14 +12,19 @@ const MARKO = {
   facebook: "marko.markovic",
 };
 
-/** Creates customers "Customer 01" … "Customer NN" through the API. */
+const UNKNOWN_ID = "00000000-0000-4000-8000-000000000000";
+
+/** Creates customers "Customer 01" … "Customer NN" through the API, returning their ids. */
 async function createNumberedCustomers(agent: TestAgent, count: number) {
+  const ids: string[] = [];
   for (let n = 1; n <= count; n++) {
     const label = String(n).padStart(2, "0");
-    await agent
+    const { body } = await agent
       .post("/api/customers")
       .send({ name: `Customer ${label}`, phone: `06000000${label}` });
+    ids.push(body.id);
   }
+  return ids;
 }
 
 function searchCustomers(agent: TestAgent, term: string) {
@@ -179,6 +184,72 @@ describe("customers: update and delete", () => {
 
     expect(unknown.status).toBe(404);
     expect(malformed.status).toBe(404);
+  });
+});
+
+describe("customers: bulk delete", () => {
+  it("is only reachable by a logged-in staff member", async () => {
+    const response = await request(createApp())
+      .post("/api/customers/bulk-delete")
+      .send({ ids: [UNKNOWN_ID] });
+
+    expect(response.status).toBe(401);
+  });
+
+  it("deletes the named customers and keeps the rest", async () => {
+    const { agent } = await authenticatedAgent();
+    const [first, second, kept] = await createNumberedCustomers(agent, 3);
+
+    const response = await agent.post("/api/customers/bulk-delete").send({ ids: [first, second] });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ deletedIds: [first, second], inUseIds: [] });
+    expect((await agent.get(`/api/customers/${first}`)).status).toBe(404);
+    expect((await agent.get(`/api/customers/${second}`)).status).toBe(404);
+    expect((await agent.get(`/api/customers/${kept}`)).status).toBe(200);
+  });
+
+  it("keeps a customer who owns a device, reporting them as in use, and deletes the others", async () => {
+    const { agent } = await authenticatedAgent();
+    const [owner, other] = await createNumberedCustomers(agent, 2);
+    await agent.post("/api/devices").send({ model: "iPhone 12", ownerId: owner });
+
+    const response = await agent.post("/api/customers/bulk-delete").send({ ids: [owner, other] });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ deletedIds: [other], inUseIds: [owner] });
+    expect((await agent.get(`/api/customers/${owner}`)).status).toBe(200);
+    expect((await agent.get(`/api/customers/${other}`)).status).toBe(404);
+  });
+
+  it("skips ids that name no customer", async () => {
+    const { agent } = await authenticatedAgent();
+    const [customer] = await createNumberedCustomers(agent, 1);
+
+    const response = await agent
+      .post("/api/customers/bulk-delete")
+      .send({ ids: [customer, UNKNOWN_ID] });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ deletedIds: [customer], inUseIds: [] });
+  });
+
+  it("rejects an empty, oversized or malformed list with 400, deleting nothing", async () => {
+    const { agent } = await authenticatedAgent();
+    const [customer] = await createNumberedCustomers(agent, 1);
+    const tooMany = Array.from({ length: 51 }, () => customer);
+
+    const empty = await agent.post("/api/customers/bulk-delete").send({ ids: [] });
+    const oversized = await agent.post("/api/customers/bulk-delete").send({ ids: tooMany });
+    const malformed = await agent
+      .post("/api/customers/bulk-delete")
+      .send({ ids: [customer, "not-a-uuid"] });
+
+    for (const response of [empty, oversized, malformed]) {
+      expect(response.status).toBe(400);
+      expect(response.body.details.fieldErrors).toHaveProperty("ids");
+    }
+    expect((await agent.get(`/api/customers/${customer}`)).status).toBe(200);
   });
 });
 

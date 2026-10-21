@@ -8,6 +8,7 @@ import {
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import type { Customer, CustomerInput, CustomerListQuery, Page } from "@servicebook/schemas";
+import { useBulkDeleteMutation } from "./bulkDelete";
 import { deviceKeys } from "./devices";
 import { serviceKeys } from "./services";
 import { request, toSearchParams, type HttpError } from "./http";
@@ -78,5 +79,25 @@ export function useDeleteCustomerMutation() {
           ? t("This customer still owns devices or has services, so they cannot be deleted.")
           : t("Could not delete the customer. Please try again."),
       ),
+  });
+}
+
+/** Deletes any number of customers; customers still in use are kept and counted. */
+export function useBulkDeleteCustomersMutation() {
+  const { t } = useTranslation();
+
+  return useBulkDeleteMutation({
+    path: "/customers",
+    listKey: customerKeys.all,
+    detailKey: customerKeys.detail,
+    messages: {
+      deleted: (count) => t("Customers deleted: {{count}}", { count }),
+      deletedAndKept: (deleted, inUse) =>
+        t("Customers deleted: {{deleted}}. Kept because they are in use: {{inUse}}.", {
+          deleted,
+          inUse,
+        }),
+      failed: t("Could not delete the customers. Please try again."),
+    },
   });
 }

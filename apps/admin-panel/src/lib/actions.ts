@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import type { Action, ActionInput } from "@servicebook/schemas";
+import { useBulkDeleteMutation } from "./bulkDelete";
 import { request, type HttpError } from "./http";
 
 const actionKeys = {
@@ -49,5 +50,24 @@ export function useDeleteActionMutation() {
           ? t("This action is used on a service, so it cannot be deleted.")
           : t("Could not delete the action. Please try again."),
       ),
+  });
+}
+
+/** Deletes any number of actions, in batches; actions still in use are kept and counted. */
+export function useBulkDeleteActionsMutation() {
+  const { t } = useTranslation();
+
+  return useBulkDeleteMutation({
+    path: "/actions",
+    listKey: actionKeys.all,
+    messages: {
+      deleted: (count) => t("Actions deleted: {{count}}", { count }),
+      deletedAndKept: (deleted, inUse) =>
+        t("Actions deleted: {{deleted}}. Kept because they are in use: {{inUse}}.", {
+          deleted,
+          inUse,
+        }),
+      failed: t("Could not delete the actions. Please try again."),
+    },
   });
 }

@@ -6,10 +6,14 @@ import {
   getFilteredRowModel,
   useReactTable,
   type ColumnDef,
+  type OnChangeFn,
+  type RowSelectionState,
 } from "@tanstack/react-table";
 import { Pencil, Trash2 } from "lucide-react";
 import type { Action } from "@servicebook/schemas";
 import { formatRsd } from "@/lib/format";
+import { cn } from "@/lib/utils";
+import { SELECT_COLUMN_CLASS, selectColumn } from "./selectColumn";
 import { TableSkeletonRows } from "./Skeletons";
 import { Button } from "./ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
@@ -19,6 +23,9 @@ type ActionsTableProps = {
   actions: Action[];
   /** Filters the list by name, ignoring case. */
   search: string;
+  /** The checked rows, keyed by action id. */
+  rowSelection: RowSelectionState;
+  onRowSelectionChange: OnChangeFn<RowSelectionState>;
   onEdit: (action: Action) => void;
   onDelete: (action: Action) => void;
   /** The price list is still loading: placeholder rows show instead of the empty message. */
@@ -27,10 +34,15 @@ type ActionsTableProps = {
   noMatchesMessage: string;
 };
 
-/** The price list. Unlike customers, it is short enough to search client-side. */
+/**
+ * The price list. Unlike customers, it is short enough to search client-side;
+ * the header checkbox selects the rows matching the search.
+ */
 export function ActionsTable({
   actions,
   search,
+  rowSelection,
+  onRowSelectionChange,
   onEdit,
   onDelete,
   loading,
@@ -41,6 +53,13 @@ export function ActionsTable({
 
   const columns = useMemo<ColumnDef<Action>[]>(
     () => [
+      {
+        ...selectColumn<Action>(t, {
+          name: (action) => action.name,
+          selectAllLabel: t("Select all shown"),
+        }),
+        enableGlobalFilter: false,
+      },
       {
         accessorKey: "name",
         // A thing's name, which Serbian words differently from a person's.
@@ -94,7 +113,8 @@ export function ActionsTable({
     getFilteredRowModel: getFilteredRowModel(),
     getRowId: (action) => action.id,
     globalFilterFn: "includesString",
-    state: { globalFilter: search.trim() },
+    state: { globalFilter: search.trim(), rowSelection },
+    onRowSelectionChange,
   });
 
   const rows = table.getRowModel().rows;
@@ -106,7 +126,10 @@ export function ActionsTable({
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
-                <TableHead key={header.id}>
+                <TableHead
+                  key={header.id}
+                  className={cn(header.column.id === "select" && SELECT_COLUMN_CLASS)}
+                >
                   {flexRender(header.column.columnDef.header, header.getContext())}
                 </TableHead>
               ))}
@@ -127,9 +150,12 @@ export function ActionsTable({
             </TableRow>
           ) : (
             rows.map((row) => (
-              <TableRow key={row.id}>
+              <TableRow key={row.id} data-state={row.getIsSelected() ? "selected" : undefined}>
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id} className="py-3">
+                  <TableCell
+                    key={cell.id}
+                    className={cn("py-3", cell.column.id === "select" && SELECT_COLUMN_CLASS)}
+                  >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}

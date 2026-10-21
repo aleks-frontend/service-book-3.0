@@ -1,13 +1,8 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
-import type {
-  BulkDeleteResult,
-  Device,
-  DeviceInput,
-  DeviceListQuery,
-  Page,
-} from "@servicebook/schemas";
+import type { Device, DeviceInput, DeviceListQuery, Page } from "@servicebook/schemas";
+import { useBulkDeleteMutation } from "./bulkDelete";
 import { serviceKeys } from "./services";
 import { request, toSearchParams, type HttpError } from "./http";
 
@@ -83,28 +78,22 @@ export function useDeleteDeviceMutation() {
   });
 }
 
-/** Deletes up to `BULK_DELETE_MAX` devices at once; devices still in use are kept and counted. */
+/** Deletes any number of devices; devices still in use are kept and counted. */
 export function useBulkDeleteDevicesMutation() {
-  const queryClient = useQueryClient();
   const { t } = useTranslation();
 
-  return useMutation({
-    mutationFn: (ids: string[]) =>
-      request<BulkDeleteResult>("/devices/bulk-delete", { method: "POST", body: { ids } }),
-    onSuccess: ({ deletedIds, inUseIds }) => {
-      if (inUseIds.length > 0) {
-        toast(
-          t("Devices deleted: {{deleted}}. Kept because they are in use: {{inUse}}.", {
-            deleted: deletedIds.length,
-            inUse: inUseIds.length,
-          }),
-        );
-      } else {
-        toast.success(t("Devices deleted: {{count}}", { count: deletedIds.length }));
-      }
-      for (const id of deletedIds) queryClient.removeQueries({ queryKey: deviceKeys.detail(id) });
-      return queryClient.invalidateQueries({ queryKey: deviceKeys.all });
+  return useBulkDeleteMutation({
+    path: "/devices",
+    listKey: deviceKeys.all,
+    detailKey: deviceKeys.detail,
+    messages: {
+      deleted: (count) => t("Devices deleted: {{count}}", { count }),
+      deletedAndKept: (deleted, inUse) =>
+        t("Devices deleted: {{deleted}}. Kept because they are in use: {{inUse}}.", {
+          deleted,
+          inUse,
+        }),
+      failed: t("Could not delete the devices. Please try again."),
     },
-    onError: () => toast.error(t("Could not delete the devices. Please try again.")),
   });
 }

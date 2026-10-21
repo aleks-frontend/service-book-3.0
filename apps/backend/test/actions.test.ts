@@ -1,9 +1,23 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
+import type TestAgent from "supertest/lib/agent.js";
 import { createApp } from "../src/app.js";
 import { authenticatedAgent } from "./helpers.js";
 
 const SCREEN_REPLACEMENT = { name: "Screen replacement", price: 4500 };
+const UNKNOWN_ID = "00000000-0000-4000-8000-000000000000";
+
+/** Creates actions "Action 01" … "Action NN" through the API, returning their ids. */
+async function createNumberedActions(agent: TestAgent, count: number) {
+  const ids: string[] = [];
+  for (let n = 1; n <= count; n++) {
+    const { body } = await agent
+      .post("/api/actions")
+      .send({ name: `Action ${String(n).padStart(2, "0")}`, price: 1000 });
+    ids.push(body.id);
+  }
+  return ids;
+}
 
 describe("actions: create and read", () => {
   it("is only reachable by a logged-in staff member", async () => {
@@ -172,5 +186,57 @@ describe("actions: update and delete", () => {
 
     expect(unknown.status).toBe(404);
     expect(malformed.status).toBe(404);
+  });
+});
+
+describe("actions: bulk delete", () => {
+  it("is only reachable by a logged-in staff member", async () => {
+    const response = await request(createApp())
+      .post("/api/actions/bulk-delete")
+      .send({ ids: [UNKNOWN_ID] });
+
+    expect(response.status).toBe(401);
+  });
+
+  it("deletes the named actions and keeps the rest", async () => {
+    const { agent } = await authenticatedAgent();
+    const [first, second, kept] = await createNumberedActions(agent, 3);
+
+    const response = await agent.post("/api/actions/bulk-delete").send({ ids: [first, second] });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ deletedIds: [first, second], inUseIds: [] });
+    const list = await agent.get("/api/actions");
+    expect(list.body.map(({ id }: { id: string }) => id)).toEqual([kept]);
+  });
+
+  it("skips ids that name no action", async () => {
+    const { agent } = await authenticatedAgent();
+    const [action] = await createNumberedActions(agent, 1);
+
+    const response = await agent
+      .post("/api/actions/bulk-delete")
+      .send({ ids: [action, UNKNOWN_ID] });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ deletedIds: [action], inUseIds: [] });
+  });
+
+  it("rejects an empty, oversized or malformed list with 400, deleting nothing", async () => {
+    const { agent } = await authenticatedAgent();
+    const [action] = await createNumberedActions(agent, 1);
+    const tooMany = Array.from({ length: 51 }, () => action);
+
+    const empty = await agent.post("/api/actions/bulk-delete").send({ ids: [] });
+    const oversized = await agent.post("/api/actions/bulk-delete").send({ ids: tooMany });
+    const malformed = await agent
+      .post("/api/actions/bulk-delete")
+      .send({ ids: [action, "not-a-uuid"] });
+
+    for (const response of [empty, oversized, malformed]) {
+      expect(response.status).toBe(400);
+      expect(response.body.details.fieldErrors).toHaveProperty("ids");
+    }
+    expect((await agent.get(`/api/actions/${action}`)).status).toBe(200);
   });
 });

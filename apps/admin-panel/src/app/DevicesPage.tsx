@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { RowSelectionState } from "@tanstack/react-table";
-import { Plus, Trash2, X } from "lucide-react";
+import { Plus } from "lucide-react";
 import {
   deviceLabel,
   type CustomerSummary,
@@ -15,7 +14,9 @@ import {
   useDeleteDeviceMutation,
   useDevicesQuery,
 } from "@/lib/devices";
+import { namesSummary } from "@/lib/bulkDelete";
 import { useDrawerStack } from "@/lib/useDrawerStack";
+import { useScopedRowSelection } from "@/lib/useScopedRowSelection";
 import { useSearching } from "@/lib/useSearching";
 import { Button } from "@/components/ui/button";
 import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
@@ -26,10 +27,9 @@ import { DrawerStack } from "@/components/DrawerStack";
 import { LoadingRegion } from "@/components/LoadingRegion";
 import { Pagination } from "@/components/Pagination";
 import { SearchInput } from "@/components/SearchInput";
+import { SelectionBar } from "@/components/SelectionBar";
 
 const SEARCH_DEBOUNCE_MS = 300;
-/** How many selected devices the bulk delete confirmation names before "and N more". */
-const NAMED_IN_CONFIRMATION = 3;
 
 /** The create/edit dialog is either closed, creating, or editing one device. */
 type FormState = { open: false } | { open: true; device?: Device };
@@ -77,14 +77,10 @@ export function DevicesPage() {
 
   // Checked rows belong to the page they were checked on: another page, page
   // size, search, filter or sort starts with nothing selected.
-  const selectionScope = JSON.stringify(query);
-  const [selection, setSelection] = useState<{ scope: string; rows: RowSelectionState }>({
-    scope: selectionScope,
-    rows: {},
-  });
-  const rowSelection = selection.scope === selectionScope ? selection.rows : {};
+  const { rowSelection, onRowSelectionChange, clearSelection } = useScopedRowSelection(
+    JSON.stringify(query),
+  );
   const selectedDevices = (data?.items ?? []).filter((device) => rowSelection[device.id]);
-  const clearSelection = () => setSelection({ scope: selectionScope, rows: {} });
 
   // Deleting the last device on a page leaves it empty: step back a page.
   useEffect(() => {
@@ -111,13 +107,6 @@ export function DevicesPage() {
         },
       },
     );
-  }
-
-  /** "A, B, C" or "A, B, C and 4 more", for the bulk delete confirmation. */
-  function selectedNames() {
-    const named = selectedDevices.slice(0, NAMED_IN_CONFIRMATION).map(deviceLabel).join(", ");
-    const more = selectedDevices.length - NAMED_IN_CONFIRMATION;
-    return more > 0 ? t("{{names}} and {{count}} more", { names: named, count: more }) : named;
   }
 
   const isFiltered = Boolean(search || owner || genericOnly);
@@ -170,32 +159,17 @@ export function DevicesPage() {
         <p className="text-sm text-destructive">{t("Could not load devices.")}</p>
       ) : (
         <>
-          {selectedDevices.length > 0 && (
-            <div className="flex flex-wrap items-center gap-3 rounded-md border bg-muted px-3 py-2 text-sm">
-              <span className="font-medium">
-                {t("Selected: {{count}}", { count: selectedDevices.length })}
-              </span>
-              <Button variant="destructive" size="sm" onClick={() => setConfirmingBulkDelete(true)}>
-                <Trash2 className="mr-2 h-4 w-4" aria-hidden />
-                {t("Delete selected")}
-              </Button>
-              <Button variant="ghost" size="sm" onClick={clearSelection}>
-                <X className="mr-2 h-4 w-4" aria-hidden />
-                {t("Clear selection")}
-              </Button>
-            </div>
-          )}
+          <SelectionBar
+            count={selectedDevices.length}
+            onDelete={() => setConfirmingBulkDelete(true)}
+            onClear={clearSelection}
+          />
           <LoadingRegion refreshing={isPlaceholderData}>
             <DevicesTable
               devices={data?.items ?? []}
               sortDir={sortDir}
               rowSelection={rowSelection}
-              onRowSelectionChange={(updater) =>
-                setSelection({
-                  scope: selectionScope,
-                  rows: typeof updater === "function" ? updater(rowSelection) : updater,
-                })
-              }
+              onRowSelectionChange={onRowSelectionChange}
               onSortDirChange={(next) => {
                 setSortDir(next);
                 setPage(1);
@@ -244,7 +218,7 @@ export function DevicesPage() {
         onOpenChange={setConfirmingBulkDelete}
         title={t("Delete selected devices?")}
         description={t("These devices will be permanently deleted: {{names}}.", {
-          names: selectedNames(),
+          names: namesSummary(selectedDevices.map(deviceLabel), t),
         })}
         isDeleting={bulkDeleteDevices.isPending}
         onConfirm={confirmBulkDelete}

@@ -5,10 +5,14 @@ import {
   getCoreRowModel,
   useReactTable,
   type ColumnDef,
+  type OnChangeFn,
+  type RowSelectionState,
   type SortingState,
 } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp, Pencil, Trash2 } from "lucide-react";
 import type { Customer, SortDir } from "@servicebook/schemas";
+import { cn } from "@/lib/utils";
+import { SELECT_COLUMN_CLASS, selectColumn } from "./selectColumn";
 import { TableSkeletonRows } from "./Skeletons";
 import { Button } from "./ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
@@ -17,6 +21,9 @@ type CustomersTableProps = {
   customers: Customer[];
   sortDir: SortDir;
   onSortDirChange: (sortDir: SortDir) => void;
+  /** The checked rows, keyed by customer id. */
+  rowSelection: RowSelectionState;
+  onRowSelectionChange: OnChangeFn<RowSelectionState>;
   onOpen: (customer: Customer) => void;
   onEdit: (customer: Customer) => void;
   onDelete: (customer: Customer) => void;
@@ -25,11 +32,16 @@ type CustomersTableProps = {
   emptyMessage: string;
 };
 
-/** One page of customers. Paging, search and sorting happen on the server. */
+/**
+ * One page of customers. Paging, search and sorting happen on the server; the
+ * header checkbox selects the rows on this page only.
+ */
 export function CustomersTable({
   customers,
   sortDir,
   onSortDirChange,
+  rowSelection,
+  onRowSelectionChange,
   onOpen,
   onEdit,
   onDelete,
@@ -40,6 +52,10 @@ export function CustomersTable({
 
   const columns = useMemo<ColumnDef<Customer>[]>(
     () => [
+      selectColumn<Customer>(t, {
+        name: (customer) => customer.name,
+        selectAllLabel: t("Select all on this page"),
+      }),
       {
         accessorKey: "name",
         header: ({ column }) => {
@@ -101,7 +117,8 @@ export function CustomersTable({
     manualSorting: true,
     manualPagination: true,
     enableSortingRemoval: false,
-    state: { sorting },
+    state: { sorting, rowSelection },
+    onRowSelectionChange,
     onSortingChange: (updater) => {
       const next = typeof updater === "function" ? updater(sorting) : updater;
       onSortDirChange(next[0]?.desc ? "desc" : "asc");
@@ -117,6 +134,7 @@ export function CustomersTable({
               {headerGroup.headers.map((header) => (
                 <TableHead
                   key={header.id}
+                  className={cn(header.column.id === "select" && SELECT_COLUMN_CLASS)}
                   aria-sort={
                     header.column.getIsSorted()
                       ? header.column.getIsSorted() === "desc"
@@ -147,6 +165,7 @@ export function CustomersTable({
             table.getRowModel().rows.map((row) => (
               <TableRow
                 key={row.id}
+                data-state={row.getIsSelected() ? "selected" : undefined}
                 className="cursor-pointer"
                 tabIndex={0}
                 onClick={() => onOpen(row.original)}
@@ -157,7 +176,10 @@ export function CustomersTable({
                 }}
               >
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id} className="py-3">
+                  <TableCell
+                    key={cell.id}
+                    className={cn("py-3", cell.column.id === "select" && SELECT_COLUMN_CLASS)}
+                  >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}
