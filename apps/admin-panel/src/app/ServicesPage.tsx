@@ -47,9 +47,9 @@ function isSortOption(value: string): value is SortOption {
 
 function readSavedView(): ServicesView {
   try {
-    return localStorage.getItem(VIEW_STORAGE_KEY) === "cards" ? "cards" : "table";
+    return localStorage.getItem(VIEW_STORAGE_KEY) === "table" ? "table" : "cards";
   } catch {
-    return "table";
+    return "cards";
   }
 }
 

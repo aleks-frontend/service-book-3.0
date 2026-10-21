@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { logIn } from "./logIn.js";
 
 // The UI defaults to Serbian (sr).
@@ -10,11 +10,17 @@ function today() {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
 
+/** Switches the services list from its default cards to the table, which is remembered. */
+async function showTable(page: Page) {
+  await page.getByRole("button", { name: "Prikaz tabele" }).click();
+}
+
 test("a staff member registers a service for a new customer and opens it via ?service=", async ({
   page,
 }) => {
   await logIn(page);
   await expect(page).toHaveURL("/services");
+  await showTable(page);
 
   await page.getByRole("button", { name: "Dodaj", exact: true }).click();
   const addDialog = page.getByRole("dialog", { name: "Novi servis" });
@@ -109,21 +115,22 @@ test("the table/cards toggle switches the list view and is remembered", async ({
 
   const tableButton = page.getByRole("button", { name: "Prikaz tabele" });
   const cardsButton = page.getByRole("button", { name: "Prikaz kartica" });
-  await expect(tableButton).toHaveAttribute("aria-pressed", "true");
-
-  await cardsButton.click();
   await expect(cardsButton).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("table")).toBeHidden();
   await expect(page.getByRole("listitem").first()).toContainText("Jovana Jović");
 
-  await page.reload();
-  await expect(cardsButton).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByRole("table")).toBeHidden();
-
   await tableButton.click();
+  await expect(tableButton).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("table")).toBeVisible();
+
   await page.reload();
   await expect(tableButton).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("table")).toBeVisible();
+
+  await cardsButton.click();
+  await page.reload();
+  await expect(cardsButton).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("table")).toBeHidden();
 });
 
 test("a work line starts at the action's price, and the total follows quantity and price as they are typed", async ({
@@ -131,6 +138,7 @@ test("a work line starts at the action's price, and the total follows quantity a
 }) => {
   await logIn(page);
   await expect(page).toHaveURL("/services");
+  await showTable(page);
 
   const post = async (path: string, data: object) =>
     (await page.request.post(path, { data })).json();
@@ -253,6 +261,7 @@ test("a one-click status change from the list shows in the badge and in the Log 
 }) => {
   await logIn(page);
   await expect(page).toHaveURL("/services");
+  await showTable(page);
 
   const post = async (path: string, data: object) =>
     (await page.request.post(path, { data })).json();
@@ -300,6 +309,7 @@ test("a one-click status change from the list shows in the badge and in the Log 
 test("search, status filter and empty state narrow the services list", async ({ page }) => {
   await logIn(page);
   await expect(page).toHaveURL("/services");
+  await showTable(page);
 
   const post = async (path: string, data: object) =>
     (await page.request.post(path, { data })).json();
