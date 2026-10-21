@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { LogOut, Menu, Wrench } from "lucide-react";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { ServiceReportOfferProvider } from "./ServiceReportOfferProvider";
 import { Button } from "./ui/button";
 import {
   DropdownMenu,
@@ -108,7 +109,9 @@ export function AppLayout() {
       </header>
 
       <main className="container py-6">
-        <Outlet />
+        <ServiceReportOfferProvider>
+          <Outlet />
+        </ServiceReportOfferProvider>
       </main>
     </div>
   );

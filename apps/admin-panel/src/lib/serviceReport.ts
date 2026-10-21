@@ -1,3 +1,4 @@
+import { createContext, useContext } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
@@ -20,4 +21,22 @@ export function useDownloadServiceReportMutation() {
     },
     onError: () => toast.error(t("Could not create the service report. Please try again.")),
   });
+}
+
+/** Offers a service's report; provided by `ServiceReportOfferProvider`. */
+export const ServiceReportOfferContext = createContext<((service: ServiceDetail) => void) | null>(
+  null,
+);
+
+/**
+ * Returns `offerServiceReport(service)`, which asks whether to generate the service's
+ * report. The offer lives above the page, so it stays up when whatever asked for it
+ * (a list row that a status filter now hides, …) unmounts.
+ */
+export function useOfferServiceReport() {
+  const offerServiceReport = useContext(ServiceReportOfferContext);
+  if (!offerServiceReport) {
+    throw new Error("useOfferServiceReport must be used within a ServiceReportOfferProvider");
+  }
+  return offerServiceReport;
 }

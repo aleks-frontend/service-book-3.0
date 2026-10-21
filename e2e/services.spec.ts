@@ -1,14 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
+import { today } from "./dates.js";
 import { logIn } from "./logIn.js";
 
 // The UI defaults to Serbian (sr).
-
-/** Today in the browser's (and the test runner's) time zone, as `YYYY-MM-DD`. */
-function today() {
-  const now = new Date();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-}
 
 /** Switches the services list from its default cards to the table, which is remembered. */
 async function showTable(page: Page) {
