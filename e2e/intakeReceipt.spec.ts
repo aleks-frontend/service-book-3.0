@@ -125,3 +125,36 @@ test("a staff member prints a service's intake receipt, in the UI language, with
   expect(englishReceipt.imageCount).toBe(2);
   expect(englishReceipt.qrCodes).toEqual([`${baseURL}/s/${service.publicToken}`]);
 });
+
+test("creating a service offers its intake receipt", async ({ page }) => {
+  await logIn(page);
+  await expect(page).toHaveURL("/services");
+  const response = await page.request.post("/api/customers", {
+    data: { name: "Milica Jovanović", phone: "0641234567" },
+  });
+  expect(response.ok()).toBe(true);
+  const customer = await response.json();
+  const device = await page.request.post("/api/devices", {
+    data: { manufacturer: "Samsung", model: "Galaxy S21", ownerId: customer.id },
+  });
+  expect(device.ok()).toBe(true);
+
+  await page.getByRole("button", { name: "Dodaj", exact: true }).click();
+  const addDialog = page.getByRole("dialog", { name: "Novi servis" });
+  await addDialog.getByLabel("Mušterija *").fill("Milica Jovanović");
+  await page.getByRole("option", { name: /^Milica Jovanović/ }).click();
+  await addDialog.getByLabel("Uređaji *").fill("Galaxy S21");
+  await page.getByRole("option", { name: /^Samsung Galaxy S21/ }).click();
+  await addDialog.getByLabel("Opis").fill("Ne pali se");
+  await addDialog.getByRole("button", { name: "Dodaj servis" }).click();
+  await expect(addDialog).toBeHidden();
+
+  const prompt = page.getByRole("dialog", { name: "Odštampati prijemnicu?" });
+  const download = page.waitForEvent("download");
+  await prompt.getByRole("button", { name: "Preuzmi" }).click();
+  await expect(prompt).toBeHidden();
+  expect((await download).suggestedFilename()).toMatch(/^prijemnica-\d{4}-\d{4}\.pdf$/);
+  const receipt = await readDownload(await download);
+  expect(receipt.text).toContain("Ime Milica Jovanović");
+  expect(receipt.text).toContain("Ne pali se");
+});

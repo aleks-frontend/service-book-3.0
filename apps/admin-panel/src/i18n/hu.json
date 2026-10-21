@@ -271,5 +271,9 @@
   "Choose a start date on or before the end date.": "A kezdő dátum nem lehet későbbi a záró dátumnál.",
   "Service not found": "A szerviz nem található",
   "Could not load the service": "A szerviz betöltése nem sikerült",
-  "Check the link, or ask the shop for a new one.": "Ellenőrizze a linket, vagy kérjen újat a szerviztől."
+  "Check the link, or ask the shop for a new one.": "Ellenőrizze a linket, vagy kérjen újat a szerviztől.",
+  "Not now": "Most nem",
+  "Download": "Letöltés",
+  "Print the intake receipt?": "Kinyomtatja az átvételi elismervényt?",
+  "Service {{number}} is created. Download the intake receipt for the customer?": "A(z) {{number}} szerviz létrejött. Letölti az átvételi elismervényt az ügyfélnek?"
 }

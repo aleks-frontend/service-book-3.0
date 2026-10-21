@@ -48,8 +48,16 @@ test("a staff member registers a service for a new customer and opens it via ?se
   await expect(addDialog.getByText("Apple iPhone 13")).toBeVisible();
 
   await addDialog.getByLabel("Opis").fill("Ne puni bateriju");
+  let downloaded = false;
+  page.on("download", () => (downloaded = true));
   await addDialog.getByRole("button", { name: "Dodaj servis" }).click();
   await expect(addDialog).toBeHidden();
+
+  // It offers the intake receipt; "Not now" closes the prompt without downloading anything.
+  const receiptPrompt = page.getByRole("dialog", { name: "Odštampati prijemnicu?" });
+  await expect(receiptPrompt).toBeVisible();
+  await receiptPrompt.getByRole("button", { name: "Ne sada" }).click();
+  await expect(receiptPrompt).toBeHidden();
 
   // The new service is at the top of the list.
   const firstRow = page.getByRole("row").nth(1);
@@ -77,6 +85,9 @@ test("a staff member registers a service for a new customer and opens it via ?se
   await editDialog.getByRole("button", { name: "Sačuvaj izmene" }).click();
   await expect(editDialog).toBeHidden();
   await expect(details).toContainText("Ne puni bateriju, pukao ekran");
+  // Editing offers no intake receipt.
+  await expect(receiptPrompt).toBeHidden();
+  expect(downloaded).toBe(false);
 
   // A reload keeps it open, and the back button closes it.
   await page.reload();

@@ -271,5 +271,9 @@
   "Choose a start date on or before the end date.": "Izaberite početni datum koji nije posle krajnjeg.",
   "Service not found": "Servis nije pronađen",
   "Could not load the service": "Servis nije mogao da se učita",
-  "Check the link, or ask the shop for a new one.": "Proverite link ili zatražite novi od servisa."
+  "Check the link, or ask the shop for a new one.": "Proverite link ili zatražite novi od servisa.",
+  "Not now": "Ne sada",
+  "Download": "Preuzmi",
+  "Print the intake receipt?": "Odštampati prijemnicu?",
+  "Service {{number}} is created. Download the intake receipt for the customer?": "Servis {{number}} je kreiran. Preuzeti prijemnicu za mušteriju?"
 }

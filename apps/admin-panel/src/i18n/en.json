@@ -271,5 +271,9 @@
   "Choose a start date on or before the end date.": "Choose a start date on or before the end date.",
   "Service not found": "Service not found",
   "Could not load the service": "Could not load the service",
-  "Check the link, or ask the shop for a new one.": "Check the link, or ask the shop for a new one."
+  "Check the link, or ask the shop for a new one.": "Check the link, or ask the shop for a new one.",
+  "Not now": "Not now",
+  "Download": "Download",
+  "Print the intake receipt?": "Print the intake receipt?",
+  "Service {{number}} is created. Download the intake receipt for the customer?": "Service {{number}} is created. Download the intake receipt for the customer?"
 }
