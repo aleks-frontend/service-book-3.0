@@ -391,6 +391,32 @@ describe("customers: paged list", () => {
     expect(names(response)).toEqual(["Customer 01"]);
   });
 
+  it("lists only the customers that match every word, each in any field", async () => {
+    const { agent } = await authenticatedAgent();
+    await agent.post("/api/customers").send(MARKO);
+    await agent.post("/api/customers").send({ name: "Marko Petrović", phone: "0651112233" });
+    await agent.post("/api/customers").send({ name: "Ana Kovač", phone: "0649998877" });
+
+    expect(names(await searchCustomers(agent, "Marko 064"))).toEqual(["Marko Marković"]);
+    expect(names(await searchCustomers(agent, "marko example.com"))).toEqual(["Marko Marković"]);
+  });
+
+  it("keeps adjacent phone-like words together as one piece of a number", async () => {
+    const { agent } = await authenticatedAgent();
+    await agent.post("/api/customers").send(MARKO);
+    await agent.post("/api/customers").send({ name: "Marko Petrović", phone: "064 999 1230" });
+
+    expect(names(await searchCustomers(agent, "Marko 064 123"))).toEqual(["Marko Marković"]);
+  });
+
+  it("keeps a +381 run the start of a number", async () => {
+    const { agent } = await authenticatedAgent();
+    await agent.post("/api/customers").send({ name: "Ana Kovač", phone: "064 1206 333" });
+    await agent.post("/api/customers").send({ name: "Bojan Ilić", phone: "011 333 0644" });
+
+    expect(names(await searchCustomers(agent, "+381 64"))).toEqual(["Ana Kovač"]);
+  });
+
   it("pages through search results with the filtered total", async () => {
     const { agent } = await authenticatedAgent();
     await createNumberedCustomers(agent, 12);

@@ -9,7 +9,7 @@ import {
 import { Prisma } from "../generated/prisma/client.js";
 import { bulkDeleteHandler } from "../lib/bulkDelete.js";
 import { prisma } from "../lib/prisma.js";
-import { findCustomerIdsByPhone, isPhoneTerm } from "../lib/phoneSearch.js";
+import { findCustomerIdsByPhone, isPhoneTerm, searchWords } from "../lib/phoneSearch.js";
 import { findServiceHistory } from "../lib/serviceRows.js";
 import {
   hideLegacyId,
@@ -24,6 +24,24 @@ export const customersRouter = Router();
 
 const LABEL = "Customer";
 
+/**
+ * Every word must appear in the name, phone or email; a phone-like word also
+ * matches phones by their digits. Prisma can't compare those, so they come
+ * back as ids.
+ */
+function searchWhere(search: string): Promise<Prisma.CustomerWhereInput[]> {
+  return Promise.all(
+    searchWords(search).map(async (word) => ({
+      OR: [
+        ...(["name", "phone", "email"] as const).map((field) => ({
+          [field]: { contains: word, mode: "insensitive" as const },
+        })),
+        { id: { in: isPhoneTerm(word) ? await findCustomerIdsByPhone(word) : [] } },
+      ],
+    })),
+  );
+}
+
 customersRouter.get("/", async (req, res) => {
   const parsed = customerListQuerySchema.safeParse(req.query);
   if (!parsed.success) {
@@ -32,18 +50,7 @@ customersRouter.get("/", async (req, res) => {
   }
 
   const { page, pageSize, search, sortDir } = parsed.data;
-  // Prisma can't compare phones by their digits, so those matches come back as ids.
-  const phoneMatches = search && isPhoneTerm(search) ? await findCustomerIdsByPhone(search) : [];
-  const where: Prisma.CustomerWhereInput = search
-    ? {
-        OR: [
-          ...(["name", "phone", "email"] as const).map((field) => ({
-            [field]: { contains: search, mode: "insensitive" as const },
-          })),
-          { id: { in: phoneMatches } },
-        ],
-      }
-    : {};
+  const where: Prisma.CustomerWhereInput = { AND: await searchWhere(search ?? "") };
 
   const [items, total] = await Promise.all([
     prisma.customer.findMany({

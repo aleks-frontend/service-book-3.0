@@ -12,6 +12,24 @@ export function isPhoneTerm(term: string) {
 }
 
 /**
+ * The words of a search term, split on whitespace, except that a run of
+ * adjacent phone-like words stays one word: `Marko 064 123 4567` is `Marko`
+ * and `064 123 4567`. Split apart, `+381 64` would lose the `+381` anchor
+ * that makes it the start of a number.
+ */
+export function searchWords(term: string): string[] {
+  const words: string[] = [];
+  let inPhoneRun = false;
+  for (const word of term.split(/\s+/).filter(Boolean)) {
+    const phoneLike = isPhoneTerm(word);
+    if (phoneLike && inPhoneRun) words[words.length - 1] += ` ${word}`;
+    else words.push(word);
+    inPhoneRun = phoneLike;
+  }
+  return words;
+}
+
+/**
  * Whether the phone in the `phone` column contains a phone-like term once
  * both are reduced to digits, so `064 123`, `064/123` and `+38164123` all
  * find `+381 64 123 4567`. A term with the country code is the start of a
