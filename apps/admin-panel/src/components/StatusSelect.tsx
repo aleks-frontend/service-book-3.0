@@ -1,8 +1,11 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown } from "lucide-react";
-import { STATUSES, type Status } from "@servicebook/schemas";
+import { STATUSES, type ServiceDetail, type Status } from "@servicebook/schemas";
+import { useDownloadServiceReportMutation } from "@/lib/serviceReport";
 import { useChangeStatusMutation } from "@/lib/services";
 import { STATUS_LABELS } from "@/lib/statuses";
+import { OfferDocumentDialog } from "./OfferDocumentDialog";
 import { StatusBadge } from "./StatusBadge";
 import {
   DropdownMenu,
@@ -20,14 +23,20 @@ type StatusSelectProps = {
 /**
  * A service's status badge that opens a menu of the statuses; picking one
  * saves it at once. While it saves, the badge already shows the new status.
+ * Once a change to Completed saves, it offers the service report.
  */
 export function StatusSelect({ serviceId, status }: StatusSelectProps) {
   const { t } = useTranslation();
   const changeStatus = useChangeStatusMutation();
+  const serviceReport = useDownloadServiceReportMutation();
   const shown = changeStatus.isPending ? changeStatus.variables.status : status;
+  // Kept after the offer closes, so its text doesn't go blank while it animates out.
+  const [completed, setCompleted] = useState<ServiceDetail>();
+  const [offeringReport, setOfferingReport] = useState(false);
 
   return (
-    // Rows and cards open the service on click; choosing a status must not.
+    // Rows and cards open the service on click; choosing a status, or answering the
+    // offer (whose clicks bubble through its portal), must not.
     <span className="inline-flex" onClick={(event) => event.stopPropagation()}>
       <DropdownMenu>
         <DropdownMenuTrigger
@@ -42,7 +51,17 @@ export function StatusSelect({ serviceId, status }: StatusSelectProps) {
           <DropdownMenuRadioGroup
             value={shown}
             onValueChange={(value) => {
-              if (value !== shown) changeStatus.mutate({ id: serviceId, status: value as Status });
+              if (value === shown) return;
+              changeStatus.mutate(
+                { id: serviceId, status: value as Status },
+                {
+                  onSuccess: (saved) => {
+                    if (saved.status !== "COMPLETED") return;
+                    setCompleted(saved);
+                    setOfferingReport(true);
+                  },
+                },
+              );
             }}
           >
             {STATUSES.map((option) => (
@@ -53,6 +72,18 @@ export function StatusSelect({ serviceId, status }: StatusSelectProps) {
           </DropdownMenuRadioGroup>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <OfferDocumentDialog
+        open={offeringReport}
+        onOpenChange={setOfferingReport}
+        title={t("Print the service report?")}
+        description={t(
+          "Service {{number}} is completed. Generate the service report for the customer?",
+          { number: completed?.number ?? "" },
+        )}
+        confirmLabel={t("Generate")}
+        onConfirm={() => completed && serviceReport.mutate(completed)}
+      />
     </span>
   );
 }

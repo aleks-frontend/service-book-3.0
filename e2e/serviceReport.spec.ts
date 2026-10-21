@@ -127,3 +127,40 @@ test("a staff member writes the customer report and prints the service report, i
   expect(english.text).not.toContain("Izveštaj o servisu");
   expect(english.qrCodes).toEqual([`${baseURL}/s/${service.publicToken}`]);
 });
+
+test("completing a service from the list offers its service report", async ({ page }) => {
+  await logIn(page);
+  await expect(page).toHaveURL("/services");
+  const send = async (path: string, data: object) => {
+    const response = await page.request.post(path, { data });
+    expect(response.ok()).toBe(true);
+    return response.json();
+  };
+  const customer = await send("/api/customers", { name: "Jelena Ilić", phone: "0601" });
+  const device = await send("/api/devices", { model: "Pixel 7", ownerId: customer.id });
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const service = await send("/api/services", {
+    customerId: customer.id,
+    deviceIds: [device.id],
+    date: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`,
+  });
+  await page.reload();
+
+  // The list opens in cards; choosing Completed on one saves it, then offers the report.
+  const card = page.getByRole("listitem").filter({ hasText: service.number });
+  await card.getByRole("button", { name: /Promeni status/ }).click();
+  await page.getByRole("menuitemradio", { name: "Završen" }).click();
+
+  const prompt = page.getByRole("dialog", { name: "Odštampati izveštaj o servisu?" });
+  const download = page.waitForEvent("download");
+  await prompt.getByRole("button", { name: "Generiši" }).click();
+  await expect(prompt).toBeHidden();
+  await expect(card.getByRole("button", { name: /Promeni status/ })).toHaveText("Završen");
+  expect((await download).suggestedFilename()).toBe(`izvestaj-o-servisu-${service.number}.pdf`);
+  const pdf = await readDownload(await download);
+  expect(pdf.text).toContain(`Izveštaj o servisu ${service.number}`);
+  expect(pdf.text).toContain("Ime Jelena Ilić");
+  // The prompt sits over the list; the service did not open.
+  await expect(page).toHaveURL("/services");
+});
