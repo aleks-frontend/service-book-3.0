@@ -1,0 +1,239 @@
+/* PROTOTYPE (#24): the prototype's own chrome. Deliberately not any direction's look. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  transition: background 0.2s;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+.proto-bar {
+  position: fixed;
+  z-index: 100;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 999px;
+  background: #000;
+  color: #fff;
+  font:
+    500 13px/1 system-ui,
+    sans-serif;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  outline: 2px solid #fff;
+}
+
+.proto-bar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.proto-bar button:hover,
+.proto-bar button[aria-pressed="true"] {
+  background: #333;
+}
+
+.proto-bar-label {
+  min-width: 128px;
+  text-align: center;
+}
+
+.proto-bar-sep {
+  width: 1px;
+  height: 18px;
+  background: #555;
+  margin: 0 4px;
+}
+
+/* A transparent native select over the status, so every direction's badge changes the status. */
+.proto-status {
+  position: relative;
+  display: inline-flex;
+}
+
+.proto-status select {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.proto-status:focus-within {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* The notes panel takes the direction's fonts and colours, so it reads as part of the direction. */
+.notes {
+  position: fixed;
+  z-index: 90;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: min(480px, 100vw);
+  overflow-y: auto;
+  padding: 24px 24px 96px;
+  background: var(--surface);
+  color: var(--ink);
+  border-right: 1px solid var(--rule);
+  box-shadow: 8px 0 32px rgba(0, 0, 0, 0.25);
+  font-family: var(--font-text);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.notes section {
+  margin-top: 24px;
+}
+
+.notes h3 {
+  margin: 0 0 8px;
+  font: 600 15px/1.3 var(--font-text);
+}
+
+.notes p,
+.notes ul {
+  margin: 0 0 8px;
+}
+
+.notes ul {
+  padding-left: 18px;
+}
+
+.notes-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.notes-title {
+  margin: 0 0 4px;
+  font: 700 28px/1.1 var(--font-display);
+}
+
+.notes-close {
+  align-self: start;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.notes-sample-display {
+  font: 700 26px/1.2 var(--font-display);
+}
+
+.notes-sample-text {
+  font-size: 16px;
+}
+
+.notes-meta {
+  color: var(--muted);
+}
+
+.notes-logos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.notes-logo {
+  display: grid;
+  place-items: center;
+  height: 112px;
+  border: 1px solid var(--rule);
+}
+
+.notes-swatches {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 12px;
+  font-size: 13px;
+}
+
+.notes-swatch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.notes-swatch span {
+  width: 18px;
+  height: 18px;
+  border: 1px solid rgba(128, 128, 128, 0.5);
+}
+
+.notes-swatch code {
+  margin-left: auto;
+  color: var(--muted);
+}
+
+.notes-statuses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 12px 0;
+  padding: 10px;
+  border: 1px solid var(--rule);
+}
+
+.notes-statuses span {
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.notes-checks {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.notes-checks td {
+  padding: 3px 4px;
+  border-top: 1px solid var(--rule);
+}
+
+.notes-checks tr[data-fail] {
+  color: #d00;
+  font-weight: 700;
+}
+
+.notes-pair {
+  display: inline-block;
+  width: 32px;
+  text-align: center;
+  font-weight: 600;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+}

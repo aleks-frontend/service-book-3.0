@@ -1,0 +1,602 @@
+/* PROTOTYPE (#24), direction A: Workbench. */
+
+.wb {
+  --font-display: "Big Shoulders Display", "Arial Narrow", sans-serif;
+  --font-text: "Archivo", system-ui, sans-serif;
+  --bar: #1c2124;
+  --bar-ink: #eceeec;
+  --r: 2px;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 14px/1.45 var(--font-text);
+}
+
+.wb[data-mode="dark"] {
+  --bar: #23282c;
+}
+
+.wb :focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.wb a {
+  color: inherit;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.wb-muted {
+  color: var(--muted);
+}
+
+.wb-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.wb-nowrap {
+  white-space: nowrap;
+}
+
+.wb-right {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.wb-number {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Header: an ink bar with a yellow floor-marking edge. */
+.wb-top {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  height: 56px;
+  padding: 0 20px;
+  background: var(--bar);
+  color: var(--bar-ink);
+  border-bottom: 4px solid var(--primary);
+}
+
+.wb-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font: 800 22px/1 var(--font-display);
+  letter-spacing: 0.01em;
+}
+
+.wb-nav {
+  display: flex;
+  align-self: stretch;
+  gap: 4px;
+}
+
+.wb-nav a {
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  text-decoration: none;
+  color: #b9c0c4;
+  font-weight: 500;
+  border-bottom: 4px solid transparent;
+  margin-bottom: -4px;
+}
+
+.wb-nav a:hover {
+  color: var(--bar-ink);
+}
+
+.wb-nav a[aria-current="page"] {
+  color: var(--bar-ink);
+  font-weight: 700;
+  border-bottom-color: var(--bar-ink);
+}
+
+.wb-user {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #b9c0c4;
+}
+
+/* Controls */
+.wb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  background: var(--surface);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.wb-btn:hover {
+  border-color: var(--ink);
+}
+
+.wb-btn-primary {
+  background: var(--primary);
+  color: var(--onPrimary);
+  border-color: var(--primary);
+}
+
+.wb-btn-primary:hover {
+  border-color: var(--onPrimary);
+}
+
+.wb-btn-dark {
+  background: transparent;
+  color: var(--bar-ink);
+  border-color: #4a5257;
+}
+
+.wb-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--r);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.wb-icon:hover {
+  background: rgba(127, 127, 127, 0.18);
+}
+
+.wb-main {
+  padding: 20px;
+}
+
+.wb-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.wb-toolbar h1 {
+  margin: 0 16px 0 0;
+  font: 800 34px/1 var(--font-display);
+}
+
+.wb-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 320px;
+  max-width: 520px;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.wb-search input {
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+}
+
+.wb-search:focus-within {
+  outline: 2px solid var(--focus);
+}
+
+.wb-select {
+  height: 34px;
+  padding: 0 8px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  background: var(--surface);
+}
+
+.wb-seg {
+  display: flex;
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  background: var(--surface);
+  margin-left: auto;
+}
+
+.wb-seg button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 32px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.wb-seg button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--surface);
+}
+
+/* Status: a tag with a darker notch at its start. */
+.wb-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 8px 0 10px;
+  border-radius: var(--r);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  clip-path: polygon(5px 0, 100% 0, 100% 100%, 5px 100%, 0 50%);
+}
+
+/* Table: the counter view. */
+.wb-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+}
+
+.wb-table th {
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  border-bottom: 2px solid var(--ink);
+}
+
+.wb-table td {
+  height: 40px;
+  padding: 4px 12px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.wb-table tbody tr {
+  cursor: pointer;
+  box-shadow: inset 4px 0 0 transparent;
+}
+
+.wb-table tbody tr:hover,
+.wb-table tbody tr[aria-selected="true"] {
+  box-shadow: inset 4px 0 0 var(--primary);
+  background: color-mix(in srgb, var(--primary) 7%, var(--surface));
+}
+
+.wb-table .wb-number {
+  font-size: 17px;
+}
+
+/* Cards: repair tags with a notched end and a punched hole. */
+.wb-tags {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wb-tag {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px 12px 34px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  cursor: pointer;
+  clip-path: polygon(14px 0, 100% 0, 100% 100%, 14px 100%, 0 calc(100% - 14px), 0 14px);
+}
+
+.wb-tag::before {
+  content: "";
+  position: absolute;
+  left: 11px;
+  top: 18px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow: inset 0 0 0 1.5px var(--rule);
+}
+
+.wb-tag:hover {
+  border-color: var(--ink);
+}
+
+.wb-tag-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.wb-tag-number {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.wb-tag-customer {
+  font-weight: 600;
+}
+
+.wb-tag-customer .wb-muted {
+  font-weight: 400;
+}
+
+.wb-tag-devices {
+  color: var(--muted);
+}
+
+.wb-tag-foot {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 6px;
+  border-top: 1px dashed var(--rule);
+  font-size: 13px;
+}
+
+/* Drawer: a flat sheet with an ink header. */
+.wb-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(16, 20, 22, 0.55);
+  animation: wb-fade 80ms ease-out;
+}
+
+.wb-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(600px, 100vw);
+  overflow-y: auto;
+  background: var(--surface);
+  border-left: 4px solid var(--primary);
+  animation: wb-slide 160ms cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+@keyframes wb-slide {
+  from {
+    transform: translateX(40px);
+    opacity: 0;
+  }
+}
+
+@keyframes wb-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.wb-drawer-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 16px 14px 20px;
+  background: var(--bar);
+  color: var(--bar-ink);
+}
+
+.wb-drawer-title {
+  font: 800 30px/1 var(--font-display);
+  font-variant-numeric: tabular-nums;
+}
+
+.wb-drawer-sub {
+  margin-top: 4px;
+  color: #b9c0c4;
+  font-size: 13px;
+}
+
+.wb-drawer-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.wb-drawer-actions .proto-status {
+  margin-right: 6px;
+}
+
+.wb-summary {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  margin: 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.wb-summary dt,
+.wb-summary dd {
+  margin: 0;
+  padding: 8px 20px;
+  border-top: 1px solid var(--rule);
+}
+
+.wb-summary dt {
+  color: var(--muted);
+  font-size: 13px;
+  padding-right: 0;
+}
+
+.wb-summary dd {
+  padding-left: 0;
+}
+
+.wb-summary dt:first-of-type,
+.wb-summary dt:first-of-type + dd {
+  border-top: 0;
+}
+
+.wb-tabs {
+  display: flex;
+  gap: 0;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.wb-tabs button {
+  padding: 12px 14px 10px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.wb-tabs button[aria-selected="true"] {
+  color: var(--ink);
+  border-bottom-color: var(--primary);
+}
+
+.wb-panel {
+  padding: 16px 20px 96px;
+}
+
+.wb-lines {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 12px;
+}
+
+.wb-lines th {
+  padding: 6px 8px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  border-bottom: 1px solid var(--ink);
+}
+
+.wb-lines td {
+  padding: 8px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.wb-lines td svg {
+  vertical-align: -2px;
+  color: var(--muted);
+}
+
+.wb-lines tfoot td {
+  border-bottom: 0;
+  border-top: 2px solid var(--ink);
+  font: 800 22px/1 var(--font-display);
+}
+
+.wb-form {
+  display: grid;
+  gap: 8px;
+}
+
+.wb-form label {
+  font-weight: 600;
+}
+
+.wb-form p {
+  margin: 0;
+}
+
+.wb-form textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  background: var(--surface);
+  resize: vertical;
+}
+
+.wb-log {
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+  border-left: 2px solid var(--rule);
+}
+
+.wb-log li {
+  padding: 4px 0 14px 16px;
+  position: relative;
+}
+
+.wb-log li::before {
+  content: "";
+  position: absolute;
+  left: -5px;
+  top: 10px;
+  width: 8px;
+  height: 8px;
+  background: var(--ink);
+}
+
+.wb-log-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.wb-log-meta strong {
+  color: var(--ink);
+}
+
+.wb-log p {
+  margin: 4px 0 0;
+}
+
+.wb-log-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+@media (max-width: 900px) {
+  .wb-nav {
+    display: none;
+  }
+  .wb-table th:nth-child(4),
+  .wb-table td:nth-child(4) {
+    display: none;
+  }
+}
+
+/* A changed status flashes its row's or tag's yellow edge once. */
+.wb-table tbody tr[data-changed],
+.wb-tag[data-changed] {
+  animation: wb-flash 300ms ease-out;
+}
+
+@keyframes wb-flash {
+  from {
+    box-shadow: inset 6px 0 0 var(--primary);
+    background: color-mix(in srgb, var(--primary) 30%, var(--surface));
+  }
+}
+
+.wb-table th.wb-num,
+.wb-lines th.wb-num {
+  text-align: right;
+}

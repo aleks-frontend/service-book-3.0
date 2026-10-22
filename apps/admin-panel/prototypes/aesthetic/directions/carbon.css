@@ -1,0 +1,626 @@
+/* PROTOTYPE (#24), direction B: Carbon copy. */
+
+.cc {
+  --font-display: "Zilla Slab", Georgia, serif;
+  --font-text: "Libre Franklin", system-ui, sans-serif;
+  --spine: var(--primary);
+  --spine-ink: #ffffff;
+  --spine-muted: #cdd3f7;
+  --paper-shadow: 0 1px 0 var(--rule), 0 10px 18px -12px rgba(30, 35, 64, 0.35);
+  --r: 4px;
+  --ruled: color-mix(in srgb, var(--primary) 16%, transparent);
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 14px/1.5 var(--font-text);
+}
+
+.cc[data-mode="dark"] {
+  --spine: #0e1128;
+  --spine-ink: #e8eaf6;
+  --spine-muted: #a6accb;
+  --paper-shadow: 0 1px 0 var(--rule), 0 12px 22px -12px rgba(0, 0, 0, 0.6);
+}
+
+.cc :focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.cc a {
+  color: var(--primary);
+  text-underline-offset: 3px;
+}
+
+.cc-muted {
+  color: var(--muted);
+}
+
+.cc-small {
+  font-size: 12px;
+}
+
+.cc-right {
+  text-align: right;
+}
+
+.cc-nowrap {
+  white-space: nowrap;
+}
+
+.cc-grow {
+  flex: 1;
+}
+
+.cc-end {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.cc-amount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cc-app {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  min-height: 100vh;
+}
+
+/* The spine of the book. */
+.cc-spine {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 0;
+  background: var(--spine);
+  color: var(--spine-ink);
+}
+
+.cc-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 20px 24px;
+  font: 700 18px/1.05 var(--font-display);
+}
+
+.cc-nav {
+  display: grid;
+}
+
+.cc-nav a {
+  padding: 9px 20px;
+  color: var(--spine-muted);
+  text-decoration: none;
+  font-weight: 500;
+  border-left: 4px solid transparent;
+}
+
+.cc-nav a:hover {
+  color: var(--spine-ink);
+}
+
+.cc-nav a[aria-current="page"] {
+  color: var(--spine-ink);
+  font-weight: 700;
+  border-left-color: var(--spine-ink);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.cc-user {
+  margin-top: auto;
+  display: grid;
+  gap: 4px;
+  padding: 0 20px;
+  color: var(--spine-muted);
+}
+
+.cc-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--spine-ink);
+  cursor: pointer;
+}
+
+.cc-main {
+  padding: 28px 32px 96px;
+  max-width: 1280px;
+}
+
+.cc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.cc-head h1 {
+  margin: 0;
+  font: 700 34px/1.1 var(--font-display);
+}
+
+.cc-head-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.cc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  background: var(--surface);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cc-btn:hover {
+  border-color: var(--primary);
+}
+
+.cc-btn-primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--onPrimary);
+}
+
+.cc-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: var(--r);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.cc-icon:hover {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
+.cc-seg {
+  display: flex;
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.cc-seg button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.cc-seg button[aria-pressed="true"] {
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, var(--surface));
+}
+
+.cc-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 20px 0 24px;
+}
+
+.cc-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 320px;
+  max-width: 560px;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.cc-search input {
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+}
+
+.cc-search:focus-within {
+  outline: 2px solid var(--focus);
+}
+
+.cc-select {
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  background: var(--surface);
+}
+
+/* Status as an outlined stamp. It presses in when it changes. */
+.cc-stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 1.5px solid currentColor;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.cc-stamp[data-changed] {
+  animation: cc-stamp 200ms ease-out;
+}
+
+@keyframes cc-stamp {
+  from {
+    transform: scale(1.15);
+    opacity: 0.4;
+  }
+}
+
+/* The printed number: the year small, the sequence large, in red. */
+.cc-no {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.cc-no-year {
+  font-size: 0.62em;
+  font-weight: 600;
+}
+
+.cc-no-large {
+  font-size: 40px;
+}
+
+/* Cards: slips with a perforated top edge. */
+.cc-slips {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cc-slip {
+  position: relative;
+  display: grid;
+  gap: 2px;
+  padding: 20px 18px 16px;
+  background: var(--surface);
+  border-radius: 0 0 var(--r) var(--r);
+  box-shadow: var(--paper-shadow);
+  cursor: pointer;
+  transition: transform 120ms ease-out;
+}
+
+.cc-slip::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -5px;
+  height: 10px;
+  background: radial-gradient(circle at 5px 5px, var(--bg) 3px, transparent 3.5px) 0 0 / 12px 10px
+    repeat-x;
+}
+
+.cc-slip:hover {
+  transform: translateY(-2px);
+}
+
+.cc-slip-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+
+.cc-slip-customer {
+  font: 600 19px/1.25 var(--font-display);
+}
+
+.cc-slip-devices {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--ruled);
+}
+
+.cc-slip-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+}
+
+/* Table: ruled like the book, with a red margin line after the number. */
+.cc-ledger-wrap {
+  background: var(--surface);
+  border-radius: var(--r);
+  box-shadow: var(--paper-shadow);
+  overflow: hidden;
+}
+
+.cc-ledger {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.cc-ledger th {
+  padding: 12px 14px 8px;
+  text-align: left;
+  font: 600 14px/1.2 var(--font-display);
+  color: var(--primary);
+  border-bottom: 2px solid var(--primary);
+}
+
+.cc-ledger td {
+  height: 44px;
+  padding: 6px 14px;
+  border-bottom: 1px solid var(--ruled);
+}
+
+.cc-ledger th:first-child,
+.cc-ledger-no {
+  border-right: 3px double var(--accent);
+}
+
+.cc-ledger tbody tr {
+  cursor: pointer;
+}
+
+.cc-ledger tbody tr:hover,
+.cc-ledger tbody tr[aria-selected="true"] {
+  background: color-mix(in srgb, var(--primary) 6%, var(--surface));
+}
+
+/* Drawer: the slip pulled out of the book, perforated along its left edge. */
+.cc-scrim {
+  position: fixed;
+  inset: 0;
+  background: color-mix(in srgb, var(--ink) 35%, transparent);
+  animation: cc-fade 180ms ease-out;
+}
+
+.cc-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(600px, 100vw);
+  overflow-y: auto;
+  padding-left: 10px;
+  background:
+    radial-gradient(circle at 0 6px, var(--bg) 3px, transparent 3.5px) 0 0 / 10px 12px repeat-y,
+    var(--surface);
+  box-shadow: -16px 0 40px -20px rgba(20, 24, 51, 0.45);
+  animation: cc-pull 240ms cubic-bezier(0.25, 0.8, 0.35, 1.05);
+}
+
+@keyframes cc-pull {
+  from {
+    transform: translateX(64px);
+    opacity: 0;
+  }
+}
+
+@keyframes cc-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.cc-drawer-bar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 12px 16px 0 24px;
+}
+
+.cc-drawer-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  padding: 12px 28px 16px 24px;
+  border-bottom: 2px solid var(--primary);
+}
+
+.cc-drawer-head h2 {
+  margin: 0;
+  font: 700 26px/1.1 var(--font-display);
+}
+
+.cc-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 24px;
+  margin: 0;
+  padding: 18px 28px 20px 24px;
+}
+
+.cc-fields .cc-wide {
+  grid-column: 1 / -1;
+}
+
+.cc-fields dt {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.cc-fields dd {
+  margin: 2px 0 0;
+  padding-bottom: 4px;
+  border-bottom: 1px dotted var(--muted);
+}
+
+.cc-phone {
+  margin-left: 10px;
+}
+
+.cc-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.cc-tabs button {
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: var(--r) var(--r) 0 0;
+  background: transparent;
+  color: var(--muted);
+  font: 600 15px/1.2 var(--font-display);
+  cursor: pointer;
+  margin-bottom: -1px;
+}
+
+.cc-tabs button[aria-selected="true"] {
+  color: var(--ink);
+  background: var(--surface);
+  border-color: var(--rule);
+}
+
+.cc-panel {
+  padding: 16px 28px 96px 24px;
+}
+
+.cc-lines {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.cc-lines td {
+  padding: 10px 6px;
+  border-bottom: 1px solid var(--ruled);
+}
+
+.cc-line-icon {
+  width: 24px;
+  color: var(--primary);
+}
+
+.cc-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 4px 0 16px;
+  padding: 10px 6px;
+  border-top: 2px solid var(--primary);
+  font: 700 22px/1 var(--font-display);
+}
+
+.cc-form {
+  display: grid;
+  gap: 8px;
+}
+
+.cc-form label {
+  font: 600 16px/1.2 var(--font-display);
+}
+
+.cc-form p {
+  margin: 0;
+}
+
+/* Written on ruled lines, like the book. */
+.cc-ruled {
+  width: 100%;
+  padding: 2px 10px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  line-height: 28px;
+  background:
+    repeating-linear-gradient(to bottom, transparent 0 27px, var(--ruled) 27px 28px) 0 2px / 100%
+      28px local,
+    var(--surface);
+  resize: vertical;
+}
+
+.cc-log {
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.cc-log li {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--ruled);
+}
+
+.cc-log-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.cc-log-meta span {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.cc-log p {
+  margin: 4px 0 0;
+}
+
+.cc-log-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+@media (max-width: 900px) {
+  .cc-app {
+    grid-template-columns: 1fr;
+  }
+  .cc-spine {
+    display: none;
+  }
+  .cc-main {
+    padding: 20px 16px 96px;
+  }
+}
+
+.cc-ledger th.cc-right {
+  text-align: right;
+}
+
+.cc[data-mode="dark"] .cc-scrim {
+  background: rgba(6, 8, 22, 0.6);
+}

@@ -1,0 +1,670 @@
+/* PROTOTYPE (#24), direction C: Circuit. */
+
+.ci {
+  --font-display: "Chakra Petch", system-ui, sans-serif;
+  --font-text: "Red Hat Text", system-ui, sans-serif;
+  --lift: 0 1px 2px rgba(14, 64, 40, 0.06), 0 8px 24px -10px rgba(14, 64, 40, 0.22);
+  --tint: color-mix(in srgb, var(--primary) 8%, var(--surface));
+  --edge: transparent;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 15px/1.5 var(--font-text);
+}
+
+.ci[data-mode="dark"] {
+  --lift: none;
+  --tint: color-mix(in srgb, var(--accent) 7%, var(--surface));
+  --edge: var(--rule);
+}
+
+.ci :focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.ci a {
+  color: var(--primary);
+  text-underline-offset: 3px;
+}
+
+.ci-muted {
+  color: var(--muted);
+}
+
+.ci-small {
+  font-size: 13px;
+}
+
+.ci-strong {
+  font-weight: 600;
+}
+
+.ci-right {
+  text-align: right;
+}
+
+.ci-nowrap {
+  white-space: nowrap;
+}
+
+.ci-grow {
+  flex: 1;
+}
+
+.ci-end {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.ci-number {
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.ci-amount {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* A floating, rounded top bar with pill navigation. */
+.ci-top {
+  position: sticky;
+  top: 12px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin: 12px 12px 0;
+  padding: 8px 10px 8px 16px;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--lift);
+  border: 1px solid var(--edge);
+}
+
+.ci-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font: 700 18px/1 var(--font-display);
+}
+
+.ci-nav {
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--bg);
+}
+
+.ci-nav a {
+  padding: 6px 14px;
+  border-radius: 999px;
+  color: var(--muted);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.ci-nav a:hover {
+  color: var(--ink);
+}
+
+.ci-nav a[aria-current="page"] {
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(14, 64, 40, 0.15);
+}
+
+.ci[data-mode="dark"] .ci-nav a[aria-current="page"] {
+  box-shadow: inset 0 0 0 1px var(--rule);
+}
+
+.ci-user {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ci-avatar {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--tint);
+  color: var(--primary);
+  font: 700 14px/1 var(--font-display);
+}
+
+.ci-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--surface);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ci-btn:hover {
+  border-color: var(--primary);
+}
+
+.ci-btn-primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--onPrimary);
+}
+
+.ci-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.ci-icon:hover {
+  background: var(--tint);
+  color: var(--ink);
+}
+
+.ci-icon-box {
+  border: 1px solid var(--rule);
+}
+
+.ci-main {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 28px 24px 96px;
+}
+
+.ci-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ci-head h1 {
+  margin: 0;
+  font: 700 32px/1.1 var(--font-display);
+}
+
+.ci-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 20px 0 24px;
+  padding: 10px;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--lift);
+  border: 1px solid var(--edge);
+}
+
+.ci-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 320px;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--muted);
+}
+
+.ci-search input {
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+}
+
+.ci-search:focus-within {
+  outline: 2px solid var(--focus);
+}
+
+.ci-select {
+  height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.ci-seg {
+  display: flex;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--bg);
+}
+
+.ci-seg button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.ci-seg button[aria-pressed="true"] {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgba(14, 64, 40, 0.15);
+}
+
+/* Status as an LED: a dot that glows in dark mode, and pulses once when it changes. */
+.ci-led {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 26px;
+  padding: 0 10px 0 9px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ci-led-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.ci[data-mode="dark"] .ci-led-dot {
+  box-shadow: 0 0 6px 1px currentColor;
+}
+
+.ci-led[data-changed] .ci-led-dot {
+  animation: ci-pulse 600ms ease-out;
+}
+
+@keyframes ci-pulse {
+  30% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, currentColor 30%, transparent);
+  }
+}
+
+/* Cards: components on the board. */
+.ci-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ci-card {
+  display: grid;
+  gap: 2px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--lift);
+  border: 1px solid var(--edge);
+  cursor: pointer;
+  transition:
+    box-shadow 150ms,
+    border-color 150ms;
+}
+
+.ci-card:hover {
+  border-color: var(--primary);
+}
+
+.ci-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.ci-card-top .ci-number {
+  font-size: 18px;
+}
+
+.ci-card-customer {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.ci-card-devices {
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--bg);
+  font-size: 14px;
+}
+
+.ci-card-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-top: 12px;
+  font-size: 14px;
+}
+
+.ci-card-foot .ci-amount {
+  font-size: 17px;
+}
+
+/* Table */
+.ci-table-wrap {
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--lift);
+  border: 1px solid var(--edge);
+  overflow: hidden;
+}
+
+.ci-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ci-table th {
+  padding: 14px 16px 10px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.ci-table td {
+  height: 56px;
+  padding: 6px 16px;
+  border-top: 1px solid var(--rule);
+}
+
+.ci-table tbody tr {
+  cursor: pointer;
+}
+
+.ci-table tbody tr:hover,
+.ci-table tbody tr[aria-selected="true"] {
+  background: var(--tint);
+}
+
+/* Drawer: floats inset from the screen edges. */
+.ci-scrim {
+  position: fixed;
+  inset: 0;
+  background: color-mix(in srgb, var(--ink) 30%, transparent);
+  backdrop-filter: blur(2px);
+  animation: ci-fade 200ms ease-out;
+}
+
+.ci-drawer {
+  position: fixed;
+  z-index: 20;
+  top: 12px;
+  right: 12px;
+  bottom: 12px;
+  width: min(600px, calc(100vw - 24px));
+  overflow-y: auto;
+  border-radius: 20px;
+  background: var(--surface);
+  border: 1px solid var(--edge);
+  box-shadow: 0 24px 64px -16px rgba(14, 64, 40, 0.35);
+  animation: ci-float 280ms cubic-bezier(0.2, 1.15, 0.35, 1);
+  transform-origin: right center;
+}
+
+.ci-scrim {
+  z-index: 15;
+}
+
+@keyframes ci-float {
+  from {
+    transform: translateX(32px) scale(0.98);
+    opacity: 0;
+  }
+}
+
+@keyframes ci-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.ci-drawer-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 20px 16px 0 24px;
+}
+
+.ci-drawer-title {
+  font: 700 28px/1.1 var(--font-display);
+  font-variant-numeric: tabular-nums;
+}
+
+.ci-drawer-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 24px;
+}
+
+.ci-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 14px 20px;
+  margin: 0 24px;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--bg);
+}
+
+.ci-summary .ci-wide {
+  grid-column: 1 / -1;
+}
+
+.ci-summary dt {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.ci-summary dd {
+  margin: 2px 0 0;
+  font-size: 14px;
+}
+
+.ci-tabs {
+  display: flex;
+  gap: 2px;
+  margin: 20px 24px 0;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--bg);
+}
+
+.ci-tabs button {
+  flex: 1;
+  height: 34px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ci-tabs button[aria-selected="true"] {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgba(14, 64, 40, 0.15);
+}
+
+.ci-panel {
+  padding: 16px 24px 32px;
+}
+
+.ci-lines {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ci-lines li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+}
+
+.ci-line-icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--tint);
+  color: var(--primary);
+}
+
+.ci-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 12px 0 16px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--tint);
+  font: 700 22px/1 var(--font-display);
+}
+
+.ci-total span:last-child {
+  color: var(--accent);
+}
+
+.ci-form {
+  display: grid;
+  gap: 8px;
+}
+
+.ci-form label {
+  font-weight: 600;
+}
+
+.ci-form p {
+  margin: 0;
+}
+
+.ci-form textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--surface);
+  resize: vertical;
+}
+
+/* The log is a copper trace with a pad at each entry. */
+.ci-log {
+  position: relative;
+  margin: 0 0 16px;
+  padding: 0 0 0 26px;
+  list-style: none;
+}
+
+.ci-log::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+.ci-log li {
+  position: relative;
+  padding: 0 0 16px;
+}
+
+.ci-log li::before {
+  content: "";
+  position: absolute;
+  left: -24px;
+  top: 4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  background: var(--surface);
+}
+
+.ci-log-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.ci-log-meta span {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.ci-log p {
+  margin: 4px 0 0;
+}
+
+.ci-log-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+@media (max-width: 900px) {
+  .ci-nav {
+    display: none;
+  }
+  .ci-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ci-table th.ci-right {
+  text-align: right;
+}
+
+.ci[data-mode="dark"] .ci-scrim {
+  background: rgba(3, 12, 8, 0.6);
+}
