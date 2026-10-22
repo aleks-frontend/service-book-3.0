@@ -24,7 +24,12 @@ type CustomerDrawerProps = {
 /** Facebook is stored as staff typed it: a profile URL or just a name. */
 function facebookLink(facebook: string) {
   return /^https?:\/\//i.test(facebook) ? (
-    <a href={facebook} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+    <a
+      href={facebook}
+      target="_blank"
+      rel="noreferrer"
+      className="text-emphasis underline decoration-1 underline-offset-[3px] hover:decoration-2"
+    >
       {facebook}
     </a>
   ) : (
@@ -101,13 +106,19 @@ function CustomerSummary({ customer }: { customer: Customer }) {
   return (
     <DrawerSummary label={t("Customer details")}>
       <DrawerSummaryRow label={t("Phone")}>
-        <a href={`tel:${customer.phone}`} className="text-primary hover:underline">
+        <a
+          href={`tel:${customer.phone}`}
+          className="text-emphasis underline decoration-1 underline-offset-[3px] hover:decoration-2"
+        >
           {customer.phone}
         </a>
       </DrawerSummaryRow>
       {customer.email && (
         <DrawerSummaryRow label={t("Email")}>
-          <a href={`mailto:${customer.email}`} className="text-primary hover:underline">
+          <a
+            href={`mailto:${customer.email}`}
+            className="text-emphasis underline decoration-1 underline-offset-[3px] hover:decoration-2"
+          >
             {customer.email}
           </a>
         </DrawerSummaryRow>

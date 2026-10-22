@@ -6,7 +6,7 @@ export function PlaceholderPage({ titleKey }: { titleKey: string }) {
 
   return (
     <section>
-      <h1 className="text-2xl font-semibold">{t(titleKey)}</h1>
+      <h1 className="font-display text-title">{t(titleKey)}</h1>
       <p className="mt-2 text-muted-foreground">{t("This section is coming soon.")}</p>
     </section>
   );

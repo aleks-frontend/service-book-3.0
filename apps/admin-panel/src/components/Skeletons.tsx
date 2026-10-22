@@ -18,7 +18,7 @@ export function Skeleton({
 }) {
   return (
     <div
-      className={cn("h-4 animate-pulse rounded bg-muted motion-reduce:animate-none", className)}
+      className={cn("h-4 animate-pulse rounded-sm bg-muted motion-reduce:animate-none", className)}
       style={style}
       aria-hidden
     />
@@ -32,7 +32,7 @@ export function TableSkeletonRows({ columns }: { columns: number }) {
   return Array.from({ length: PLACEHOLDER_COUNT }, (_, row) => (
     <TableRow key={row} className="hover:bg-transparent">
       {Array.from({ length: columns }, (_, column) => (
-        <TableCell key={column} className="py-3">
+        <TableCell key={column}>
           {row === 0 && column === 0 && <span className="sr-only">{t("Loading…")}</span>}
           <Skeleton />
         </TableCell>
@@ -49,7 +49,7 @@ export function CardSkeletons({ className }: { className?: string }) {
     <ul className={className}>
       <li className="sr-only">{t("Loading…")}</li>
       {Array.from({ length: PLACEHOLDER_COUNT }, (_, card) => (
-        <li key={card} className="space-y-3 rounded-md border bg-card p-4" aria-hidden>
+        <li key={card} className="repair-tag pointer-events-none space-y-3" aria-hidden>
           <Skeleton className="w-1/3" />
           <Skeleton className="w-2/3" />
           <Skeleton />

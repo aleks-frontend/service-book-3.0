@@ -15,6 +15,19 @@ Sentry.init({
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <App />
-    <Toaster position="bottom-right" toastOptions={{ duration: 4000 }} />
+    <Toaster
+      position="bottom-right"
+      toastOptions={{
+        duration: 4000,
+        // Flat, on the theme's tokens: no shadow or rounding, a rule around it.
+        style: {
+          background: "hsl(var(--popover))",
+          color: "hsl(var(--popover-foreground))",
+          border: "1px solid hsl(var(--input))",
+          borderRadius: "var(--radius)",
+          boxShadow: "none",
+        },
+      }}
+    />
   </React.StrictMode>,
 );

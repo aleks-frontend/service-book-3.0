@@ -8,10 +8,10 @@ export function selectClassNames<Option, IsMulti extends boolean>(
   return {
     control: ({ isFocused, isDisabled }) =>
       cn(
-        "min-h-10 rounded-md border border-input bg-white px-3 text-sm",
+        "min-h-9 rounded-md border border-input bg-card px-3 text-sm",
         // The search input inside would otherwise show a text cursor.
         !isDisabled && "cursor-pointer [&_input]:!cursor-pointer",
-        isFocused && "ring-2 ring-ring ring-offset-2 ring-offset-background",
+        isFocused && "ring-2 ring-ring ring-offset-1 ring-offset-background",
         isDisabled && "cursor-not-allowed opacity-50",
         invalid && "border-destructive",
         invalid && isFocused && "ring-destructive",
@@ -25,7 +25,8 @@ export function selectClassNames<Option, IsMulti extends boolean>(
     dropdownIndicator: () => "cursor-pointer p-1 hover:text-foreground",
     indicatorSeparator: () => "hidden",
     loadingIndicator: () => "p-1",
-    menu: () => "z-50 mt-1 mb-1 rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
+    menu: () =>
+      "z-50 mt-1 mb-1 rounded-md border border-input bg-popover p-1 text-popover-foreground",
     menuList: () => "max-h-64",
     option: ({ isFocused }) =>
       cn(

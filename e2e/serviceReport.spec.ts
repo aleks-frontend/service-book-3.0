@@ -98,23 +98,23 @@ test("a staff member writes the customer report and prints the service report, i
     "Glavna 1, Subotica",
     "024 123 456 · servis@example.com",
     "PIB 101234567",
-    // The service, its customer and devices; section headings are set in capitals.
+    // The service, its customer and devices, under their section headings.
     `Izveštaj o servisu ${service.number}`,
     "7. mart 2026.",
-    "PODACI O MUŠTERIJI",
+    "Podaci o mušteriji",
     "Ime Đorđe Živković",
     "Telefon 0657",
-    "UREĐAJI NA SERVISU",
+    "Uređaji na servisu",
     "Lenovo ThinkPad T14",
     "SN: PF-3K2L9",
     // Both lines, with quantity, unit price and line total, and the grand total in RSD.
-    "RAD I PRODAJA",
+    "Rad i prodaja",
     "Opis Količina Jedinična cena (RSD) Ukupno po stavci (RSD)",
     "Čišćenje ventilatora 2 2.500 5.000",
     "USB-C punjač 65W 1 3.200 3.200",
     "Ukupno 8.200 RSD",
     // The customer report, signed for the company.
-    "IZVEŠTAJ ZA MUŠTERIJU",
+    "Izveštaj za mušteriju",
     "Očišćen ventilator i zamenjena termalna pasta.",
     "Uz laptop je prodat punjač.",
   ]) {
@@ -139,14 +139,14 @@ test("a staff member writes the customer report and prints the service report, i
   for (const text of [
     `Service report ${service.number}`,
     "7 March 2026",
-    "CUSTOMER DETAILS",
+    "Customer details",
     "Name Đorđe Živković",
     "S/N PF-3K2L9",
-    "WORK AND SALES",
+    "Work and sales",
     "Description Quantity Unit price (RSD) Line total (RSD)",
     "Čišćenje ventilatora 2 2,500 5,000",
     "Total 8,200 RSD",
-    "CUSTOMER REPORT",
+    "Customer report",
     "Očišćen ventilator i zamenjena termalna pasta.",
     "Tax ID 101234567",
   ]) {

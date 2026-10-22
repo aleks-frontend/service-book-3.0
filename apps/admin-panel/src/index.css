@@ -1,29 +1,96 @@
+@import "@fontsource-variable/archivo/wght";
+@import "@fontsource-variable/big-shoulders-display/wght";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Workbench (ADR-0005): graphite and signal yellow. The PDFs' colours in
+ * `documents/theme.ts` mirror the light set; keep them in sync.
+ */
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 222 47% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --background: 120 5.6% 92.9%; /* page #ECEEEC */
+    --foreground: 202.5 12.5% 12.5%; /* ink #1C2124 */
+    --card: 0 0% 100%; /* surface #FFFFFF */
+    --card-foreground: 202.5 12.5% 12.5%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 221 83% 45%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 94%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 210 40% 94%;
-    --muted-foreground: 215 16% 42%;
-    --accent: 214 60% 92%;
-    --accent-foreground: 222 47% 11%;
-    --destructive: 0 72% 45%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214 32% 88%;
-    --input: 214 32% 85%;
-    --ring: 221 83% 45%;
-    --radius: 0.5rem;
+    --popover-foreground: 202.5 12.5% 12.5%;
+    /* Yellow is a fill only in light mode: as text on white it reaches 1.6:1. */
+    --primary: 48 100% 48%; /* #F5C400 */
+    --primary-foreground: 202.5 12.5% 12.5%;
+    --secondary: 140 5.7% 89.6%; /* #E3E6E4 */
+    --secondary-foreground: 202.5 12.5% 12.5%;
+    --muted: 140 5.7% 89.6%;
+    --muted-foreground: 204 8.2% 35.9%; /* #545D63 */
+    --accent: 140 5.7% 89.6%;
+    --accent-foreground: 202.5 12.5% 12.5%;
+    /* Accent text and focus: links, the create row of a picker, the focus ring. */
+    --emphasis: 202.5 12.5% 12.5%;
+    --destructive: 3.2 71.3% 41%; /* #B3261E */
+    --destructive-foreground: 0 0% 100%;
+    --border: 195 7.3% 78.4%; /* rule #C4CACC */
+    /* Field outlines need 3:1 against the surface, more than a rule has. */
+    --input: 201.4 5.7% 52.2%; /* #7E878C */
+    --ring: 202.5 12.5% 12.5%;
+    --bar: 202.5 12.5% 12.5%; /* the header bar */
+    --radius: 2px;
+
+    --status-received: 209.7 49.2% 36.3%;
+    --status-received-foreground: 0 0% 100%;
+    --status-in-progress: 48 100% 48%;
+    --status-in-progress-foreground: 202.5 12.5% 12.5%;
+    --status-completed: 144.3 46.3% 31.4%;
+    --status-completed-foreground: 0 0% 100%;
+    --status-delivered: 204 7.6% 38.6%;
+    --status-delivered-foreground: 0 0% 100%;
+    --status-cancelled: 3.2 71.3% 41%;
+    --status-cancelled-foreground: 0 0% 100%;
+
+    color-scheme: light;
+  }
+
+  /* On `<html>` for the dark theme, and on the header bar, which is dark in both. */
+  .dark {
+    --background: 205.7 11.9% 11.6%; /* #1A1E21 */
+    --foreground: 120 5.6% 92.9%; /* #ECEEEC */
+    --card: 206.7 11.4% 15.5%; /* #23282C */
+    --card-foreground: 120 5.6% 92.9%;
+    --popover: 206.7 11.4% 15.5%;
+    --popover-foreground: 120 5.6% 92.9%;
+    --primary: 48 100% 48%;
+    --primary-foreground: 202.5 12.5% 12.5%;
+    --secondary: 204 10% 19.6%; /* #2D3337 */
+    --secondary-foreground: 120 5.6% 92.9%;
+    --muted: 204 10% 19.6%;
+    --muted-foreground: 204 8.9% 66.9%; /* #A3ACB2 */
+    --accent: 204 10% 19.6%;
+    --accent-foreground: 120 5.6% 92.9%;
+    --emphasis: 48 100% 48%;
+    --destructive: 4.3 80.8% 69.4%; /* #F07B72 */
+    --destructive-foreground: 5.3 68% 9.8%;
+    --border: 203.1 9.8% 26.1%; /* #3C4449 */
+    --input: 202.5 6.8% 46.3%; /* #6E787E */
+    --ring: 48 100% 48%;
+
+    --status-received: 208.6 60.9% 64.9%;
+    --status-received-foreground: 208.7 43.4% 10.4%;
+    --status-in-progress: 48 100% 48%;
+    --status-in-progress-foreground: 202.5 12.5% 12.5%;
+    --status-completed: 144.8 46.8% 56.5%;
+    --status-completed-foreground: 145.7 44.7% 9.2%;
+    --status-delivered: 203.1 10.1% 74.7%;
+    --status-delivered-foreground: 202.5 12.5% 12.5%;
+    --status-cancelled: 4.3 80.8% 69.4%;
+    --status-cancelled-foreground: 5.3 68% 9.8%;
+
+    color-scheme: dark;
+  }
+
+  /* Only the page's own theme moves the bar, not the header's dark scope. */
+  :root.dark {
+    --bar: 206.7 11.4% 15.5%; /* #23282C */
   }
 }
 
@@ -32,12 +99,77 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground antialiased;
-    font-family:
-      system-ui,
-      -apple-system,
-      "Segoe UI",
-      Roboto,
-      sans-serif;
+    @apply bg-background font-sans text-foreground antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+}
+
+@layer components {
+  /*
+   * A card as a repair tag (ADR-0005): a notched end and a punched hole. Its
+   * outline is the tag's own background showing around an inset surface, so it
+   * follows the notch, which a border cut by `clip-path` would not.
+   */
+  .repair-tag {
+    --tag-shape: polygon(14px 0, 100% 0, 100% 100%, 14px 100%, 0 calc(100% - 14px), 0 14px);
+    position: relative;
+    isolation: isolate;
+    padding: 12px 14px 12px 34px;
+    background: hsl(var(--border));
+    clip-path: var(--tag-shape);
+  }
+  .repair-tag::before {
+    content: "";
+    position: absolute;
+    inset: 1px;
+    z-index: -1;
+    background: hsl(var(--card));
+    clip-path: var(--tag-shape);
+  }
+  .repair-tag::after {
+    content: "";
+    position: absolute;
+    left: 11px;
+    top: 18px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: hsl(var(--background));
+    box-shadow: inset 0 0 0 1.5px hsl(var(--border));
+  }
+  .repair-tag:hover {
+    background: hsl(var(--foreground));
+  }
+  /* `clip-path` would clip a focus ring, so focus thickens the outline instead. */
+  .repair-tag:focus-visible {
+    outline: none;
+    background: hsl(var(--ring));
+  }
+  .repair-tag:focus-visible::before {
+    inset: 2px;
+  }
+  .repair-tag[data-changed]::before {
+    animation: tag-flash 300ms ease-out;
+  }
+  @keyframes tag-flash {
+    from {
+      background: color-mix(in srgb, hsl(var(--primary)) 30%, hsl(var(--card)));
+      box-shadow: inset 6px 0 0 hsl(var(--primary));
+    }
+  }
+}
+
+/* Motion is fast and mechanical, and off entirely when the OS asks for less. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

@@ -34,7 +34,7 @@ export function StatusSelect({ serviceId, status }: StatusSelectProps) {
     <span className="inline-flex" onClick={(event) => event.stopPropagation()}>
       <DropdownMenu>
         <DropdownMenuTrigger
-          className="inline-flex items-center gap-0.5 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          className="inline-flex items-center gap-0.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           aria-label={`${t(STATUS_LABELS[shown])} – ${t("Change status")}`}
         >
           <StatusBadge status={shown} className="pr-1.5">

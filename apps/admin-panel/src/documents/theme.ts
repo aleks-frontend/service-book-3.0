@@ -1,31 +1,40 @@
 import { Font, StyleSheet } from "@react-pdf/renderer";
-import notoSansBold from "./fonts/NotoSans-Bold.ttf?url";
-import notoSansRegular from "./fonts/NotoSans-Regular.ttf?url";
+import archivoBold from "./fonts/Archivo-Bold.ttf?url";
+import archivoRegular from "./fonts/Archivo-Regular.ttf?url";
+import bigShouldersExtraBold from "./fonts/BigShouldersDisplay-ExtraBold.ttf?url";
 
-// The PDF standard fonts lack letters such as č, đ and ő, so documents embed Noto Sans.
+// The admin panel's faces (ADR-0005). The PDF standard fonts lack letters such as č, đ and ő;
+// these cover them.
 Font.register({
-  family: "Noto Sans",
+  family: "Archivo",
   fonts: [
-    { src: notoSansRegular, fontWeight: 400 },
-    { src: notoSansBold, fontWeight: 700 },
+    { src: archivoRegular, fontWeight: 400 },
+    { src: archivoBold, fontWeight: 700 },
   ],
+});
+Font.register({
+  family: "Big Shoulders Display",
+  fonts: [{ src: bigShouldersExtraBold, fontWeight: 800 }],
 });
 // Names and models must not be hyphenated across lines.
 Font.registerHyphenationCallback((word) => [word]);
 
-/** The admin panel's colour tokens (`src/index.css`) as hex, so documents look like the app. */
+/**
+ * The admin panel's light colour tokens (`src/index.css`) as hex; keep them in
+ * sync. Documents are ink-light: colour goes on text, rules, borders and the
+ * logo only, never on a filled or tinted area.
+ */
 export const colors = {
-  text: "#0f1729", // --foreground
-  muted: "#5a687c", // --muted-foreground
-  border: "#d7dfea", // --border
-  primary: "#1450d2", // --primary
-  surface: "#f4f7fb", // --muted at about half strength, like the drawer's summary box
+  text: "#1C2124", // --foreground
+  muted: "#545D63", // --muted-foreground
+  border: "#C4CACC", // --border
+  primary: "#F5C400", // --primary; too faint for text on paper, so only the logo's fill
 };
 
-/** Styles shared by every document: an A4 page with the app's accent band, and its type. */
+/** Styles shared by every document: an A4 page and its type. */
 export const documentStyles = StyleSheet.create({
   page: {
-    fontFamily: "Noto Sans",
+    fontFamily: "Archivo",
     fontSize: 10,
     lineHeight: 1.4,
     color: colors.text,
@@ -33,33 +42,27 @@ export const documentStyles = StyleSheet.create({
     paddingBottom: 40,
     paddingHorizontal: 40,
   },
-  accentBand: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 6,
-    backgroundColor: colors.primary,
-  },
   // Larger text sets its own line height; the page's is relative to its 10pt.
   title: {
     fontSize: 20,
     fontWeight: 700,
     lineHeight: 1.3,
   },
-  /** A small uppercase heading over a section, in the primary colour. */
-  eyebrow: {
-    fontSize: 8,
-    fontWeight: 700,
-    textTransform: "uppercase",
-    color: colors.primary,
+  /** The service number, in the display face as in the app. */
+  serviceNumber: {
+    fontFamily: "Big Shoulders Display",
+    fontWeight: 800,
+    fontSize: 16,
+    lineHeight: 1.1,
   },
-  /** A rounded, lightly tinted box, like `DrawerSummary` in the app. */
-  card: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 6,
-    backgroundColor: colors.surface,
-    padding: 10,
+  /** A section's heading, over a rule. */
+  sectionTitle: {
+    fontWeight: 700,
+    paddingBottom: 3,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.text,
+  },
+  sectionBody: {
+    paddingTop: 6,
   },
 });

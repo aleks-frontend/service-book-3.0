@@ -114,14 +114,21 @@ export function ServicesPage() {
   }
 
   const viewButtonClass = (option: ServicesView) =>
-    cn("h-9 w-9", view === option && "bg-accent text-accent-foreground");
+    cn(
+      "h-8 w-8 rounded-none",
+      view === option && "bg-foreground text-background hover:bg-foreground hover:text-background",
+    );
 
   return (
     <section className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">{t("Services")}</h1>
+        <h1 className="font-display text-title">{t("Services")}</h1>
         <div className="flex items-center gap-3">
-          <div role="group" aria-label={t("View")} className="flex rounded-md border bg-card p-0.5">
+          <div
+            role="group"
+            aria-label={t("View")}
+            className="flex overflow-hidden rounded-md border border-input bg-card"
+          >
             <Button
               variant="ghost"
               size="icon"

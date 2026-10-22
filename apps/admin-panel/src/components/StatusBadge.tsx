@@ -3,12 +3,13 @@ import type { Status } from "@servicebook/schemas";
 import { STATUS_LABELS } from "@/lib/statuses";
 import { cn } from "@/lib/utils";
 
+/** Solid tags; each pair meets WCAG AA in both themes (ADR-0005). */
 const STATUS_CLASSES: Record<Status, string> = {
-  RECEIVED: "bg-sky-100 text-sky-800",
-  IN_PROGRESS: "bg-amber-100 text-amber-800",
-  COMPLETED: "bg-emerald-100 text-emerald-800",
-  DELIVERED: "bg-slate-200 text-slate-800",
-  CANCELLED: "bg-red-100 text-red-800",
+  RECEIVED: "bg-status-received text-status-received-foreground",
+  IN_PROGRESS: "bg-status-in-progress text-status-in-progress-foreground",
+  COMPLETED: "bg-status-completed text-status-completed-foreground",
+  DELIVERED: "bg-status-delivered text-status-delivered-foreground",
+  CANCELLED: "bg-status-cancelled text-status-cancelled-foreground",
 };
 
 type StatusBadgeProps = {
@@ -23,7 +24,8 @@ export function StatusBadge({ status, className, children }: StatusBadgeProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium",
+        // A tag: notched at its start.
+        "inline-flex h-[22px] items-center whitespace-nowrap rounded-sm pl-2.5 pr-2 text-xs font-bold [clip-path:polygon(5px_0,100%_0,100%_100%,5px_100%,0_50%)]",
         STATUS_CLASSES[status],
         className,
       )}

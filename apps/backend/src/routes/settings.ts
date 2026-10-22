@@ -37,6 +37,20 @@ function toSettings(row: SettingsRow | null): Settings {
   };
 }
 
+/**
+ * Reachable without a session: the login page shows the company's logo. It is
+ * printed on every document anyway; nothing else from the settings is read.
+ */
+export const publicSettingsRouter = Router();
+
+publicSettingsRouter.get("/logo", async (_req, res) => {
+  const row = await prisma.settings.findUnique({
+    where: { id: SETTINGS_ID },
+    select: { logo: true, logoType: true },
+  });
+  res.json({ logo: toDataUrl(row?.logo ?? null, row?.logoType ?? null) });
+});
+
 settingsRouter.get("/", async (_req, res) => {
   const row = await prisma.settings.findUnique({ where: { id: SETTINGS_ID } });
   res.json(toSettings(row));

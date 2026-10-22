@@ -14,11 +14,8 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     flexDirection: "row",
-    gap: 3,
-  },
-  number: {
-    fontWeight: 700,
-    color: colors.primary,
+    alignItems: "baseline",
+    gap: 4,
   },
   date: {
     color: colors.muted,
@@ -29,7 +26,7 @@ const styles = StyleSheet.create({
     padding: 6,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 6,
+    borderRadius: 2,
   },
   qrImage: {
     width: 76,
@@ -43,9 +40,6 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 14,
-  },
-  sectionTitle: {
-    marginBottom: 4,
   },
   field: {
     flexDirection: "row",
@@ -112,7 +106,7 @@ export function DocumentTitle({
       <View>
         <Text style={documentStyles.title}>{title}</Text>
         <View style={styles.subtitle}>
-          <Text style={styles.number}>{service.number}</Text>
+          <Text style={documentStyles.serviceNumber}>{service.number}</Text>
           <Text style={styles.date}>· {formatPlainDate(service.date, language)}</Text>
         </View>
       </View>
@@ -125,8 +119,8 @@ export function DocumentTitle({
 }
 
 /**
- * A small uppercase heading over a rounded, lightly tinted box. Kept on one
- * page unless `wrap` lets a long one break, its heading staying with its start.
+ * A bold heading over a rule, and its content. Kept on one page unless `wrap`
+ * lets a long one break, its heading staying with its start.
  */
 export function Section({
   title,
@@ -141,10 +135,12 @@ export function Section({
 }) {
   return (
     <View style={styles.section} wrap={wrap}>
-      <Text style={[documentStyles.eyebrow, styles.sectionTitle]} minPresenceAhead={40}>
+      <Text style={documentStyles.sectionTitle} minPresenceAhead={40}>
         {title}
       </Text>
-      <View style={bodyStyle ? [documentStyles.card, bodyStyle] : documentStyles.card}>
+      <View
+        style={bodyStyle ? [documentStyles.sectionBody, bodyStyle] : documentStyles.sectionBody}
+      >
         {children}
       </View>
     </View>

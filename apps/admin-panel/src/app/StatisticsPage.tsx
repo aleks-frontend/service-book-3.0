@@ -21,6 +21,15 @@ import { LoadingRegion } from "@/components/LoadingRegion";
 import { ChartSkeleton, Skeleton } from "@/components/Skeletons";
 import { StatusBadge } from "@/components/StatusBadge";
 
+// Recharts draws in SVG with its own defaults; these take the theme's tokens instead.
+const CHART_TICK = { fill: "hsl(var(--muted-foreground))" };
+const CHART_TOOLTIP = {
+  background: "hsl(var(--popover))",
+  color: "hsl(var(--popover-foreground))",
+  border: "1px solid hsl(var(--input))",
+  borderRadius: "var(--radius)",
+};
+
 const BUCKET_LABELS: Record<EarningsBucket, string> = {
   day: "Day",
   month: "Month",
@@ -41,7 +50,7 @@ export function StatisticsPage() {
 
   return (
     <section className="space-y-6">
-      <h1 className="text-2xl font-semibold">{t("Statistics")}</h1>
+      <h1 className="font-display text-title">{t("Statistics")}</h1>
       <EarningsCard />
       <StatusCountsCard />
     </section>
@@ -65,14 +74,14 @@ function EarningsCard() {
   return (
     <section aria-labelledby={id} className="space-y-4 rounded-md border bg-card p-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id={id} className="text-lg font-semibold">
+        <h2 id={id} className="font-display text-2xl font-extrabold leading-none">
           {t("Earnings")}
         </h2>
         {query && !isError && (
           <p className="flex items-baseline gap-1 text-sm text-muted-foreground">
             {t("Total")}:{" "}
             {data ? (
-              <span className="text-xl font-semibold tabular-nums text-foreground">
+              <span className="font-display text-2xl font-bold tabular-nums text-foreground">
                 {formatRsd(data.earnings, i18n.language)}
               </span>
             ) : (
@@ -151,12 +160,15 @@ function EarningsCard() {
                       dataKey="period"
                       tickFormatter={(period: string) => formatPeriod(period, i18n.language)}
                       tickLine={false}
+                      tick={CHART_TICK}
+                      stroke="hsl(var(--foreground))"
                       fontSize={12}
                     />
                     <YAxis
                       tickFormatter={(amount: number) => formatAmount(amount, i18n.language)}
                       tickLine={false}
                       axisLine={false}
+                      tick={CHART_TICK}
                       width={80}
                       fontSize={12}
                     />
@@ -167,11 +179,14 @@ function EarningsCard() {
                         t("Earnings"),
                       ]}
                       cursor={{ className: "fill-muted" }}
+                      contentStyle={CHART_TOOLTIP}
                     />
+                    {/* Yellow is too faint on white alone; the ink outline carries the bar, as on the logo. */}
                     <Bar
                       dataKey="earnings"
                       fill="hsl(var(--primary))"
-                      radius={[4, 4, 0, 0]}
+                      stroke="hsl(var(--primary-foreground))"
+                      strokeWidth={1}
                       maxBarSize={64}
                     />
                   </BarChart>
@@ -192,7 +207,7 @@ function StatusCountsCard() {
 
   return (
     <section aria-labelledby={id} className="space-y-4 rounded-md border bg-card p-4">
-      <h2 id={id} className="text-lg font-semibold">
+      <h2 id={id} className="font-display text-2xl font-extrabold leading-none">
         {t("Services by status")}
       </h2>
       {isError ? (
@@ -204,7 +219,7 @@ function StatusCountsCard() {
               <dt>
                 <StatusBadge status={status} />
               </dt>
-              <dd className="text-2xl font-semibold tabular-nums">
+              <dd className="font-display text-3xl font-bold leading-none tabular-nums">
                 {data ? (
                   data[status]
                 ) : (

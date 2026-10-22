@@ -114,7 +114,7 @@ export function DevicesPage() {
   return (
     <section className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">{t("Devices")}</h1>
+        <h1 className="font-display text-title">{t("Devices")}</h1>
         <Button onClick={() => setForm({ open: true })}>
           <Plus className="mr-2 h-4 w-4" aria-hidden />
           {t("New device")}

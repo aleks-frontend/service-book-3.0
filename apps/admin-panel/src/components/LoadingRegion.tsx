@@ -34,7 +34,7 @@ export function LoadingRegion({ refreshing, children }: LoadingRegionProps) {
         <div
           role="progressbar"
           aria-label={t("Loading…")}
-          className="absolute inset-x-0 top-0 z-10 h-0.5 overflow-hidden rounded-t-md bg-primary/20"
+          className="absolute inset-x-0 top-0 z-10 h-[3px] overflow-hidden bg-primary/25"
         >
           <div className="h-full w-1/3 animate-progress bg-primary motion-reduce:w-full motion-reduce:animate-pulse" />
         </div>

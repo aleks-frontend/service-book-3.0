@@ -1,12 +1,14 @@
 import type { ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Wrench } from "lucide-react";
 import { deviceLabel, type PublicService } from "@servicebook/schemas";
 import { formatAmount, formatPlainDate, formatRsd } from "@/lib/format";
 import { usePublicServiceQuery } from "@/lib/publicServices";
 import { cn } from "@/lib/utils";
+import { BrandBar } from "@/components/BrandBar";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { LogoMark } from "@/components/Logo";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Skeleton } from "@/components/Skeletons";
 import { StatusBadge } from "@/components/StatusBadge";
 import {
@@ -35,17 +37,23 @@ export function PublicServicePage() {
   const { data: service, error, isPending } = usePublicServiceQuery(publicToken);
 
   return (
-    <div className="flex min-h-screen flex-col items-center gap-4 bg-muted/40 p-4 sm:py-10">
-      <main className="w-full max-w-2xl space-y-6 rounded-lg border bg-card p-4 shadow-sm sm:p-6">
-        {service ? (
-          <ServiceStatus service={service} />
-        ) : isPending ? (
-          <StatusSkeleton />
-        ) : (
-          <Unavailable notFound={error?.status === 404} />
-        )}
-      </main>
-      <LanguageSwitcher />
+    <div className="flex min-h-screen flex-col items-center gap-4 p-4 sm:py-10">
+      <div className="w-full max-w-2xl overflow-hidden rounded-lg border bg-card">
+        <BrandBar className="px-4 sm:px-6" />
+        <main className="space-y-6 p-4 sm:p-6">
+          {service ? (
+            <ServiceStatus service={service} />
+          ) : isPending ? (
+            <StatusSkeleton />
+          ) : (
+            <Unavailable notFound={error?.status === 404} />
+          )}
+        </main>
+      </div>
+      <div className="flex gap-1">
+        <LanguageSwitcher />
+        <ThemeToggle />
+      </div>
     </div>
   );
 }
@@ -57,7 +65,7 @@ function ServiceStatus({ service }: { service: PublicService }) {
     <>
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold">
+          <h1 className="font-display text-title tabular-nums">
             {t("Service {{number}}", { number: service.number })}
           </h1>
           <p className="text-sm text-muted-foreground">
@@ -122,7 +130,7 @@ function ServiceStatus({ service }: { service: PublicService }) {
               <TableCell colSpan={3} className={cn(AMOUNT, "hidden sm:table-cell")}>
                 {t("Total")}
               </TableCell>
-              <TableCell className={cn(AMOUNT, "whitespace-nowrap text-primary")}>
+              <TableCell className={cn(AMOUNT, "whitespace-nowrap")}>
                 {formatRsd(service.total, i18n.language)}
               </TableCell>
             </TableRow>
@@ -142,7 +150,7 @@ function ServiceStatus({ service }: { service: PublicService }) {
 function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
     <section className="space-y-2">
-      <h2 id={id} className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+      <h2 id={id} className="border-b-2 border-foreground pb-1 text-sm font-bold">
         {title}
       </h2>
       {children}
@@ -169,8 +177,8 @@ function Unavailable({ notFound }: { notFound: boolean }) {
 
   return (
     <div className="flex flex-col items-center gap-2 py-6 text-center">
-      <Wrench className="h-8 w-8 text-muted-foreground" aria-hidden />
-      <h1 className="text-xl font-semibold">
+      <LogoMark className="h-10 w-10" />
+      <h1 className="font-display text-3xl font-extrabold leading-none">
         {notFound ? t("Service not found") : t("Could not load the service")}
       </h1>
       <p className="text-sm text-muted-foreground">

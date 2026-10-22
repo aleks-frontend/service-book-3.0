@@ -89,7 +89,7 @@ export function SettingsPage() {
   return (
     <section className="max-w-3xl space-y-4">
       <div>
-        <h1 className="text-2xl font-semibold">{t("Settings")}</h1>
+        <h1 className="font-display text-title">{t("Settings")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {t("The company details printed on intake receipts and service reports.")}
         </p>

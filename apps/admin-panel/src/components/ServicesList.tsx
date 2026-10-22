@@ -1,8 +1,15 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { flexRender, getCoreRowModel, useReactTable, type ColumnDef } from "@tanstack/react-table";
+import {
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+  type ColumnDef,
+  type Row,
+} from "@tanstack/react-table";
 import { deviceLabel, type Service } from "@servicebook/schemas";
 import { formatPlainDate, formatRsd } from "@/lib/format";
+import { useChangedFlag } from "@/lib/useChangedFlag";
 import { CardSkeletons, TableSkeletonRows } from "./Skeletons";
 import { StatusSelect } from "./StatusSelect";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
@@ -19,7 +26,7 @@ type ServicesListProps = {
   emptyMessage: string;
 };
 
-const CARD_GRID_CLASS = "grid gap-3 sm:grid-cols-2 xl:grid-cols-3";
+const CARD_GRID_CLASS = "grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3";
 
 function devicesText(service: Service) {
   return service.devices.map(deviceLabel).join(", ");
@@ -47,7 +54,7 @@ export function ServicesList({ services, view, onOpen, loading, emptyMessage }: 
   }
   if (services.length === 0) {
     return (
-      <div className="flex h-24 items-center justify-center rounded-md border bg-card text-sm text-muted-foreground">
+      <div className="flex h-24 items-center justify-center rounded-md border border-dashed bg-card text-sm text-muted-foreground">
         {emptyMessage}
       </div>
     );
@@ -72,7 +79,9 @@ function ServicesTable({
         accessorKey: "number",
         header: t("Number"),
         cell: ({ getValue }) => (
-          <span className="font-medium tabular-nums">{getValue<string>()}</span>
+          <span className="font-display text-[1.0625rem] font-bold tabular-nums tracking-[0.02em]">
+            {getValue<string>()}
+          </span>
         ),
       },
       {
@@ -144,19 +153,9 @@ function ServicesTable({
           {loading ? (
             <TableSkeletonRows columns={columns.length} />
           ) : (
-            table.getRowModel().rows.map((row) => (
-              <TableRow
-                key={row.id}
-                className="cursor-pointer"
-                {...openProps(row.original, onOpen)}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id} className="py-3">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))
+            table
+              .getRowModel()
+              .rows.map((row) => <ServiceRow key={row.id} row={row} onOpen={onOpen} />)
           )}
         </TableBody>
       </Table>
@@ -164,38 +163,69 @@ function ServicesTable({
   );
 }
 
-function ServiceCards({ services, onOpen }: Pick<ServicesListProps, "services" | "onOpen">) {
-  const { i18n } = useTranslation();
+/** One service's row; it flashes once when the service's status changes. */
+function ServiceRow({ row, onOpen }: { row: Row<Service>; onOpen: (service: Service) => void }) {
+  const changed = useChangedFlag(row.original.status);
 
+  return (
+    <TableRow
+      className="cursor-pointer data-[changed]:animate-flash"
+      data-changed={changed || undefined}
+      {...openProps(row.original, onOpen)}
+    >
+      {row.getVisibleCells().map((cell) => (
+        <TableCell key={cell.id}>
+          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+        </TableCell>
+      ))}
+    </TableRow>
+  );
+}
+
+function ServiceCards({ services, onOpen }: Pick<ServicesListProps, "services" | "onOpen">) {
   return (
     <ul className={CARD_GRID_CLASS}>
       {services.map((service) => (
-        <li
-          key={service.id}
-          className="cursor-pointer space-y-2 rounded-md border bg-card p-4 transition-colors hover:bg-muted/50"
-          {...openProps(service, onOpen)}
-        >
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <div className="font-semibold tabular-nums">{service.number}</div>
-              <div className="text-xs text-muted-foreground">
-                {formatPlainDate(service.date, i18n.language)}
-              </div>
-            </div>
-            <StatusSelect serviceId={service.id} status={service.status} />
-          </div>
-          <div className="text-sm">
-            <span className="font-medium">{service.customer.name}</span>{" "}
-            <span className="text-muted-foreground">{service.customer.phone}</span>
-          </div>
-          <div className="flex items-baseline justify-between gap-2 text-sm">
-            <span className="text-muted-foreground">{devicesText(service)}</span>
-            <span className="shrink-0 font-medium tabular-nums">
-              {formatRsd(service.total, i18n.language)}
-            </span>
-          </div>
-        </li>
+        <ServiceCard key={service.id} service={service} onOpen={onOpen} />
       ))}
     </ul>
+  );
+}
+
+/** One service as a repair tag; it flashes once when the service's status changes. */
+function ServiceCard({
+  service,
+  onOpen,
+}: {
+  service: Service;
+  onOpen: (service: Service) => void;
+}) {
+  const { i18n } = useTranslation();
+  const changed = useChangedFlag(service.status);
+
+  return (
+    <li
+      className="repair-tag grid cursor-pointer gap-1.5"
+      data-changed={changed || undefined}
+      {...openProps(service, onOpen)}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-display text-2xl font-bold leading-none tabular-nums tracking-[0.02em]">
+          {service.number}
+        </span>
+        <StatusSelect serviceId={service.id} status={service.status} />
+      </div>
+      <div className="text-sm">
+        <span className="font-semibold">{service.customer.name}</span>{" "}
+        <span className="text-muted-foreground">{service.customer.phone}</span>
+      </div>
+      <div className="text-sm text-muted-foreground">{devicesText(service)}</div>
+      <div className="flex items-baseline justify-between gap-2 border-t border-dashed pt-1.5 text-[0.8125rem]">
+        <span className="text-muted-foreground">
+          {formatPlainDate(service.date, i18n.language)}
+        </span>
+        <strong className="shrink-0 tabular-nums">{formatRsd(service.total, i18n.language)}</strong>
+      </div>
+    </li>
   );
 }

@@ -125,3 +125,22 @@ describe("settings", () => {
     expect((await agent.get("/api/settings")).body).toEqual(COMPANY);
   });
 });
+
+describe("the public logo", () => {
+  it("is null without a session before a logo is uploaded", async () => {
+    const response = await request(createApp()).get("/api/public/logo");
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ logo: null });
+  });
+
+  it("is the uploaded logo, and nothing else from the settings", async () => {
+    const { agent } = await authenticatedAgent();
+    await agent.put("/api/settings").send(COMPANY);
+
+    const response = await request(createApp()).get("/api/public/logo");
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ logo: LOGO });
+  });
+});

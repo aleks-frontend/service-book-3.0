@@ -25,20 +25,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "flex-end",
     gap: 16,
-    paddingTop: 8,
+    marginTop: 6,
+    paddingTop: 6,
+    borderTopWidth: 2,
+    borderTopColor: colors.text,
     fontSize: 12,
     lineHeight: 1.3,
     fontWeight: 700,
   },
-  totalAmount: {
-    color: colors.primary,
-  },
   noLines: {
     color: colors.muted,
-  },
-  // White, so the text written for the customer stands out.
-  reportBody: {
-    backgroundColor: "#ffffff",
   },
   signatures: {
     flexDirection: "row",
@@ -110,12 +106,12 @@ export function ServiceReport({ service, settings, qrCode, t, language }: Servic
           ))}
           <View style={styles.totalRow} wrap={false}>
             <Text>{t("Total")}</Text>
-            <Text style={styles.totalAmount}>{formatRsd(service.total, language)}</Text>
+            <Text>{formatRsd(service.total, language)}</Text>
           </View>
         </Section>
 
         {service.customerReport && (
-          <Section title={t("Customer report")} bodyStyle={styles.reportBody} wrap>
+          <Section title={t("Customer report")} wrap>
             <Text>{service.customerReport}</Text>
           </Section>
         )}

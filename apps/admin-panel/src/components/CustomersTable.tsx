@@ -178,7 +178,7 @@ export function CustomersTable({
                 {row.getVisibleCells().map((cell) => (
                   <TableCell
                     key={cell.id}
-                    className={cn("py-3", cell.column.id === "select" && SELECT_COLUMN_CLASS)}
+                    className={cn(cell.column.id === "select" && SELECT_COLUMN_CLASS)}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>

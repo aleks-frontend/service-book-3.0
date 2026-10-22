@@ -15,7 +15,15 @@ const TableHeader = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn("[&_tr]:border-b", className)} {...props} />
+  // An ink rule under the column names; the header row doesn't take a row's hover.
+  <thead
+    ref={ref}
+    className={cn(
+      "[&_tr:hover]:bg-transparent [&_tr:hover]:shadow-none [&_tr]:border-b-2 [&_tr]:border-foreground",
+      className,
+    )}
+    {...props}
+  />
 ));
 TableHeader.displayName = "TableHeader";
 
@@ -33,7 +41,7 @@ const TableFooter = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <tfoot
     ref={ref}
-    className={cn("border-t bg-muted/50 font-medium [&>tr]:last:border-b-0", className)}
+    className={cn("border-t-2 border-foreground font-semibold [&>tr]:last:border-b-0", className)}
     {...props}
   />
 ));
@@ -44,7 +52,8 @@ const TableRow = React.forwardRef<HTMLTableRowElement, React.HTMLAttributes<HTML
     <tr
       ref={ref}
       className={cn(
-        "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
+        // A row under the pointer or selected is marked by a yellow edge, like a tag in a rack.
+        "border-b transition-colors hover:bg-primary/[0.07] hover:shadow-[inset_4px_0_0_hsl(var(--primary))] data-[state=selected]:bg-primary/[0.07] data-[state=selected]:shadow-[inset_4px_0_0_hsl(var(--primary))]",
         className,
       )}
       {...props}
@@ -60,7 +69,7 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      "h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0",
+      "h-10 px-3 text-left align-middle text-xs font-semibold text-muted-foreground [&:has([role=checkbox])]:pr-0",
       className,
     )}
     {...props}
@@ -74,7 +83,7 @@ const TableCell = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <td
     ref={ref}
-    className={cn("p-4 align-middle [&:has([role=checkbox])]:pr-0", className)}
+    className={cn("h-10 px-3 py-1.5 align-middle [&:has([role=checkbox])]:pr-0", className)}
     {...props}
   />
 ));

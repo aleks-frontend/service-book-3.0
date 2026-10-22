@@ -357,8 +357,10 @@ function AddLineForm({ service, isAdding, onAdd, onDone }: AddLineFormProps) {
 
   const typeButtonClass = (option: LineType) =>
     cn(
-      "rounded-sm px-3 py-1 text-sm transition-colors",
-      type === option ? "bg-background font-medium shadow-sm" : "text-muted-foreground",
+      "px-3 py-1 text-sm font-semibold transition-colors",
+      type === option
+        ? "bg-foreground text-background"
+        : "text-muted-foreground hover:text-foreground",
     );
 
   return (
@@ -377,7 +379,7 @@ function AddLineForm({ service, isAdding, onAdd, onDone }: AddLineFormProps) {
         autoComplete="off"
         className="space-y-4"
       >
-        <div className="inline-flex rounded-md bg-muted p-1" role="group">
+        <div className="inline-flex overflow-hidden rounded-md border border-input" role="group">
           <button
             type="button"
             className={typeButtonClass("WORK")}

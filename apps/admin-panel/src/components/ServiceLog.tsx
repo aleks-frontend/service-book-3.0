@@ -31,7 +31,7 @@ export function ServiceLog({ serviceId }: { serviceId: string }) {
       ) : entries.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("No log entries yet.")}</p>
       ) : (
-        <ol className="space-y-3">
+        <ol className="border-l-2">
           {entries.map((entry) => (
             <LogEntryItem key={entry.id} entry={entry} />
           ))}
@@ -47,7 +47,10 @@ function LogEntryItem({ entry }: { entry: LogEntry }) {
   const author = entry.author?.name ?? t("Former staff member");
 
   return (
-    <li className="space-y-1 rounded-md border bg-card p-3 text-sm" data-testid="log-entry">
+    <li
+      className="relative space-y-1 pb-4 pl-4 pt-1 text-sm before:absolute before:-left-[5px] before:top-2.5 before:h-2 before:w-2 before:bg-foreground"
+      data-testid="log-entry"
+    >
       <div className="flex items-baseline justify-between gap-2 text-xs text-muted-foreground">
         <span className="font-medium text-foreground">
           {entry.type === "LEGACY_REMARK" ? t("Imported from the old app") : author}

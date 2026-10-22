@@ -6,6 +6,7 @@ import { request } from "./http";
 
 const settingsKeys = {
   all: ["settings"] as const,
+  logo: ["settings", "logo"] as const,
 };
 
 /** The company identity; every field is null until it is first saved. */
@@ -18,6 +19,16 @@ export function useSettingsQuery() {
   return useQuery(settingsQueryOptions);
 }
 
+/** The company's logo alone, which is readable without logging in. */
+export function useCompanyLogoQuery() {
+  return useQuery({
+    queryKey: settingsKeys.logo,
+    queryFn: () => request<{ logo: string | null }>("/public/logo"),
+    select: ({ logo }) => logo,
+    staleTime: Infinity,
+  });
+}
+
 export function useSaveSettingsMutation() {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
@@ -28,6 +39,7 @@ export function useSaveSettingsMutation() {
     onSuccess: (settings) => {
       toast.success(t("Settings saved"));
       queryClient.setQueryData(settingsKeys.all, settings);
+      queryClient.setQueryData(settingsKeys.logo, { logo: settings.logo });
     },
     onError: () => toast.error(t("Could not save the settings. Please try again.")),
   });

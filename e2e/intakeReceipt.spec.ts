@@ -72,16 +72,15 @@ test("a staff member prints a service's intake receipt, in the UI language, with
     // The service, the customer and what they left.
     `Prijemnica ${service.number}`,
     "7. mart 2026.",
-    // Section headings are set in capitals.
-    "PODACI O MUŠTERIJI",
+    "Podaci o mušteriji",
     "Ime Đorđe Živković",
     "E-mail djordje@example.com",
     "Telefon 0657",
     "Adresa Solunska 11/D",
-    "UREĐAJI NA SERVISU",
+    "Uređaji na servisu",
     "Lenovo ThinkPad T14",
     "SN: PF-3K2L9",
-    "OPIS KVARA",
+    "Opis kvara",
     "Pregreva se i gasi posle pola sata",
     // Signed by the staff member who printed it and by the customer.
     STAFF.name,
@@ -111,11 +110,11 @@ test("a staff member prints a service's intake receipt, in the UI language, with
   for (const text of [
     `Intake receipt ${service.number}`,
     "7 March 2026",
-    "CUSTOMER DETAILS",
+    "Customer details",
     "Name Đorđe Živković",
-    "DEVICES ON SERVICE",
+    "Devices on service",
     "S/N PF-3K2L9",
-    "FAULT DESCRIPTION",
+    "Fault description",
     "Tax ID 101234567",
     STAFF.name,
   ]) {

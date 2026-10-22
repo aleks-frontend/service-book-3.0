@@ -25,7 +25,7 @@ export function selectColumn<T>(
     ),
     cell: ({ row }) => (
       // Keep the row's own click (e.g. open the drawer) from firing as well.
-      <div onClick={(event) => event.stopPropagation()}>
+      <div className="flex" onClick={(event) => event.stopPropagation()}>
         <Checkbox
           checked={row.getIsSelected()}
           onChange={row.getToggleSelectedHandler()}

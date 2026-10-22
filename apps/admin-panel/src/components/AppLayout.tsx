@@ -2,9 +2,12 @@ import { NavLink, Outlet } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { LogOut, Menu, Wrench } from "lucide-react";
+import { LogOut, Menu } from "lucide-react";
+import { CompanyLogo } from "./CompanyLogo";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { Logo } from "./Logo";
 import { ServiceReportOfferProvider } from "./ServiceReportOfferProvider";
+import { ThemeToggle } from "./ThemeToggle";
 import { Button } from "./ui/button";
 import {
   DropdownMenu,
@@ -43,24 +46,26 @@ export function AppLayout() {
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     cn(
-      "rounded-md px-3 py-2 text-sm transition-colors",
+      // The current page is marked on the bar's yellow edge, like a floor marking.
+      "-mb-1 flex items-center border-b-4 px-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
       isActive
-        ? "bg-accent font-semibold text-accent-foreground"
-        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+        ? "border-foreground font-bold text-foreground"
+        : "border-transparent font-medium text-muted-foreground hover:text-foreground",
     );
 
   return (
     <div className="min-h-screen">
-      <header className="border-b bg-card">
-        <div className="container flex h-16 items-center gap-4">
-          <div className="flex items-center gap-2 font-semibold">
-            <Wrench className="h-5 w-5 text-primary" aria-hidden />
-            <span>Service Book</span>
+      {/* The bar is ink in both themes, so what sits on it takes the dark tokens. */}
+      <header className="dark border-b-4 border-primary bg-bar text-foreground">
+        <div className="container flex h-14 items-center gap-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <Logo />
+            <CompanyLogo />
           </div>
 
           <nav
             aria-label={t("Main navigation")}
-            className="hidden flex-1 items-center gap-1 lg:flex"
+            className="hidden flex-1 items-stretch gap-1 self-stretch lg:flex"
           >
             {NAV_ITEMS.map(({ to, labelKey }) => (
               <NavLink key={to} to={to} className={navLinkClass}>
@@ -71,6 +76,7 @@ export function AppLayout() {
 
           <div className="ml-auto flex items-center gap-3">
             <LanguageSwitcher className="hidden sm:flex" />
+            <ThemeToggle className="hidden sm:inline-grid" />
             {me && (
               <span className="hidden text-sm text-muted-foreground md:inline">{me.name}</span>
             )}
@@ -96,8 +102,9 @@ export function AppLayout() {
                     <NavLink to={to}>{t(labelKey)}</NavLink>
                   </DropdownMenuItem>
                 ))}
-                <div className="px-2 py-2 sm:hidden">
+                <div className="flex gap-1 px-2 py-2 sm:hidden">
                   <LanguageSwitcher />
+                  <ThemeToggle />
                 </div>
                 <DropdownMenuItem onSelect={handleLogOut} className="cursor-pointer sm:hidden">
                   {t("Log out")}

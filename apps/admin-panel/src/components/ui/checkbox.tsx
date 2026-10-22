@@ -8,5 +8,5 @@ export function Checkbox({ indeterminate = false, ...props }: CheckboxProps) {
   useEffect(() => {
     if (ref.current) ref.current.indeterminate = indeterminate;
   }, [indeterminate]);
-  return <input ref={ref} type="checkbox" className="h-4 w-4 accent-primary" {...props} />;
+  return <input ref={ref} type="checkbox" className="h-4 w-4 accent-foreground" {...props} />;
 }

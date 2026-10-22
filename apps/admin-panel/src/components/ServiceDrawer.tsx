@@ -161,7 +161,10 @@ function ServiceSummary({ service, onOpen }: { service: ServiceDetail; onOpen: O
           {service.customer.name}
         </DrawerLink>
         {" · "}
-        <a href={`tel:${service.customer.phone}`} className="text-primary hover:underline">
+        <a
+          href={`tel:${service.customer.phone}`}
+          className="text-emphasis underline decoration-1 underline-offset-[3px] hover:decoration-2"
+        >
           {service.customer.phone}
         </a>
       </DrawerSummaryRow>

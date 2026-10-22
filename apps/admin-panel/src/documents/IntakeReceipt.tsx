@@ -3,13 +3,14 @@ import type { TFunction } from "i18next";
 import type { Customer, ServiceDetail, Settings, StaffMember } from "@servicebook/schemas";
 import { CompanyHeader } from "./CompanyHeader";
 import { DeviceRows, DocumentTitle, Field, Section, Signature } from "./DocumentParts";
-import { documentStyles } from "./theme";
+import { colors, documentStyles } from "./theme";
 
 const styles = StyleSheet.create({
-  // White, so there is room to add notes by hand.
+  // Ruled off below, so there is room to add notes by hand.
   faultBody: {
     minHeight: 140,
-    backgroundColor: "#ffffff",
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   signatures: {
     flexDirection: "row",

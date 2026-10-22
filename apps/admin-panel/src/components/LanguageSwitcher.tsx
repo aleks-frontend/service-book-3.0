@@ -21,10 +21,10 @@ export function LanguageSwitcher({ className }: { className?: string }) {
             aria-pressed={active}
             onClick={() => changeLanguage(language)}
             className={cn(
-              "h-8 rounded-md border px-2 text-xs font-semibold uppercase transition-colors",
+              "h-8 rounded-md border px-2 text-xs font-semibold uppercase transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               active
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-border bg-card text-muted-foreground hover:border-primary hover:text-foreground",
+                ? "border-foreground bg-foreground text-background"
+                : "border-input bg-card text-muted-foreground hover:border-foreground hover:text-foreground",
             )}
           >
             {language}
