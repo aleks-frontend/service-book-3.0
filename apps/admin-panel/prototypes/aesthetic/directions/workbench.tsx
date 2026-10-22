@@ -267,7 +267,7 @@ function Drawer({
                     <th>Work or sale</th>
                     <th className="wb-num">Qty</th>
                     <th className="wb-num">Unit price</th>
-                    <th className="wb-num">Amount</th>
+                    <th className="wb-num">Line total</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -364,7 +364,7 @@ export const workbench: Direction = {
   ],
   motion:
     "Fast and mechanical: the drawer slides in from the right in 160ms with a sharp ease-out, dialogs cut in with an 80ms fade and no scale. A row whose status changes flashes a yellow left edge once (300ms); nothing else moves.",
-  pdf: "The PDFs keep the ink-and-yellow identity without fills: Archivo text, the service number in Big Shoulders, a 2pt yellow rule under the header instead of a band, and status as plain bold text.",
+  pdf: "The PDFs keep the ink-and-yellow identity without fills: Archivo text, the service number in Big Shoulders, a 2pt ink rule under the header with the yellow tag logo beside it (yellow alone is too faint on paper), and status as plain bold text.",
   Logo,
   App,
 };

@@ -407,7 +407,7 @@ export const circuit: Direction = {
     "Copper is the one accent: service numbers in light mode, the primary button in dark mode.",
   ],
   motion:
-    "Soft and springy: the drawer floats in from the right with a slight scale (0.98 to 1) over 280ms with a gentle overshoot; dialogs scale from 0.96 in 200ms. When a status changes, its LED pulses once (a 600ms glow) and the card stays put; reduced motion turns all of it into plain fades.",
+    "Soft and springy: the drawer floats in from the right with a slight scale (0.98 to 1) over 280ms with a gentle overshoot; dialogs scale from 0.96 in 200ms. When a status changes, its LED pulses once (a 600ms glow) and the card stays put; with reduced motion on, none of it moves.",
   pdf: "On paper the board becomes the silkscreen: Red Hat Text on white, the number and headings in Chakra Petch, mask-green hairlines and rounded outlines instead of tinted boxes, and copper only for the total.",
   Logo,
   App,

@@ -130,7 +130,7 @@ function Prototype() {
           {params.mode === "light" ? <Moon size={16} /> : <Sun size={16} />}
         </button>
         <button onClick={() => update({ notes: !params.notes })} aria-pressed={params.notes}>
-          <NotebookText size={16} /> Notes
+          <NotebookText size={16} /> Spec
         </button>
       </div>
     </div>
@@ -149,13 +149,13 @@ function Notes({
 }) {
   const { Logo } = direction;
   return (
-    <aside className="notes" aria-label={`${direction.name} notes`}>
+    <aside className="notes" aria-label={`${direction.name} spec`}>
       <header className="notes-head">
         <div>
           <h2 className="notes-title">{direction.name}</h2>
           <p>{direction.summary}</p>
         </div>
-        <button className="notes-close" onClick={onClose} aria-label="Close notes">
+        <button className="notes-close" onClick={onClose} aria-label="Close spec">
           <X size={18} />
         </button>
       </header>

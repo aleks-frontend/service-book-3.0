@@ -2,13 +2,19 @@
 
 Throwaway. Three aesthetic directions for the admin panel, switchable with
 `?variant=A|B|C` and `?mode=light|dark` on one page that is not part of the app's
-build. Run `npm run prototype:aesthetic -w @servicebook/admin-panel`.
+build. Run `npm run prototype:aesthetic` from the repo root.
 
 The brief: a back-office tool for one small repair shop (phones, laptops,
 printers) in Serbia, used all day by one or two staff at a counter. Its main
 jobs are finding a service fast, changing its status, and printing the intake
 receipt and the service report. Data is Serbian and Hungarian, so the fonts
 need č ć đ š ž ő ű.
+
+It is its own page, not variants on the real `/services` route, because the
+question is a restyle of every token, font and primitive, not one page's
+layout, and the issue keeps the prototypes out of the app's routes and
+bundle. That is also why the switcher bar needs no production gate: this page
+is never part of `vite build`, which only builds `index.html`.
 
 ## Plan, first pass
 

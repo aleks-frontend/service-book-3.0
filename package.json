@@ -11,6 +11,7 @@
     "postinstall": "npm run build -w @servicebook/schemas",
     "dev:backend": "npm run dev -w @servicebook/backend",
     "dev:admin-panel": "npm run dev -w @servicebook/admin-panel",
+    "prototype:aesthetic": "npm run prototype:aesthetic -w @servicebook/admin-panel",
     "build": "npm run build -w @servicebook/schemas && npm run build -w @servicebook/admin-panel && npm run build -w @servicebook/backend",
     "start": "npm run start -w @servicebook/backend",
     "lint": "eslint .",
