@@ -1,18 +1,20 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronLeft, Loader2, Pencil, Trash2, X } from "lucide-react";
+import { Loader2, Pencil, Trash2, X } from "lucide-react";
 import { Button } from "./ui/button";
 import { Separator } from "./ui/separator";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "./ui/sheet";
 
 /** Where a drawer sits in the stack, and how it leaves it. */
 export type DrawerPlace = {
-  /** Closes this drawer only: Escape, the backdrop and the back button. */
+  /** Closes this drawer only: Escape and the backdrop. */
   onClose: () => void;
   /** Closes every drawer: the X. */
   onCloseAll: () => void;
-  /** The title of the drawer below, when this is the top one of several. */
-  backTo?: string;
+  /** On the top drawer of several: the button back to the one below, before the title. */
+  back?: ReactNode;
+  /** On the top drawer of several: the edges of the ones below, beside it on wider screens. */
+  edges?: ReactNode;
   /** Over another drawer, whose backdrop already dims the page. */
   stacked: boolean;
 };
@@ -40,7 +42,8 @@ export function EntityDrawer<T>({
   open,
   onClose,
   onCloseAll,
-  backTo,
+  back,
+  edges,
   stacked,
   entity,
   isError,
@@ -58,79 +61,85 @@ export function EntityDrawer<T>({
 
   return (
     <Sheet open={open} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent className="gap-0 p-0 sm:max-w-xl" showClose={false} dimmed={!stacked}>
-        {/*
-          An ink header, like the app's bar, that stays put while the body scrolls under it.
-          The header actions are for the whole entity.
-        */}
-        <SheetHeader className="dark sticky top-0 z-10 flex-row flex-wrap items-start justify-between gap-x-4 gap-y-3 space-y-0 bg-bar py-4 pl-6 pr-4 text-foreground">
-          <div className="flex min-w-0 items-start gap-2">
-            {backTo !== undefined && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="-ml-2 h-8 w-8 shrink-0"
-                aria-label={t("Back to {{name}}", { name: backTo })}
-                title={t("Back to {{name}}", { name: backTo })}
-                onClick={onClose}
-              >
-                <ChevronLeft className="h-5 w-5" aria-hidden />
-              </Button>
-            )}
-            <div className="min-w-0 space-y-1.5">
-              <SheetTitle>{title}</SheetTitle>
-              <SheetDescription>{description}</SheetDescription>
+      {/* The body scrolls inside, so the edges can stand outside the drawer. */}
+      <SheetContent
+        className="gap-0 overflow-visible p-0 sm:max-w-xl"
+        showClose={false}
+        dimmed={!stacked}
+      >
+        <div className="flex-1 overflow-y-auto">
+          {/*
+            An ink header, like the app's bar, that stays put while the body scrolls under it.
+            The header actions are for the whole entity.
+          */}
+          <SheetHeader className="dark sticky top-0 z-10 flex-row flex-wrap items-start justify-between gap-x-4 gap-y-3 space-y-0 bg-bar py-4 pl-6 pr-4 text-foreground">
+            <div className="flex min-w-0 items-start gap-2">
+              {back}
+              <div className="min-w-0 space-y-1.5">
+                <SheetTitle>{title}</SheetTitle>
+                <SheetDescription>{description}</SheetDescription>
+              </div>
             </div>
-          </div>
-          <div className="ml-auto flex shrink-0 items-center gap-1">
-            {entity !== undefined && (
-              <>
-                {actions && (
-                  <>
-                    {actions(entity)}
-                    <Separator orientation="vertical" className="h-5" />
-                  </>
-                )}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  aria-label={editLabel}
-                  title={editLabel}
-                  onClick={() => onEdit(entity)}
-                >
-                  <Pencil className="h-4 w-4" aria-hidden />
-                </Button>
-                <Separator orientation="vertical" className="h-5" />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  aria-label={deleteLabel}
-                  title={deleteLabel}
-                  onClick={() => onDelete(entity)}
-                >
-                  <Trash2 className="h-4 w-4 text-destructive" aria-hidden />
-                </Button>
-                <Separator orientation="vertical" className="h-5" />
-              </>
-            )}
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onCloseAll}>
-              <X className="h-5 w-5" aria-hidden />
-              <span className="sr-only">{t("Close")}</span>
-            </Button>
-          </div>
-        </SheetHeader>
+            <div className="ml-auto flex shrink-0 items-center gap-1">
+              {entity !== undefined && (
+                <>
+                  {actions && (
+                    <>
+                      {actions(entity)}
+                      <Separator orientation="vertical" className="h-5" />
+                    </>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    aria-label={editLabel}
+                    title={editLabel}
+                    onClick={() => onEdit(entity)}
+                  >
+                    <Pencil className="h-4 w-4" aria-hidden />
+                  </Button>
+                  <Separator orientation="vertical" className="h-5" />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    aria-label={deleteLabel}
+                    title={deleteLabel}
+                    onClick={() => onDelete(entity)}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" aria-hidden />
+                  </Button>
+                  <Separator orientation="vertical" className="h-5" />
+                </>
+              )}
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onCloseAll}>
+                <X className="h-5 w-5" aria-hidden />
+                <span className="sr-only">{t("Close")}</span>
+              </Button>
+            </div>
+          </SheetHeader>
 
-        <div className="flex flex-col gap-4 p-6">
-          {isError ? (
-            <p className="text-sm text-destructive">{errorMessage}</p>
-          ) : entity === undefined ? (
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-          ) : (
-            children(entity)
-          )}
+          <div className="flex flex-col gap-4 p-6">
+            {isError ? (
+              <p className="text-sm text-destructive">{errorMessage}</p>
+            ) : entity === undefined ? (
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            ) : (
+              children(entity)
+            )}
+          </div>
         </div>
+
+        {edges && (
+          // The margin keeps it clear of the drawer's 4px yellow edge.
+          <nav
+            className="absolute inset-y-0 right-full mr-1 hidden md:flex"
+            aria-label={t("Drawers below")}
+          >
+            {edges}
+          </nav>
+        )}
       </SheetContent>
     </Sheet>
   );

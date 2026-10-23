@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { ChevronLeft } from "lucide-react";
 import { deviceLabel } from "@servicebook/schemas";
 import { useCustomerQuery } from "@/lib/customers";
 import { useDeviceQuery } from "@/lib/devices";
 import { useServiceQuery } from "@/lib/services";
-import { useDrawerStack, type DrawerEntry } from "@/lib/useDrawerStack";
+import { useDrawerStack, type DrawerEntry, type OpenDrawer } from "@/lib/useDrawerStack";
 import { CustomerDrawer } from "./CustomerDrawer";
 import { DeviceDrawer } from "./DeviceDrawer";
 import type { DrawerPlace } from "./EntityDrawer";
 import { ServiceDrawer } from "./ServiceDrawer";
+import { Button } from "./ui/button";
 
 function sameEntries(a: DrawerEntry[], b: DrawerEntry[]) {
   return (
@@ -17,16 +19,14 @@ function sameEntries(a: DrawerEntry[], b: DrawerEntry[]) {
 }
 
 /** A drawer's title as text, from the query its drawer already loaded. */
-function useDrawerTitle(entry: DrawerEntry | undefined) {
+function useDrawerTitle(entry: DrawerEntry) {
   const { t } = useTranslation();
-  const idOf = (kind: DrawerEntry["kind"]) => (entry?.kind === kind ? entry.id : null);
+  const idOf = (kind: DrawerEntry["kind"]) => (entry.kind === kind ? entry.id : null);
   const { data: customer } = useCustomerQuery(idOf("customer"));
   const { data: device } = useDeviceQuery(idOf("device"));
   const { data: service } = useServiceQuery(idOf("service"));
 
-  switch (entry?.kind) {
-    case undefined:
-      return undefined;
+  switch (entry.kind) {
     case "customer":
       return customer?.name ?? t("Customer");
     case "device":
@@ -34,6 +34,49 @@ function useDrawerTitle(entry: DrawerEntry | undefined) {
     case "service":
       return service ? t("Service {{number}}", { number: service.number }) : t("Service");
   }
+}
+
+type BelowProps = {
+  /** A drawer below the top one. */
+  entry: DrawerEntry;
+  /** Opening an entity already open goes back to its drawer. */
+  onOpen: OpenDrawer;
+};
+
+/** Goes back to the drawer just below, from the top drawer's header. */
+function BackButton({ entry, onOpen }: BelowProps) {
+  const { t } = useTranslation();
+  const label = t("Back to {{name}}", { name: useDrawerTitle(entry) });
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="-ml-2 h-8 w-8 shrink-0"
+      aria-label={label}
+      title={label}
+      onClick={() => onOpen(entry.kind, entry.id)}
+    >
+      <ChevronLeft className="h-5 w-5" aria-hidden />
+    </Button>
+  );
+}
+
+/** A lower drawer's edge, an ink strip beside the top drawer, that goes back to it. */
+function DrawerEdge({ entry, onOpen }: BelowProps) {
+  const { t } = useTranslation();
+  const title = useDrawerTitle(entry);
+  return (
+    <button
+      type="button"
+      className="dark flex w-10 flex-col items-center border-l border-border bg-bar py-4 font-display text-lg font-bold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+      title={t("Back to {{name}}", { name: title })}
+      onClick={() => onOpen(entry.kind, entry.id)}
+    >
+      <span className="block max-h-full overflow-hidden text-ellipsis whitespace-nowrap [writing-mode:vertical-rl]">
+        {title}
+      </span>
+    </button>
+  );
 }
 
 /**
@@ -52,8 +95,6 @@ export function DrawerStack() {
   }, [mounted, inUrl.length]);
   const stack = inUrl.slice(0, mounted);
 
-  const backTo = useDrawerTitle(stack.at(-2));
-
   // A closed drawer stays rendered, without its entity, so it animates out.
   const [rendered, setRendered] = useState(stack);
   const next = [...stack, ...rendered.slice(stack.length)];
@@ -61,10 +102,16 @@ export function DrawerStack() {
 
   return next.map((entry, depth) => {
     const id = depth < stack.length ? entry.id : null;
+    const below = depth === stack.length - 1 ? stack.slice(0, -1) : [];
     const place: DrawerPlace = {
       onClose: close,
       onCloseAll: closeAll,
-      backTo: depth === stack.length - 1 ? backTo : undefined,
+      back: below.length > 0 && <BackButton entry={below[below.length - 1]} onOpen={open} />,
+      edges:
+        below.length > 0 &&
+        below.map((lower, i) => (
+          <DrawerEdge key={`${i}:${lower.kind}`} entry={lower} onOpen={open} />
+        )),
       stacked: depth > 0,
     };
     // A slot reused by another kind of drawer is a new drawer.

@@ -301,3 +301,40 @@ test("X closes every drawer of a deep link too, and Back reopens them", async ({
   await expect(page).toHaveURL(stackUrl);
   await expect(serviceDrawer.getByRole("button", { name: "Nazad na Ivana Ivić" })).toBeVisible();
 });
+
+test("the edges of the drawers below show beside the top one and go back to theirs", async ({
+  page,
+}) => {
+  await logIn(page);
+  await expect(page).toHaveURL("/services");
+  const { customer, device, service } = await customerWithService(page, "Marko Marković");
+  const customerUrl = `/customers?customer=${customer.id}`;
+
+  await page.goto("/customers");
+  await page.getByLabel("Pretraga mušterija").fill("Marko");
+  await page.getByRole("row", { name: /Marko Marković/ }).click();
+  const customerDrawer = page.getByRole("dialog", { name: "Marko Marković" });
+  // One drawer has no edges to show.
+  await expect(customerDrawer.getByRole("navigation", { name: "Prethodni paneli" })).toHaveCount(0);
+  await customerDrawer
+    .getByRole("region", { name: "Uređaji" })
+    .getByRole("button", { name: /Redmi Marko Marković/ })
+    .click();
+  const deviceDrawer = page.getByRole("dialog", { name: `Xiaomi ${device.model}` });
+  await deviceDrawer
+    .getByRole("region", { name: "Istorija servisa" })
+    .getByRole("button", { name: new RegExp(service.number) })
+    .click();
+  const serviceDrawer = page.getByRole("dialog", { name: `Servis ${service.number}` });
+
+  // Bottom first, as they stack.
+  const edges = serviceDrawer
+    .getByRole("navigation", { name: "Prethodni paneli" })
+    .getByRole("button");
+  await expect(edges).toHaveText(["Marko Marković", `Xiaomi ${device.model}`]);
+
+  await edges.first().click();
+  await expect(page).toHaveURL(customerUrl);
+  await expect(serviceDrawer).toBeHidden();
+  await expect(customerDrawer).toBeVisible();
+});
