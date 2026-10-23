@@ -26,17 +26,20 @@ const SheetOverlay = React.forwardRef<
 SheetOverlay.displayName = SheetPrimitive.Overlay.displayName;
 
 type SheetContentProps = React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content> & {
-  /** False when the drawer places its own `SheetClose`. */
+  /** False when the drawer places its own close button. */
   showClose?: boolean;
+  /** False for a drawer over another, whose backdrop already dims the page. */
+  dimmed?: boolean;
 };
 
 /** A dialog that slides in from the right edge: the app's "drawer". */
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Content>,
   SheetContentProps
->(({ className, children, showClose = true, ...props }, ref) => (
+>(({ className, children, showClose = true, dimmed = true, ...props }, ref) => (
   <SheetPortal>
-    <SheetOverlay />
+    {/* Still there when transparent, so a click outside closes this drawer only. */}
+    <SheetOverlay className={cn(!dimmed && "bg-transparent")} />
     <SheetPrimitive.Content
       ref={ref}
       className={cn(

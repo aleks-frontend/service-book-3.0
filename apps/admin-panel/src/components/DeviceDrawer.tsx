@@ -7,17 +7,23 @@ import { useDeviceServicesQuery } from "@/lib/services";
 import type { OpenDrawer } from "@/lib/useDrawerStack";
 import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog";
 import { DeviceFormDialog } from "./DeviceFormDialog";
-import { DrawerLink, DrawerSummary, DrawerSummaryRow, EntityDrawer } from "./EntityDrawer";
+import {
+  DrawerLink,
+  DrawerSummary,
+  DrawerSummaryRow,
+  EntityDrawer,
+  type DrawerPlace,
+} from "./EntityDrawer";
 import { ServiceHistory } from "./ServiceHistory";
 
 type DeviceDrawerProps = {
   deviceId: string | null;
-  onClose: () => void;
+  place: DrawerPlace;
   onOpen: OpenDrawer;
 };
 
 /** One device, opened in the drawer stack as `?device=<id>`. */
-export function DeviceDrawer({ deviceId, onClose, onOpen }: DeviceDrawerProps) {
+export function DeviceDrawer({ deviceId, place, onOpen }: DeviceDrawerProps) {
   const { t, i18n } = useTranslation();
   const { data: device, isError } = useDeviceQuery(deviceId);
   const deleteDevice = useDeleteDeviceMutation();
@@ -29,7 +35,7 @@ export function DeviceDrawer({ deviceId, onClose, onOpen }: DeviceDrawerProps) {
     deleteDevice.mutate(device.id, {
       onSuccess: () => {
         setConfirmingDelete(false);
-        onClose();
+        place.onClose();
       },
     });
   }
@@ -38,7 +44,7 @@ export function DeviceDrawer({ deviceId, onClose, onOpen }: DeviceDrawerProps) {
     <>
       <EntityDrawer
         open={deviceId !== null}
-        onClose={onClose}
+        {...place}
         entity={device}
         isError={isError}
         errorMessage={t("Could not load the device.")}

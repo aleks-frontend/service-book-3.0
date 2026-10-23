@@ -12,7 +12,13 @@ import { cn } from "@/lib/utils";
 import type { OpenDrawer } from "@/lib/useDrawerStack";
 import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog";
 import { CustomerReport } from "./CustomerReport";
-import { DrawerLink, DrawerSummary, DrawerSummaryRow, EntityDrawer } from "./EntityDrawer";
+import {
+  DrawerLink,
+  DrawerSummary,
+  DrawerSummaryRow,
+  EntityDrawer,
+  type DrawerPlace,
+} from "./EntityDrawer";
 import { ServiceFormDialog } from "./ServiceFormDialog";
 import { ServiceLines } from "./ServiceLines";
 import { ServiceLog } from "./ServiceLog";
@@ -28,12 +34,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 
 type ServiceDrawerProps = {
   serviceId: string | null;
-  onClose: () => void;
+  place: DrawerPlace;
   onOpen: OpenDrawer;
 };
 
 /** One service, opened in the drawer stack as `?service=<id>`. */
-export function ServiceDrawer({ serviceId, onClose, onOpen }: ServiceDrawerProps) {
+export function ServiceDrawer({ serviceId, place, onOpen }: ServiceDrawerProps) {
   const { t, i18n } = useTranslation();
   const { data: service, isError } = useServiceQuery(serviceId);
   const deleteService = useDeleteServiceMutation();
@@ -45,7 +51,7 @@ export function ServiceDrawer({ serviceId, onClose, onOpen }: ServiceDrawerProps
     deleteService.mutate(service.id, {
       onSuccess: () => {
         setConfirmingDelete(false);
-        onClose();
+        place.onClose();
       },
     });
   }
@@ -54,7 +60,7 @@ export function ServiceDrawer({ serviceId, onClose, onOpen }: ServiceDrawerProps
     <>
       <EntityDrawer
         open={serviceId !== null}
-        onClose={onClose}
+        {...place}
         entity={service}
         isError={isError}
         errorMessage={t("Could not load the service.")}

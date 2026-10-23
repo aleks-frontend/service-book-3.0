@@ -9,7 +9,7 @@ import { useCustomerServicesQuery } from "@/lib/services";
 import type { OpenDrawer } from "@/lib/useDrawerStack";
 import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog";
 import { CustomerFormDialog } from "./CustomerFormDialog";
-import { DrawerSummary, DrawerSummaryRow, EntityDrawer } from "./EntityDrawer";
+import { DrawerSummary, DrawerSummaryRow, EntityDrawer, type DrawerPlace } from "./EntityDrawer";
 import { ServiceHistory } from "./ServiceHistory";
 
 /** The most devices the drawer lists; the rest are counted. */
@@ -17,7 +17,7 @@ const DEVICES_SHOWN = 50;
 
 type CustomerDrawerProps = {
   customerId: string | null;
-  onClose: () => void;
+  place: DrawerPlace;
   onOpen: OpenDrawer;
 };
 
@@ -33,7 +33,7 @@ function facebookLink(facebook: string) {
 }
 
 /** One customer, opened in the drawer stack as `?customer=<id>`. */
-export function CustomerDrawer({ customerId, onClose, onOpen }: CustomerDrawerProps) {
+export function CustomerDrawer({ customerId, place, onOpen }: CustomerDrawerProps) {
   const { t, i18n } = useTranslation();
   const { data: customer, isError } = useCustomerQuery(customerId);
   const deleteCustomer = useDeleteCustomerMutation();
@@ -45,7 +45,7 @@ export function CustomerDrawer({ customerId, onClose, onOpen }: CustomerDrawerPr
     deleteCustomer.mutate(customer.id, {
       onSuccess: () => {
         setConfirmingDelete(false);
-        onClose();
+        place.onClose();
       },
     });
   }
@@ -54,7 +54,7 @@ export function CustomerDrawer({ customerId, onClose, onOpen }: CustomerDrawerPr
     <>
       <EntityDrawer
         open={customerId !== null}
-        onClose={onClose}
+        {...place}
         entity={customer}
         isError={isError}
         errorMessage={t("Could not load the customer.")}

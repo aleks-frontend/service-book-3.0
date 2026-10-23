@@ -1,20 +1,24 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Loader2, Pencil, Trash2, X } from "lucide-react";
+import { ChevronLeft, Loader2, Pencil, Trash2, X } from "lucide-react";
 import { Button } from "./ui/button";
 import { Separator } from "./ui/separator";
-import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "./ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "./ui/sheet";
 
-type EntityDrawerProps<T> = {
-  open: boolean;
+/** Where a drawer sits in the stack, and how it leaves it. */
+export type DrawerPlace = {
+  /** Closes this drawer only: Escape, the backdrop and the back button. */
   onClose: () => void;
+  /** Closes every drawer: the X. */
+  onCloseAll: () => void;
+  /** The title of the drawer below, when this is the top one of several. */
+  backTo?: string;
+  /** Over another drawer, whose backdrop already dims the page. */
+  stacked: boolean;
+};
+
+type EntityDrawerProps<T> = DrawerPlace & {
+  open: boolean;
   /** Undefined while loading. */
   entity: T | undefined;
   isError: boolean;
@@ -35,6 +39,9 @@ type EntityDrawerProps<T> = {
 export function EntityDrawer<T>({
   open,
   onClose,
+  onCloseAll,
+  backTo,
+  stacked,
   entity,
   isError,
   errorMessage,
@@ -51,15 +58,29 @@ export function EntityDrawer<T>({
 
   return (
     <Sheet open={open} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent className="gap-0 p-0 sm:max-w-xl" showClose={false}>
+      <SheetContent className="gap-0 p-0 sm:max-w-xl" showClose={false} dimmed={!stacked}>
         {/*
           An ink header, like the app's bar, that stays put while the body scrolls under it.
           The header actions are for the whole entity.
         */}
         <SheetHeader className="dark sticky top-0 z-10 flex-row flex-wrap items-start justify-between gap-x-4 gap-y-3 space-y-0 bg-bar py-4 pl-6 pr-4 text-foreground">
-          <div className="min-w-0 space-y-1.5">
-            <SheetTitle>{title}</SheetTitle>
-            <SheetDescription>{description}</SheetDescription>
+          <div className="flex min-w-0 items-start gap-2">
+            {backTo !== undefined && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="-ml-2 h-8 w-8 shrink-0"
+                aria-label={t("Back to {{name}}", { name: backTo })}
+                title={t("Back to {{name}}", { name: backTo })}
+                onClick={onClose}
+              >
+                <ChevronLeft className="h-5 w-5" aria-hidden />
+              </Button>
+            )}
+            <div className="min-w-0 space-y-1.5">
+              <SheetTitle>{title}</SheetTitle>
+              <SheetDescription>{description}</SheetDescription>
+            </div>
           </div>
           <div className="ml-auto flex shrink-0 items-center gap-1">
             {entity !== undefined && (
@@ -94,12 +115,10 @@ export function EntityDrawer<T>({
                 <Separator orientation="vertical" className="h-5" />
               </>
             )}
-            <SheetClose asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <X className="h-5 w-5" aria-hidden />
-                <span className="sr-only">{t("Close")}</span>
-              </Button>
-            </SheetClose>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onCloseAll}>
+              <X className="h-5 w-5" aria-hidden />
+              <span className="sr-only">{t("Close")}</span>
+            </Button>
           </div>
         </SheetHeader>
 
