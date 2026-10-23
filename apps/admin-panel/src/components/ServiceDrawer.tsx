@@ -215,7 +215,7 @@ function PublicLink({ publicToken }: { publicToken: string }) {
       <Button
         variant="ghost"
         size="icon"
-        className="h-7 w-7 shrink-0"
+        className="-my-1 h-7 w-7 shrink-0"
         aria-label={t("Copy public link")}
         title={t("Copy public link")}
         onClick={copy}
