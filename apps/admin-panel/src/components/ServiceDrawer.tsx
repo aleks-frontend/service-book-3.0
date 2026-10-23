@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Loader2, Printer } from "lucide-react";
+import toast from "react-hot-toast";
+import { Copy, Loader2, Printer } from "lucide-react";
 import { deviceLabel, type ServiceDetail } from "@servicebook/schemas";
 import { useDownloadIntakeReceiptMutation } from "@/lib/intakeReceipt";
 import { useDownloadServiceReportMutation } from "@/lib/serviceReport";
 import { useDeleteServiceMutation, useServiceQuery } from "@/lib/services";
 import { formatDate, formatPlainDate } from "@/lib/format";
+import { publicServiceUrl } from "@/lib/publicServices";
 import { cn } from "@/lib/utils";
 import type { OpenDrawer } from "@/lib/useDrawerStack";
 import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog";
@@ -150,7 +152,7 @@ function PrintMenu({ service }: { service: ServiceDetail }) {
   );
 }
 
-/** The customer, devices, date and description at a glance; they are changed in the edit modal. */
+/** The customer, devices, date, description and public link at a glance; the first four are changed in the edit modal. */
 function ServiceSummary({ service, onOpen }: { service: ServiceDetail; onOpen: OpenDrawer }) {
   const { t, i18n } = useTranslation();
 
@@ -179,6 +181,47 @@ function ServiceSummary({ service, onOpen }: { service: ServiceDetail; onOpen: O
           <span className="whitespace-pre-line">{service.description}</span>
         </DrawerSummaryRow>
       )}
+      <DrawerSummaryRow label={t("Public link")}>
+        <PublicLink publicToken={service.publicToken} />
+      </DrawerSummaryRow>
     </DrawerSummary>
+  );
+}
+
+/** The page the customer sees, to open in a new tab or copy to the clipboard. */
+function PublicLink({ publicToken }: { publicToken: string }) {
+  const { t } = useTranslation();
+  const url = publicServiceUrl(publicToken);
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success(t("Public link copied"));
+    } catch {
+      toast.error(t("Could not copy the public link."));
+    }
+  }
+
+  return (
+    <span className="inline-flex max-w-full items-center gap-1">
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="min-w-0 break-all rounded-sm text-emphasis underline decoration-1 underline-offset-[3px] hover:decoration-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        {url}
+      </a>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7 shrink-0"
+        aria-label={t("Copy public link")}
+        title={t("Copy public link")}
+        onClick={copy}
+      >
+        <Copy className="h-3.5 w-3.5" aria-hidden />
+      </Button>
+    </span>
   );
 }

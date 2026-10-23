@@ -279,5 +279,9 @@
   "Service {{number}} is created. Download the intake receipt for the customer?": "Servis {{number}} je kreiran. Preuzeti prijemnicu za mušteriju?",
   "Generate": "Generiši",
   "Print the service report?": "Odštampati izveštaj o servisu?",
-  "Service {{number}} is completed. Generate the service report for the customer?": "Servis {{number}} je završen. Generisati izveštaj o servisu za mušteriju?"
+  "Service {{number}} is completed. Generate the service report for the customer?": "Servis {{number}} je završen. Generisati izveštaj o servisu za mušteriju?",
+  "Public link": "Javni link",
+  "Copy public link": "Kopiraj javni link",
+  "Public link copied": "Javni link je kopiran",
+  "Could not copy the public link.": "Kopiranje javnog linka nije uspelo."
 }

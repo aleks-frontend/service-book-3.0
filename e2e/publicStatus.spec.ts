@@ -94,3 +94,40 @@ test("the customer scans the QR on their intake receipt and sees the service's s
 
   await customerContext.close();
 });
+
+test("staff open and copy a service's public link from its drawer", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await logIn(page);
+  await expect(page).toHaveURL("/services");
+
+  const send = async (path: string, data: object) => {
+    const response = await page.request.post(path, { data });
+    expect(response.ok()).toBe(true);
+    return response.json();
+  };
+  const customer = await send("/api/customers", { name: "Petar Perić", phone: "0634445" });
+  const device = await send("/api/devices", { model: "Punjač" });
+  const service = await send("/api/services", {
+    customerId: customer.id,
+    deviceIds: [device.id],
+    date: "2026-04-02",
+  });
+  const publicLink = new URL(`/s/${service.publicToken}`, page.url()).href;
+
+  await page.goto(`/services?service=${service.id}`);
+  const drawer = page.getByRole("dialog", { name: `Servis ${service.number}` });
+  const link = drawer.getByRole("link", { name: publicLink });
+  await expect(link).toHaveAttribute("href", publicLink);
+  await expect(link).toHaveAttribute("target", "_blank");
+  await expect(link).toHaveAttribute("rel", "noopener noreferrer");
+
+  await drawer.getByRole("button", { name: "Kopiraj javni link" }).click();
+  await expect(page.getByText("Javni link je kopiran")).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(publicLink);
+
+  const publicPage = context.waitForEvent("page");
+  await link.click();
+  const opened = await publicPage;
+  await expect(opened).toHaveURL(`/s/${service.publicToken}`);
+  await expect(opened.getByRole("heading", { name: `Servis ${service.number}` })).toBeVisible();
+});

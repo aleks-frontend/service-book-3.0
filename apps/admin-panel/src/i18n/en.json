@@ -279,5 +279,9 @@
   "Service {{number}} is created. Download the intake receipt for the customer?": "Service {{number}} is created. Download the intake receipt for the customer?",
   "Generate": "Generate",
   "Print the service report?": "Print the service report?",
-  "Service {{number}} is completed. Generate the service report for the customer?": "Service {{number}} is completed. Generate the service report for the customer?"
+  "Service {{number}} is completed. Generate the service report for the customer?": "Service {{number}} is completed. Generate the service report for the customer?",
+  "Public link": "Public link",
+  "Copy public link": "Copy public link",
+  "Public link copied": "Public link copied",
+  "Could not copy the public link.": "Could not copy the public link."
 }
