@@ -49,10 +49,26 @@ export function CardSkeletons({ className }: { className?: string }) {
     <ul className={className}>
       <li className="sr-only">{t("Loading…")}</li>
       {Array.from({ length: PLACEHOLDER_COUNT }, (_, card) => (
-        <li key={card} className="repair-tag pointer-events-none space-y-3" aria-hidden>
-          <Skeleton className="w-1/3" />
-          <Skeleton className="w-2/3" />
-          <Skeleton />
+        // Laid out like a service card: the customer, the devices, the phone, then the footer.
+        <li
+          key={card}
+          className="repair-tag pointer-events-none grid min-w-0 grid-cols-1 gap-1.5"
+          aria-hidden
+        >
+          <div className="flex h-[1.875rem] items-center justify-between gap-2">
+            <Skeleton className="h-6 w-1/2" />
+            <Skeleton className="h-5 w-16" />
+          </div>
+          <div className="flex h-6 items-center">
+            <Skeleton className="w-2/3" />
+          </div>
+          <div className="flex h-5 items-center">
+            <Skeleton className="h-3 w-1/4" />
+          </div>
+          <div className="flex h-[1.6875rem] items-end justify-between gap-2 border-t border-dashed">
+            <Skeleton className="h-3 w-1/3" />
+            <Skeleton className="h-3 w-16" />
+          </div>
         </li>
       ))}
     </ul>

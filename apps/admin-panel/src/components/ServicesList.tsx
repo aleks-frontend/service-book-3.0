@@ -204,24 +204,31 @@ function ServiceCard({
   const changed = useChangedFlag(service.status);
 
   return (
+    // The phone row takes up a stretched card's spare height, keeping the footer at the bottom.
     <li
-      className="repair-tag grid cursor-pointer gap-1.5"
+      className="repair-tag grid min-w-0 cursor-pointer grid-cols-1 grid-rows-[auto_auto_1fr_auto] gap-1.5"
       data-changed={changed || undefined}
       {...openProps(service, onOpen)}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="font-display text-2xl font-bold leading-none tabular-nums tracking-[0.02em]">
-          {service.number}
+        <span
+          className="min-w-0 truncate font-display text-2xl font-bold leading-tight"
+          title={service.customer.name}
+        >
+          {service.customer.name}
         </span>
         <StatusSelect serviceId={service.id} status={service.status} />
       </div>
-      <div className="text-sm">
-        <span className="font-semibold">{service.customer.name}</span>{" "}
-        <span className="text-muted-foreground">{service.customer.phone}</span>
+      <div className="line-clamp-2 font-medium">{devicesText(service)}</div>
+      <div className="text-[0.8125rem] leading-5 text-muted-foreground">
+        {service.customer.phone}
       </div>
-      <div className="text-sm text-muted-foreground">{devicesText(service)}</div>
-      <div className="flex items-baseline justify-between gap-2 border-t border-dashed pt-1.5 text-[0.8125rem]">
-        <span className="text-muted-foreground">
+      <div className="flex items-baseline justify-between gap-2 border-t border-dashed pt-1.5 text-[0.8125rem] leading-5">
+        <span className="min-w-0 truncate text-muted-foreground">
+          <span className="font-display text-sm font-bold leading-none tabular-nums tracking-[0.02em] text-foreground">
+            {service.number}
+          </span>
+          {" · "}
           {formatPlainDate(service.date, i18n.language)}
         </span>
         <strong className="shrink-0 tabular-nums">{formatRsd(service.total, i18n.language)}</strong>
