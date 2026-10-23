@@ -163,10 +163,7 @@ function ServiceSummary({ service, onOpen }: { service: ServiceDetail; onOpen: O
           {service.customer.name}
         </DrawerLink>
         {" · "}
-        <a
-          href={`tel:${service.customer.phone}`}
-          className="text-emphasis underline decoration-1 underline-offset-[3px] hover:decoration-2"
-        >
+        <a href={`tel:${service.customer.phone}`} className="text-link">
           {service.customer.phone}
         </a>
       </DrawerSummaryRow>
@@ -208,7 +205,7 @@ function PublicLink({ publicToken }: { publicToken: string }) {
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        className="min-w-0 break-all rounded-sm text-emphasis underline decoration-1 underline-offset-[3px] hover:decoration-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="min-w-0 break-all text-link"
       >
         {url}
       </a>

@@ -109,6 +109,10 @@
 }
 
 @layer components {
+  /* Every text link: drawer links, tel:/mailto: links, external links and the button's link variant. */
+  .text-link {
+    @apply rounded-sm text-emphasis underline decoration-1 underline-offset-[3px] hover:decoration-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
+  }
   /*
    * A card as a repair tag (ADR-0005): a notched end and a punched hole. Its
    * outline is the tag's own background showing around an inset surface, so it

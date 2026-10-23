@@ -101,10 +101,7 @@ function DeviceSummary({ device, onOpen }: { device: Device; onOpen: OpenDrawer 
           <>
             <DrawerLink onClick={() => onOpen("customer", owner.id)}>{owner.name}</DrawerLink>
             {" · "}
-            <a
-              href={`tel:${owner.phone}`}
-              className="text-emphasis underline decoration-1 underline-offset-[3px] hover:decoration-2"
-            >
+            <a href={`tel:${owner.phone}`} className="text-link">
               {owner.phone}
             </a>
           </>

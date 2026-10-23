@@ -141,11 +141,7 @@ export function DrawerSummaryRow({ label, children }: { label: string; children:
 /** A name in a drawer that opens its entity's own drawer on top. */
 export function DrawerLink({ onClick, children }: { onClick: () => void; children: ReactNode }) {
   return (
-    <button
-      type="button"
-      className="rounded-sm font-medium text-emphasis underline decoration-1 underline-offset-[3px] hover:decoration-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      onClick={onClick}
-    >
+    <button type="button" className="font-medium text-link" onClick={onClick}>
       {children}
     </button>
   );
