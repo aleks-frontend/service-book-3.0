@@ -22,8 +22,8 @@ const styles = StyleSheet.create({
     height: 28,
   },
   logo: {
-    maxWidth: 110,
-    maxHeight: 56,
+    maxWidth: 121,
+    maxHeight: 61.6,
     objectFit: "contain",
   },
   name: {
