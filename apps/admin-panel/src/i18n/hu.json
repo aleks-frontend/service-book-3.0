@@ -301,5 +301,8 @@
   "Public link": "Nyilvános link",
   "Copy public link": "Nyilvános link másolása",
   "Public link copied": "Nyilvános link kimásolva",
-  "Could not copy the public link.": "Nem sikerült kimásolni a nyilvános linket."
+  "Could not copy the public link.": "Nem sikerült kimásolni a nyilvános linket.",
+  "Condition at intake": "Állapot átvételkor",
+  "Intake note": "Jegyzet az átvételkori állapotról",
+  "Scratches, cracks, dents… Saved as the first note in the log.": "Karcok, repedések, horpadások… Az első jegyzetként kerül a naplóba."
 }

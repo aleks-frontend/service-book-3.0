@@ -12,6 +12,7 @@ import type {
   DeviceService,
   LogEntry,
   Service,
+  ServiceCreateInput,
   ServiceDetail,
   ServiceInput,
   ServiceLine,
@@ -74,15 +75,45 @@ export function useDeviceServicesQuery(deviceId: string) {
   });
 }
 
+/**
+ * A new service as the API takes it: JSON, or multipart when its intake note
+ * has photos, with the device ids as `deviceIds[]` fields.
+ */
+function newServiceBody(input: ServiceCreateInput, photos: PickedPhoto[]) {
+  if (photos.length === 0) return input;
+  const body = new FormData();
+  body.append("customerId", input.customerId);
+  for (const deviceId of input.deviceIds) body.append("deviceIds[]", deviceId);
+  body.append("date", input.date);
+  if (input.description) body.append("description", input.description);
+  if (input.intakeNote) body.append("intakeNote", input.intakeNote);
+  for (const { name, photo, thumbnail } of photos) {
+    body.append(PHOTO_FIELD, photo, name);
+    body.append(THUMBNAIL_FIELD, thumbnail, name);
+  }
+  return body;
+}
+
+type SaveServiceVariables =
+  | { id: string; input: ServiceInput }
+  | { id?: undefined; input: ServiceCreateInput; intakePhotos: PickedPhoto[] };
+
+/** Edits a service, or registers a new one with its intake note's text and photos, if any. */
 export function useSaveServiceMutation() {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
 
   return useMutation({
-    mutationFn: ({ id, input }: { id?: string; input: ServiceInput }) =>
-      id
-        ? request<ServiceDetail>(`/services/${id}`, { method: "PUT", body: input })
-        : request<ServiceDetail>("/services", { method: "POST", body: input }),
+    mutationFn: (variables: SaveServiceVariables) =>
+      variables.id !== undefined
+        ? request<ServiceDetail>(`/services/${variables.id}`, {
+            method: "PUT",
+            body: variables.input,
+          })
+        : request<ServiceDetail>("/services", {
+            method: "POST",
+            body: newServiceBody(variables.input, variables.intakePhotos),
+          }),
     onSuccess: (service, { id }) => {
       toast.success(
         id

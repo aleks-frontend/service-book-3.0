@@ -2,6 +2,7 @@ import { Router, type Response } from "express";
 import {
   customerReportInputSchema,
   plainDateToUtc,
+  serviceCreateInputSchema,
   serviceInputSchema,
   serviceListQuerySchema,
   statusChangeInputSchema,
@@ -12,12 +13,21 @@ import {
   type Status,
 } from "@servicebook/schemas";
 import { Prisma } from "../generated/prisma/client.js";
+import { photoStorageOf } from "../lib/photoStorage.js";
+import {
+  parsePhotos,
+  photoRows,
+  photoUpload,
+  sendPhotoStorageError,
+  storePhotosThen,
+} from "../lib/photoUploads.js";
 import { prisma } from "../lib/prisma.js";
 import { listServiceIds } from "../lib/serviceList.js";
 import { newPublicToken, nextSequence } from "../lib/serviceNumbers.js";
 import { serviceSelect, toService } from "../lib/serviceRows.js";
 import {
   idParam,
+  isForeignKeyViolation,
   isNotFound,
   parseBody,
   sendFieldError,
@@ -107,28 +117,51 @@ servicesRouter.get("/", async (req, res) => {
   res.json(result);
 });
 
-servicesRouter.post("/", async (req, res) => {
-  const input = parseBody(serviceInputSchema, req, res, LABEL);
+// JSON, or multipart when the intake note has photos (see serviceCreateInputSchema).
+// The photos are stored first, then the service, its intake note and the note's
+// photos are written in one transaction; if that fails, the photos are deleted again.
+servicesRouter.post("/", photoUpload(LABEL), async (req, res) => {
+  const input = parseBody(serviceCreateInputSchema, req, res, LABEL);
   if (!input) return;
   if (!(await checkCustomerAndDevices(res, input))) return;
+  const photos = parsePhotos(req, res, LABEL);
+  if (!photos) return;
 
   const date = plainDateToUtc(input.date);
-  const row = await prisma.$transaction(async (tx) => {
-    const year = date.getUTCFullYear();
-    return tx.service.create({
-      data: {
-        year,
-        sequence: await nextSequence(tx, year),
-        publicToken: newPublicToken(),
-        date,
-        description: input.description,
-        customerId: input.customerId,
-        devices: { create: deviceRows(input.deviceIds) },
-      },
-      select: serviceDetailSelect,
-    });
-  });
-  res.status(201).json(toServiceDetail(row));
+  const intakeNote =
+    input.intakeNote || photos.length > 0
+      ? {
+          type: "NOTE" as const,
+          text: input.intakeNote,
+          authorId: req.user!.id,
+          photos: { create: photoRows(photos) },
+        }
+      : undefined;
+  try {
+    const row = await storePhotosThen(photoStorageOf(req), photos, () =>
+      prisma.$transaction(async (tx) => {
+        const year = date.getUTCFullYear();
+        return tx.service.create({
+          data: {
+            year,
+            sequence: await nextSequence(tx, year),
+            publicToken: newPublicToken(),
+            date,
+            description: input.description,
+            customerId: input.customerId,
+            devices: { create: deviceRows(input.deviceIds) },
+            log: intakeNote && { create: intakeNote },
+          },
+          select: serviceDetailSelect,
+        });
+      }),
+    );
+    res.status(201).json(toServiceDetail(row));
+  } catch (error) {
+    // The customer or a device was deleted while the photos uploaded.
+    if (isForeignKeyViolation(error) && !(await checkCustomerAndDevices(res, input))) return;
+    sendPhotoStorageError(res, error);
+  }
 });
 
 servicesRouter.get("/:id", async (req, res) => {
