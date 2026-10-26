@@ -81,10 +81,8 @@ test("a staff member adds a note with photos from the drawer, shrunk before uplo
   const log = await (await page.request.get(`/api/services/${serviceId}/log`)).json();
   expect(log[0].photos).toEqual([{ id: expect.any(String), width: 2048, height: 1536 }]);
 
-  // The link opens the full-size photo.
-  const full = await page.request.get(
-    (await entries.first().getByRole("link").getAttribute("href"))!,
-  );
+  // The full-size photo is served too.
+  const full = await page.request.get(`/api/photos/${log[0].photos[0].id}`);
   expect(full.status()).toBe(200);
   expect(full.headers()["content-type"]).toBe("image/jpeg");
 });
@@ -109,4 +107,71 @@ test("a note can be only photos, and no more than 10 can be picked", async ({ pa
   const entries = drawer.getByTestId("log-entry");
   await expect(entries).toHaveCount(1);
   await expect(entries.first().getByRole("img")).toHaveCount(10);
+});
+
+/** Posts a note with photos straight to the API: each one `photo.jpg` (640 × 480) with its 160 px thumbnail. */
+async function postPhotoNote(page: Page, serviceId: string, text: string, count: number) {
+  const body = new FormData();
+  body.append("text", text);
+  for (let n = 0; n < count; n++) {
+    const photo = readFileSync(`${IMAGES}/photo.jpg`);
+    const thumbnail = readFileSync(`${IMAGES}/thumbnail.jpg`);
+    body.append("photos", new Blob([photo], { type: "image/jpeg" }), "photo.jpg");
+    body.append("thumbnails", new Blob([thumbnail], { type: "image/jpeg" }), "photo.jpg");
+  }
+  const response = await page.request.post(`/api/services/${serviceId}/log`, { multipart: body });
+  expect(response.status()).toBe(201);
+}
+
+test("photos open in a lightbox from a note and from the Photos strip", async ({ page }) => {
+  const { drawer, serviceId } = await openServiceLog(page, "Milan Milić");
+  const strip = drawer.getByRole("region", { name: "Fotografije" });
+  // No photos, no strip.
+  await expect(drawer.getByTestId("log-entry")).toHaveCount(0);
+  await expect(strip).toHaveCount(0);
+
+  await postPhotoNote(page, serviceId, "Prijem", 2);
+  await postPhotoNote(page, serviceId, "Posle popravke", 1);
+  await page.reload();
+  await drawer.getByRole("tab", { name: "Dnevnik" }).click();
+
+  const lightbox = page.getByRole("dialog", { name: "Pregled fotografija" });
+  const current = lightbox.locator(".yarl__slide_current img");
+  const counter = lightbox.locator(".yarl__slide_current");
+
+  // The strip collects every photo of the service, oldest first.
+  const log = await (await page.request.get(`/api/services/${serviceId}/log`)).json();
+  const oldestFirst = log.flatMap((entry: { photos: { id: string }[] }) =>
+    entry.photos.map((photo) => `/api/photos/${photo.id}/thumb`),
+  );
+  await expect(strip.getByRole("img")).toHaveCount(3);
+  expect(
+    await strip.getByRole("img").evaluateAll((imgs) => imgs.map((img) => img.getAttribute("src"))),
+  ).toEqual(oldestFirst);
+
+  // From the second note, the lightbox pages through that note's one photo only.
+  const second = drawer.getByTestId("log-entry").nth(1);
+  await second.getByRole("button", { name: "Fotografija 1" }).click();
+  await expect(lightbox).toBeVisible();
+  await expect(counter).toHaveAccessibleName("1 od 1");
+  // The full-size photo, not the thumbnail.
+  await expect.poll(() => current.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(640);
+  await expect(lightbox.getByRole("button", { name: "Sledeća fotografija" })).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await expect(lightbox).toBeHidden();
+  // Escape closed the lightbox only, not the drawer.
+  await expect(drawer).toBeVisible();
+
+  // From the strip, it pages through all of them.
+  await strip.getByRole("button", { name: "Fotografija 2" }).click();
+  await expect(counter).toHaveAccessibleName("2 od 3");
+  await lightbox.getByRole("button", { name: "Sledeća fotografija" }).click();
+  await expect(counter).toHaveAccessibleName("3 od 3");
+  await page.keyboard.press("ArrowLeft");
+  await expect(counter).toHaveAccessibleName("2 od 3");
+  await lightbox.getByRole("button", { name: "Prethodna fotografija" }).click();
+  await expect(counter).toHaveAccessibleName("1 od 3");
+  await lightbox.getByRole("button", { name: "Zatvori" }).click();
+  await expect(lightbox).toBeHidden();
+  await expect(drawer).toBeVisible();
 });

@@ -10,10 +10,10 @@ import {
   type LogNoteInputValues,
 } from "@servicebook/schemas";
 import { formatDateTime } from "@/lib/format";
-import { photoUrl, thumbnailUrl } from "@/lib/photos";
 import { useAddNoteMutation, useServiceLogQuery } from "@/lib/services";
 import { usePhotoPicker } from "@/lib/usePhotoPicker";
 import { PhotoPicker } from "./PhotoPicker";
+import { PhotoThumbnails } from "./PhotoThumbnails";
 import { StatusBadge } from "./StatusBadge";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
@@ -73,24 +73,7 @@ function LogEntryItem({ entry }: { entry: LogEntry }) {
       ) : (
         entry.text && <p className="whitespace-pre-line">{entry.text}</p>
       )}
-      {entry.photos.length > 0 && (
-        <ul className="flex flex-wrap gap-2 pt-1" aria-label={t("Photos")}>
-          {entry.photos.map((photo, n) => (
-            <li key={photo.id}>
-              <a href={photoUrl(photo.id)} target="_blank" rel="noreferrer">
-                <img
-                  src={thumbnailUrl(photo.id)}
-                  alt={t("Photo {{n}}", { n: n + 1 })}
-                  width={photo.width}
-                  height={photo.height}
-                  loading="lazy"
-                  className="h-20 w-20 rounded-md border object-cover"
-                />
-              </a>
-            </li>
-          ))}
-        </ul>
-      )}
+      {entry.photos.length > 0 && <PhotoThumbnails photos={entry.photos} className="pt-1" />}
     </li>
   );
 }
