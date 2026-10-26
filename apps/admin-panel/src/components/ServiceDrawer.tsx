@@ -22,6 +22,7 @@ import {
 import { ServiceFormDialog } from "./ServiceFormDialog";
 import { ServiceLines } from "./ServiceLines";
 import { ServiceLog } from "./ServiceLog";
+import { ServicePhotos } from "./ServicePhotos";
 import { StatusSelect } from "./StatusSelect";
 import { Button } from "./ui/button";
 import {
@@ -88,6 +89,7 @@ export function ServiceDrawer({ serviceId, place, onOpen }: ServiceDrawerProps) 
         {(service) => (
           <>
             <ServiceSummary service={service} onOpen={onOpen} />
+            <ServicePhotos serviceId={service.id} />
             <Tabs defaultValue="details">
               <TabsList>
                 <TabsTrigger value="details">{t("Details")}</TabsTrigger>
