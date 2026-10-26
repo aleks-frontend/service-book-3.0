@@ -35,7 +35,7 @@ type ServiceFormProps = {
    * save. Given when creating a service only, which adds the optional
    * "Condition at intake" section: a note and its photos.
    */
-  intakePhotos?: PhotoPickerState;
+  intakeNotePhotos?: PhotoPickerState;
   /** Whether the service is being saved, which locks the intake photos. */
   saving?: boolean;
   /** The service's fields; `intakeNote` is set when creating only. */
@@ -43,10 +43,11 @@ type ServiceFormProps = {
 };
 
 /**
- * The customer, devices, date and description of a service. The customer and
- * devices can be picked or created inline; the date starts as today.
+ * The customer, devices, date and description of a service, and, when one is
+ * created, an optional note and photos of the device's condition at intake.
+ * The customer and devices can be picked or created inline; the date starts as today.
  */
-export function ServiceForm({ id, service, intakePhotos, saving, onSubmit }: ServiceFormProps) {
+export function ServiceForm({ id, service, intakeNotePhotos, saving, onSubmit }: ServiceFormProps) {
   const { t } = useTranslation();
 
   // The form only holds ids; the pickers also need the names to show.
@@ -204,7 +205,7 @@ export function ServiceForm({ id, service, intakePhotos, saving, onSubmit }: Ser
           <Textarea id={`${id}-description`} rows={4} {...register("description")} />
         </div>
 
-        {intakePhotos && (
+        {intakeNotePhotos && (
           <fieldset className="space-y-1.5 border-t pt-4">
             <legend className="float-left mb-1.5 w-full text-sm font-medium">
               {t("Condition at intake")}
@@ -219,7 +220,7 @@ export function ServiceForm({ id, service, intakePhotos, saving, onSubmit }: Ser
               placeholder={t("Scratches, cracks, dents… Saved as the first note in the log.")}
               {...register("intakeNote")}
             />
-            <PhotoPicker id={`${id}-intake-photos`} picker={intakePhotos} disabled={saving} />
+            <PhotoPicker id={`${id}-intake-photos`} picker={intakeNotePhotos} disabled={saving} />
           </fieldset>
         )}
       </form>

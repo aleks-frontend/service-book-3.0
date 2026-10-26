@@ -75,6 +75,14 @@ export function useDeviceServicesQuery(deviceId: string) {
   });
 }
 
+/** Each photo and its thumbnail as the API takes them: the n-th thumbnail belongs to the n-th photo. */
+function appendPhotos(body: FormData, photos: PickedPhoto[]) {
+  for (const { name, photo, thumbnail } of photos) {
+    body.append(PHOTO_FIELD, photo, name);
+    body.append(THUMBNAIL_FIELD, thumbnail, name);
+  }
+}
+
 /**
  * A new service as the API takes it: JSON, or multipart when its intake note
  * has photos, with the device ids as `deviceIds[]` fields.
@@ -87,16 +95,13 @@ function newServiceBody(input: ServiceCreateInput, photos: PickedPhoto[]) {
   body.append("date", input.date);
   if (input.description) body.append("description", input.description);
   if (input.intakeNote) body.append("intakeNote", input.intakeNote);
-  for (const { name, photo, thumbnail } of photos) {
-    body.append(PHOTO_FIELD, photo, name);
-    body.append(THUMBNAIL_FIELD, thumbnail, name);
-  }
+  appendPhotos(body, photos);
   return body;
 }
 
 type SaveServiceVariables =
   | { id: string; input: ServiceInput }
-  | { id?: undefined; input: ServiceCreateInput; intakePhotos: PickedPhoto[] };
+  | { id?: undefined; input: ServiceCreateInput; intakeNotePhotos: PickedPhoto[] };
 
 /** Edits a service, or registers a new one with its intake note's text and photos, if any. */
 export function useSaveServiceMutation() {
@@ -112,7 +117,7 @@ export function useSaveServiceMutation() {
           })
         : request<ServiceDetail>("/services", {
             method: "POST",
-            body: newServiceBody(variables.input, variables.intakePhotos),
+            body: newServiceBody(variables.input, variables.intakeNotePhotos),
           }),
     onSuccess: (service, { id }) => {
       toast.success(
@@ -251,10 +256,7 @@ function noteBody(text: string | null, photos: PickedPhoto[]) {
   if (photos.length === 0) return { text };
   const body = new FormData();
   if (text) body.append("text", text);
-  for (const { name, photo, thumbnail } of photos) {
-    body.append(PHOTO_FIELD, photo, name);
-    body.append(THUMBNAIL_FIELD, thumbnail, name);
-  }
+  appendPhotos(body, photos);
   return body;
 }
 

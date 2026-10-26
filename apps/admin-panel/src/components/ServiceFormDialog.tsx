@@ -37,11 +37,11 @@ export function ServiceFormDialog({ open, onOpenChange, service }: ServiceFormDi
   const intakeReceipt = useDownloadIntakeReceiptMutation();
   const formId = service ? "service-edit-form" : "service-create-form";
   const [created, setCreated] = useState<ServiceDetail>();
-  const intakePhotos = usePhotoPicker();
+  const intakeNotePhotos = usePhotoPicker();
 
   function changeOpen(next: boolean) {
     // The form goes with the dialog's content, so its photos go too.
-    if (!next) intakePhotos.clear();
+    if (!next) intakeNotePhotos.clear();
     onOpenChange(next);
   }
 
@@ -57,12 +57,14 @@ export function ServiceFormDialog({ open, onOpenChange, service }: ServiceFormDi
           <ServiceForm
             id={formId}
             service={service}
-            intakePhotos={service ? undefined : intakePhotos}
+            intakeNotePhotos={service ? undefined : intakeNotePhotos}
             saving={saveService.isPending}
             onSubmit={(input) => {
-              if (intakePhotos.processing) return;
+              if (intakeNotePhotos.processing) return;
               saveService.mutate(
-                service ? { id: service.id, input } : { input, intakePhotos: intakePhotos.photos },
+                service
+                  ? { id: service.id, input }
+                  : { input, intakeNotePhotos: intakeNotePhotos.photos },
                 {
                   onSuccess: (saved) => {
                     changeOpen(false);
@@ -80,7 +82,7 @@ export function ServiceFormDialog({ open, onOpenChange, service }: ServiceFormDi
             <Button
               type="submit"
               form={formId}
-              disabled={saveService.isPending || intakePhotos.processing}
+              disabled={saveService.isPending || intakeNotePhotos.processing}
             >
               {saveService.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {service ? t("Save changes") : t("Create service")}
