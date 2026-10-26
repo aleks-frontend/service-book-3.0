@@ -195,6 +195,11 @@ servicesRouter.put("/:id/customer-report", async (req, res) => {
 servicesRouter.put("/:id/status", async (req, res) => {
   const id = idParam(req, res, LABEL);
   if (!id) return;
+  // Photos belong to notes only; to photograph a finished repair, staff add a note.
+  if (req.is("multipart/form-data")) {
+    sendFieldError(res, LABEL, "photos", "A status change can't carry photos");
+    return;
+  }
   const input = parseBody(statusChangeInputSchema, req, res, LABEL);
   if (!input) return;
 

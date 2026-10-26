@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import type TestAgent from "supertest/lib/agent.js";
 import { createApp } from "../src/app.js";
 import { FilesystemPhotoStorage } from "../src/lib/photoStorage.js";
+import { prisma } from "../src/lib/prisma.js";
 import { authenticatedAgent } from "./helpers.js";
 import { MemoryPhotoStorage } from "./memoryPhotoStorage.js";
 
@@ -196,6 +197,20 @@ describe("notes with photos", () => {
     expect(storage.objects.size).toBe(0);
   });
 
+  it("deletes the stored objects when the note can't be written", async () => {
+    const { storage, agent, service } = await setUp();
+    // The service is deleted while its photos upload, so writing the note fails.
+    storage.duringPut = async () => {
+      await prisma.service.deleteMany({ where: { id: service.id } });
+    };
+
+    const response = await postNote(agent, service.id, "Too late", [{ photo: JPEG }]);
+
+    expect(response.status).toBe(404);
+    expect(storage.objects.size).toBe(0);
+    expect(await prisma.serviceLogEntry.count()).toBe(0);
+  });
+
   it("stores nothing for an unknown service", async () => {
     const { storage, agent, service } = await setUp();
     const deleted = await agent.delete(`/api/services/${service.id}`);
@@ -216,6 +231,7 @@ describe("notes with photos", () => {
       .attach("photos", JPEG, "photo.jpg");
 
     expect(response.status).toBe(400);
+    expect(response.body.details.fieldErrors.photos).toBeDefined();
     expect(await readLog(agent, service.id)).toEqual([]);
     expect(storage.objects.size).toBe(0);
   });
