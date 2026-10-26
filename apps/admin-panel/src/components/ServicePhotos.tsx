@@ -19,7 +19,7 @@ export function ServicePhotos({ serviceId }: { serviceId: string }) {
       <h3 id={headingId} className="text-sm font-semibold">
         {t("Photos")}
       </h3>
-      <PhotoThumbnails photos={photos} />
+      <PhotoThumbnails serviceId={serviceId} photos={photos} />
     </section>
   );
 }

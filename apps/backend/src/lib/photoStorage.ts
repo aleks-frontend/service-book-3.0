@@ -130,6 +130,23 @@ export function photoStorageFromEnv(env = process.env): PhotoStorage {
   return new FilesystemPhotoStorage(path.resolve("storage/photos"));
 }
 
+/**
+ * Deletes the objects of photos that have no row: deleted ones, or ones whose
+ * write failed. A failure is logged rather than thrown, since the photos are
+ * gone from the app either way; only their bytes are left in the storage.
+ */
+export async function deletePhotoObjects(
+  storage: PhotoStorage,
+  photos: { key: string; thumbnailKey: string }[],
+) {
+  const keys = photos.flatMap(({ key, thumbnailKey }) => [key, thumbnailKey]);
+  try {
+    await storage.delete(keys);
+  } catch (error) {
+    console.error("Could not delete the objects of photos with no row", keys, error);
+  }
+}
+
 /** The photo storage of the app handling the request (see `createApp`). */
 export function photoStorageOf(req: Request): PhotoStorage {
   return req.app.locals.photoStorage as PhotoStorage;

@@ -110,9 +110,9 @@ test("a note can be only photos, and no more than 10 can be picked", async ({ pa
 });
 
 /** Posts a note with photos straight to the API: each one `photo.jpg` (640 × 480) with its 160 px thumbnail. */
-async function postPhotoNote(page: Page, serviceId: string, text: string, count: number) {
+async function postPhotoNote(page: Page, serviceId: string, text: string | null, count: number) {
   const body = new FormData();
-  body.append("text", text);
+  if (text !== null) body.append("text", text);
   for (let n = 0; n < count; n++) {
     const photo = readFileSync(`${IMAGES}/photo.jpg`);
     const thumbnail = readFileSync(`${IMAGES}/thumbnail.jpg`);
@@ -173,6 +173,52 @@ test("photos open in a lightbox from a note and from the Photos strip", async ({
   await expect(counter).toHaveAccessibleName("1 od 3");
   await lightbox.getByRole("button", { name: "Zatvori" }).click();
   await expect(lightbox).toBeHidden();
+  await expect(drawer).toBeVisible();
+});
+
+test("a staff member deletes photos from a note's thumbnails and from the lightbox", async ({
+  page,
+}) => {
+  const { drawer, serviceId } = await openServiceLog(page, "Vesna Vasić");
+  await postPhotoNote(page, serviceId, "Napukao ekran", 2);
+  await postPhotoNote(page, serviceId, null, 1);
+  await page.reload();
+  await drawer.getByRole("tab", { name: "Dnevnik" }).click();
+
+  const entries = drawer.getByTestId("log-entry");
+  const strip = drawer.getByRole("region", { name: "Fotografije" });
+  const confirm = page.getByRole("dialog", { name: "Obrisati fotografiju?" });
+  const lightbox = page.getByRole("dialog", { name: "Pregled fotografija" });
+  await expect(strip.getByRole("img")).toHaveCount(3);
+
+  // Nothing is deleted until it is confirmed.
+  await entries.first().getByRole("button", { name: "Obriši fotografiju 1" }).click();
+  await confirm.getByRole("button", { name: "Otkaži" }).click();
+  await expect(confirm).toBeHidden();
+  await expect(entries.first().getByRole("img")).toHaveCount(2);
+
+  // From a note's thumbnail: it leaves the note and the strip, and the note keeps its text.
+  await entries.first().getByRole("button", { name: "Obriši fotografiju 1" }).click();
+  await confirm.getByRole("button", { name: "Obriši" }).click();
+  await expect(confirm).toBeHidden();
+  await expect(entries.first().getByRole("img")).toHaveCount(1);
+  await expect(entries.first()).toContainText("Napukao ekran");
+  await expect(strip.getByRole("img")).toHaveCount(2);
+
+  // From the lightbox: cancelling goes back to the same photo.
+  await strip.getByRole("button", { name: "Fotografija 2" }).click();
+  await lightbox.getByRole("button", { name: "Obriši fotografiju" }).click();
+  await expect(lightbox).toBeHidden();
+  await confirm.getByRole("button", { name: "Otkaži" }).click();
+  await expect(lightbox.locator(".yarl__slide_current")).toHaveAccessibleName("2 od 2");
+
+  // The last photo of a note with no text takes the note with it.
+  await lightbox.getByRole("button", { name: "Obriši fotografiju" }).click();
+  await confirm.getByRole("button", { name: "Obriši" }).click();
+  await expect(confirm).toBeHidden();
+  await expect(lightbox).toBeHidden();
+  await expect(entries).toHaveCount(1);
+  await expect(strip.getByRole("img")).toHaveCount(1);
   await expect(drawer).toBeVisible();
 });
 

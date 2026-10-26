@@ -13,7 +13,7 @@ import {
   type Status,
 } from "@servicebook/schemas";
 import { Prisma } from "../generated/prisma/client.js";
-import { photoStorageOf } from "../lib/photoStorage.js";
+import { deletePhotoObjects, photoStorageOf } from "../lib/photoStorage.js";
 import {
   parsePhotos,
   photoRows,
@@ -263,16 +263,29 @@ servicesRouter.put("/:id/status", async (req, res) => {
   res.json(toServiceDetail(row));
 });
 
-// The service's attached devices, lines and log go with it; the devices and customer stay.
+// The service's attached devices, lines and log go with it, and its photos'
+// objects are deleted once it is; the devices and customer stay.
 servicesRouter.delete("/:id", async (req, res) => {
   const id = idParam(req, res, LABEL);
   if (!id) return;
 
-  try {
-    await prisma.service.delete({ where: { id } });
-    res.status(204).send();
-  } catch (error) {
-    if (!isNotFound(error)) throw error;
+  const photos = await prisma.$transaction(async (tx) => {
+    // Locks the service, so no note can add photos between listing them and the delete.
+    const [service] = await tx.$queryRaw<{ id: string }[]>`
+      SELECT "id" FROM "service" WHERE "id" = ${id}::uuid FOR UPDATE
+    `;
+    if (!service) return null;
+    const photos = await tx.photo.findMany({
+      where: { logEntry: { serviceId: id } },
+      select: { key: true, thumbnailKey: true },
+    });
+    await tx.service.delete({ where: { id } });
+    return photos;
+  });
+  if (!photos) {
     sendNotFound(res, LABEL);
+    return;
   }
+  await deletePhotoObjects(photoStorageOf(req), photos);
+  res.status(204).send();
 });

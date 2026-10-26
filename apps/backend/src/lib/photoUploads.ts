@@ -9,7 +9,7 @@ import {
   THUMBNAIL_MAX_BYTES,
   type PhotoType,
 } from "@servicebook/schemas";
-import type { PhotoStorage } from "./photoStorage.js";
+import { deletePhotoObjects, type PhotoStorage } from "./photoStorage.js";
 import { sendFieldError } from "./routeHelpers.js";
 
 /** Room for a note's text beside its photos. */
@@ -236,11 +236,7 @@ export async function storePhotosThen<T>(
   photos: NewPhoto[],
   write: () => Promise<T>,
 ): Promise<T> {
-  const keys = photos.flatMap(({ key, thumbnailKey }) => [key, thumbnailKey]);
-  const cleanUp = () =>
-    storage.delete(keys).catch((error: unknown) => {
-      console.error("Could not delete the photos of a failed write", keys, error);
-    });
+  const cleanUp = () => deletePhotoObjects(storage, photos);
 
   // Settled rather than raced, so no put is still running when the clean-up starts.
   const puts = await Promise.allSettled(
