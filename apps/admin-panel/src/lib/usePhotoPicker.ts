@@ -21,6 +21,8 @@ export function usePhotoPicker() {
   const taken = useRef(0);
   const latest = useRef(photos);
   latest.current = photos;
+  // Bumped by `clear`, so photos still being processed then are dropped, not added to the next note.
+  const generation = useRef(0);
 
   const add = useCallback(
     async (files: File[]) => {
@@ -31,8 +33,16 @@ export function usePhotoPicker() {
       const accepted = files.slice(0, Math.max(room, 0));
       taken.current += accepted.length;
       setProcessing((count) => count + accepted.length);
+      const pickedIn = generation.current;
 
       const results = await Promise.allSettled(accepted.map(processPhoto));
+      setProcessing((count) => count - accepted.length);
+      if (generation.current !== pickedIn) {
+        results.forEach((result) => {
+          if (result.status === "fulfilled") URL.revokeObjectURL(result.value.previewUrl);
+        });
+        return;
+      }
       const processed: PickedPhoto[] = [];
       results.forEach((result, n) => {
         if (result.status === "fulfilled") {
@@ -47,7 +57,6 @@ export function usePhotoPicker() {
         }
       });
       setPhotos((current) => [...current, ...processed]);
-      setProcessing((count) => count - accepted.length);
     },
     [t],
   );
@@ -60,6 +69,7 @@ export function usePhotoPicker() {
 
   const clear = useCallback(() => {
     revokePreviews(latest.current);
+    generation.current++;
     taken.current = 0;
     setPhotos([]);
   }, []);

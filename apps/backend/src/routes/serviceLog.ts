@@ -10,7 +10,13 @@ import {
   storePhotosThen,
 } from "../lib/photoUploads.js";
 import { prisma } from "../lib/prisma.js";
-import { idParam, parseBody, sendFieldError, sendNotFound } from "../lib/routeHelpers.js";
+import {
+  idParam,
+  isForeignKeyViolation,
+  parseBody,
+  sendFieldError,
+  sendNotFound,
+} from "../lib/routeHelpers.js";
 
 /** Mounted at `/api/services/:id/log`; `:id` is the service's. */
 export const serviceLogRouter = Router({ mergeParams: true });
@@ -81,6 +87,11 @@ serviceLogRouter.post("/", photoUpload(LABEL), async (req, res) => {
     );
     res.status(201).json(entry);
   } catch (error) {
+    // The service was deleted while its photos uploaded.
+    if (isForeignKeyViolation(error)) {
+      sendNotFound(res, "Service");
+      return;
+    }
     sendPhotoStorageError(res, error);
   }
 });
