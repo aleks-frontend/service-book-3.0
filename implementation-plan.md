@@ -6,6 +6,8 @@ Vocabulary is in [`GLOSSARY.md`](./GLOSSARY.md), the stack is in [`techstack.md`
 
 ## Phase 1: parity with the old app, plus login
 
+**Status: done.** Every ticket below is closed. The cutover (#18) finished on 2026-10-20, and the spec (#1) was closed on 2026-10-23.
+
 ### Goals
 
 - Every feature of the old Firebase app works in the new app, with all historical data imported.
@@ -51,6 +53,17 @@ Vocabulary is in [`GLOSSARY.md`](./GLOSSARY.md), the stack is in [`techstack.md`
 5. #15.
 6. #18.
 
+### Follow-ups after parity
+
+These came up during and after phase 1 and are all closed:
+
+- **Search and lists:** phone search ignores formatting (#19), customer search matches each word separately (#26), and the actions table is paged (#25).
+- **Bulk delete** for customers and actions (#20).
+- **Drawers:** one shared drawer shell (#21), and stacked drawers with a back button, close-all and visible edges (#34, #35).
+- **Document prompts:** the intake receipt is offered when a service is created and the service report when it's completed (#23, #27, #28). A setting to turn them off was declined (#29).
+- **Visual identity:** a direction was prototyped and picked (#24), then applied: tokens, light and dark themes, logo, favicon (#31).
+- **Service cards and drawer:** cards lead with the customer and device (#32), and the drawer shows the public link (#33).
+
 ### Legacy import mapping (summary)
 
 This is a summary; the authoritative rules are in #17.
@@ -85,10 +98,10 @@ Empty-string arrays are treated as empty. Public tokens are generated freshly. T
 
 ## Phase 2+: after parity (roadmap)
 
-These are roughly in order. Each will get its own spec and tickets.
+These are roughly in order. Each will get its own spec and tickets. Item 2 is done; item 1 is next.
 
 1. **Customer page:** a dedicated customer detail page with full service history.
-2. **Public status page:** a read-only `/s/<publicToken>` page showing status, service lines and the customer report. The QR codes on intake receipts and service reports printed in phase 1 already point here (#22).
+2. ~~**Public status page**~~ **(done, #22):** a read-only `/s/<publicToken>` page showing status, service lines and the customer report. The QR codes on intake receipts and service reports printed in phase 1 point here.
 3. **Service photos:** photos on services and log entries, stored in Cloudflare R2, with thumbnails and a lightbox. Photos of damage at intake are the priority.
 4. **Device photos.**
 5. **Device extras** beyond the serial number, which phase 1 already stores (still to be discussed).
