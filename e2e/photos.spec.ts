@@ -175,3 +175,81 @@ test("photos open in a lightbox from a note and from the Photos strip", async ({
   await expect(lightbox).toBeHidden();
   await expect(drawer).toBeVisible();
 });
+
+test("a staff member registers a service with photos of its condition at intake, kept through a failed save", async ({
+  page,
+}) => {
+  await logIn(page);
+  await expect(page).toHaveURL("/services");
+  const post = async (path: string, data: object) =>
+    (await page.request.post(path, { data })).json();
+  const customer = await post("/api/customers", { name: "Dragana Dragić", phone: "0612" });
+  await post("/api/devices", {
+    manufacturer: "Samsung",
+    model: "Galaxy A54",
+    ownerId: customer.id,
+  });
+
+  await page.getByRole("button", { name: "Dodaj", exact: true }).click();
+  const addDialog = page.getByRole("dialog", { name: "Novi servis" });
+  await addDialog.getByLabel("Mušterija *").fill("Dragana Dragić");
+  await page.getByRole("option", { name: /^Dragana Dragić/ }).click();
+  await addDialog.getByLabel("Uređaji *").fill("Galaxy A54");
+  await page.getByRole("option", { name: /^Samsung Galaxy A54/ }).click();
+
+  await expect(addDialog.getByRole("group", { name: "Stanje pri prijemu" })).toBeVisible();
+  await addDialog.getByLabel("Beleška o stanju pri prijemu").fill("Napukao ekran u donjem uglu");
+  await addDialog
+    .getByLabel("Fotografije za belešku")
+    .setInputFiles([image("photo.jpg", "image/jpeg"), image("photo.webp", "image/webp")]);
+  const picked = addDialog.getByRole("list", { name: "Izabrane fotografije" }).getByRole("img");
+  await expect(picked).toHaveCount(2);
+
+  // The first save fails; the form keeps everything, photos included.
+  await page.route(
+    "**/api/services",
+    (route) =>
+      route.request().method() === "POST"
+        ? route.fulfill({ status: 500, json: { error: "Internal server error" } })
+        : route.fallback(),
+    { times: 1 },
+  );
+  const add = addDialog.getByRole("button", { name: "Dodaj servis" });
+  await add.click();
+  await expect(page.getByText("Čuvanje servisa nije uspelo. Pokušajte ponovo.")).toBeVisible();
+  await expect(addDialog).toBeVisible();
+  await expect(addDialog.getByLabel("Beleška o stanju pri prijemu")).toHaveValue(
+    "Napukao ekran u donjem uglu",
+  );
+  await expect(picked).toHaveCount(2);
+
+  // The retry registers the service with its intake note and photos.
+  const [created] = await Promise.all([
+    page.waitForResponse(
+      (response) => response.url().endsWith("/api/services") && response.status() === 201,
+    ),
+    add.click(),
+  ]);
+  const service = await created.json();
+  await expect(addDialog).toBeHidden();
+  await page
+    .getByRole("dialog", { name: "Odštampati prijemnicu?" })
+    .getByRole("button", { name: "Ne sada" })
+    .click();
+
+  await page.goto(`/services?service=${service.id}`);
+  const drawer = page.getByRole("dialog", { name: `Servis ${service.number}` });
+  await expect(drawer.getByRole("region", { name: "Fotografije" }).getByRole("img")).toHaveCount(2);
+  await drawer.getByRole("tab", { name: "Dnevnik" }).click();
+  const entries = drawer.getByTestId("log-entry");
+  await expect(entries).toHaveCount(1);
+  await expect(entries.first()).toContainText("Napukao ekran u donjem uglu");
+  await expect(entries.first()).toContainText("E2E Staff");
+  await expect(entries.first().getByRole("img")).toHaveCount(2);
+
+  // A new service's form starts without the previous intake photos.
+  await page.goto("/services");
+  await page.getByRole("button", { name: "Dodaj", exact: true }).click();
+  await expect(addDialog.getByLabel("Beleška o stanju pri prijemu")).toHaveValue("");
+  await expect(picked).toHaveCount(0);
+});

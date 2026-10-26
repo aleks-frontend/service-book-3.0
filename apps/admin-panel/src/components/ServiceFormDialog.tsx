@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import type { Service, ServiceDetail } from "@servicebook/schemas";
 import { useDownloadIntakeReceiptMutation } from "@/lib/intakeReceipt";
 import { useSaveServiceMutation } from "@/lib/services";
+import { usePhotoPicker } from "@/lib/usePhotoPicker";
 import { OfferDocumentDialog } from "./OfferDocumentDialog";
 import { ServiceForm } from "./ServiceForm";
 import { Button } from "./ui/button";
@@ -26,7 +27,9 @@ type ServiceFormDialogProps = {
 /**
  * The "Add" modal, which registers a new service (it starts as Received), and
  * the drawer's "Edit service" modal for its customer, devices, date and description.
- * A newly registered service is followed by an offer of its intake receipt.
+ * A new service may have a note and photos of the device's condition at
+ * intake, which a failed save keeps. A newly registered service is followed
+ * by an offer of its intake receipt.
  */
 export function ServiceFormDialog({ open, onOpenChange, service }: ServiceFormDialogProps) {
   const { t } = useTranslation();
@@ -34,10 +37,17 @@ export function ServiceFormDialog({ open, onOpenChange, service }: ServiceFormDi
   const intakeReceipt = useDownloadIntakeReceiptMutation();
   const formId = service ? "service-edit-form" : "service-create-form";
   const [created, setCreated] = useState<ServiceDetail>();
+  const intakePhotos = usePhotoPicker();
+
+  function changeOpen(next: boolean) {
+    // The form goes with the dialog's content, so its photos go too.
+    if (!next) intakePhotos.clear();
+    onOpenChange(next);
+  }
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open} onOpenChange={changeOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader className="pr-8">
             <DialogTitle>{service ? t("Edit service") : t("New service")}</DialogTitle>
@@ -47,24 +57,31 @@ export function ServiceFormDialog({ open, onOpenChange, service }: ServiceFormDi
           <ServiceForm
             id={formId}
             service={service}
-            onSubmit={(input) =>
+            intakePhotos={service ? undefined : intakePhotos}
+            saving={saveService.isPending}
+            onSubmit={(input) => {
+              if (intakePhotos.processing) return;
               saveService.mutate(
-                { id: service?.id, input },
+                service ? { id: service.id, input } : { input, intakePhotos: intakePhotos.photos },
                 {
                   onSuccess: (saved) => {
-                    onOpenChange(false);
+                    changeOpen(false);
                     if (!service) setCreated(saved);
                   },
                 },
-              )
-            }
+              );
+            }}
           />
 
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button variant="outline" onClick={() => changeOpen(false)}>
               {t("Cancel")}
             </Button>
-            <Button type="submit" form={formId} disabled={saveService.isPending}>
+            <Button
+              type="submit"
+              form={formId}
+              disabled={saveService.isPending || intakePhotos.processing}
+            >
               {saveService.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {service ? t("Save changes") : t("Create service")}
             </Button>

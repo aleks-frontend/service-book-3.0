@@ -13,18 +13,20 @@ export type LogEntryType = z.infer<typeof logEntryTypeSchema>;
 /** The longest note a staff member may add. */
 export const LOG_NOTE_MAX = 5000;
 
+/** A note's text; blank becomes null. */
+export const noteTextSchema = z
+  .string()
+  .trim()
+  .max(LOG_NOTE_MAX)
+  .nullish()
+  .transform((text) => text || null);
+
 /**
- * The text of a note added to a service's log; blank becomes null. A note
- * needs text or photos, which only the route can check, as the photos travel
- * as files beside it.
+ * The text of a note added to a service's log. A note needs text or photos,
+ * which only the route can check, as the photos travel as files beside it.
  */
 export const logNoteInputSchema = z.object({
-  text: z
-    .string()
-    .trim()
-    .max(LOG_NOTE_MAX)
-    .nullish()
-    .transform((text) => text || null),
+  text: noteTextSchema,
 });
 
 export type LogNoteInputValues = z.input<typeof logNoteInputSchema>;

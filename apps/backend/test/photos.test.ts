@@ -8,7 +8,7 @@ import type TestAgent from "supertest/lib/agent.js";
 import { createApp } from "../src/app.js";
 import { FilesystemPhotoStorage } from "../src/lib/photoStorage.js";
 import { prisma } from "../src/lib/prisma.js";
-import { authenticatedAgent } from "./helpers.js";
+import { authenticatedAgent, STAFF } from "./helpers.js";
 import { MemoryPhotoStorage } from "./memoryPhotoStorage.js";
 
 const UNKNOWN_ID = "00000000-0000-4000-8000-000000000000";
@@ -42,7 +42,7 @@ async function setUp() {
     deviceIds: [phone.id],
     date: "2026-03-14",
   });
-  return { storage, agent, service };
+  return { storage, agent, service, customer, phone };
 }
 
 /** Posts a note as multipart: its text, if any, and each photo with its thumbnail. */
@@ -52,6 +52,28 @@ function postNote(agent: TestAgent, serviceId: string, text: string | null, uplo
   uploads.forEach(({ photo, thumbnail = THUMBNAIL, name = `photo-${uploads.length}` }, n) => {
     post.attach("photos", photo, `${name}-${n}.jpg`);
     post.attach("thumbnails", thumbnail, `${name}-${n}-thumb.jpg`);
+  });
+  return post;
+}
+
+/**
+ * Registers a service as multipart: its fields, the device ids as
+ * `deviceIds[]`, and its intake note's text, if any, and photos.
+ */
+function postService(
+  agent: TestAgent,
+  fields: { customerId: string; deviceIds: string[]; date: string; description?: string },
+  intakeNote: string | null,
+  uploads: Upload[],
+) {
+  const post = agent.post("/api/services");
+  post.field("customerId", fields.customerId).field("date", fields.date);
+  if (fields.description !== undefined) post.field("description", fields.description);
+  for (const deviceId of fields.deviceIds) post.field("deviceIds[]", deviceId);
+  if (intakeNote !== null) post.field("intakeNote", intakeNote);
+  uploads.forEach(({ photo, thumbnail = THUMBNAIL }, n) => {
+    post.attach("photos", photo, `intake-${n}.jpg`);
+    post.attach("thumbnails", thumbnail, `intake-${n}-thumb.jpg`);
   });
   return post;
 }
@@ -246,6 +268,148 @@ describe("notes with photos", () => {
     expect(JSON.stringify(response.body)).not.toContain(added.body.photos[0].id);
     expect(response.body).not.toHaveProperty("photos");
     expect(response.body).not.toHaveProperty("log");
+  });
+});
+
+describe("registering a service with an intake note", () => {
+  it("creates the service, its intake note and the note's photos together", async () => {
+    const { storage, agent, customer, phone } = await setUp();
+
+    const created = await postService(
+      agent,
+      { customerId: customer.id, deviceIds: [phone.id], date: "2026-03-15" },
+      "Scratched screen, dent on the left edge",
+      [{ photo: JPEG }, { photo: WEBP }],
+    );
+
+    expect(created.status).toBe(201);
+    expect(created.body).toMatchObject({
+      date: "2026-03-15",
+      status: "RECEIVED",
+      customer: { id: customer.id },
+      devices: [{ id: phone.id }],
+    });
+    expect(await readLog(agent, created.body.id)).toMatchObject([
+      {
+        type: "NOTE",
+        text: "Scratched screen, dent on the left edge",
+        author: { name: STAFF.name },
+        photos: [
+          { width: 640, height: 480 },
+          { width: 300, height: 200 },
+        ],
+      },
+    ]);
+    expect(storage.objects.size).toBe(4);
+  });
+
+  it("takes an intake note with only photos, or with only text as JSON", async () => {
+    const { agent, customer, phone } = await setUp();
+    const fields = { customerId: customer.id, deviceIds: [phone.id], date: "2026-03-15" };
+
+    const photosOnly = await postService(agent, fields, null, [{ photo: JPEG }]);
+    const textOnly = await agent.post("/api/services").send({ ...fields, intakeNote: "Like new" });
+
+    expect(photosOnly.status).toBe(201);
+    expect(await readLog(agent, photosOnly.body.id)).toMatchObject([
+      { type: "NOTE", text: null, photos: [{ width: 640 }] },
+    ]);
+    expect(textOnly.status).toBe(201);
+    expect(await readLog(agent, textOnly.body.id)).toMatchObject([
+      { type: "NOTE", text: "Like new", photos: [] },
+    ]);
+  });
+
+  it("writes no intake note without text or photos, as JSON or multipart", async () => {
+    const { storage, agent, customer, phone } = await setUp();
+    const generic = await create(agent, "/api/devices", { model: "Charger" });
+    const fields = {
+      customerId: customer.id,
+      deviceIds: [phone.id, generic.id],
+      date: "2026-03-15",
+      description: "Won't charge",
+    };
+
+    const json = await agent.post("/api/services").send({ ...fields, intakeNote: "  " });
+    const multipart = await postService(agent, fields, "", []);
+
+    for (const response of [json, multipart]) {
+      expect(response.status).toBe(201);
+      expect(response.body).toMatchObject({
+        description: "Won't charge",
+        devices: [{ id: phone.id }, { id: generic.id }],
+      });
+      expect(await readLog(agent, response.body.id)).toEqual([]);
+    }
+    expect(storage.objects.size).toBe(0);
+  });
+
+  it("refuses intake photos that aren't valid, registering nothing", async () => {
+    const { storage, agent, customer, phone } = await setUp();
+    const fields = { customerId: customer.id, deviceIds: [phone.id], date: "2026-03-15" };
+
+    const png = await postService(agent, fields, "Cracked", [{ photo: PNG }]);
+    const tooMany = await postService(
+      agent,
+      fields,
+      null,
+      Array.from({ length: 11 }, () => ({ photo: JPEG })),
+    );
+    const noDevice = await postService(agent, { ...fields, deviceIds: [] }, null, [
+      { photo: JPEG },
+    ]);
+
+    expect(png.status).toBe(400);
+    expect(png.body.details.fieldErrors.photos).toBeDefined();
+    expect(tooMany.status).toBe(400);
+    expect(tooMany.body.details.fieldErrors.photos).toBeDefined();
+    expect(noDevice.status).toBe(400);
+    expect(noDevice.body.details.fieldErrors.deviceIds).toBeDefined();
+    // Only the service from the set-up.
+    expect(await prisma.service.count()).toBe(1);
+    expect(storage.objects.size).toBe(0);
+  });
+
+  it("leaves no service, no note and no objects when storing a photo fails", async () => {
+    const { storage, agent, customer, phone } = await setUp();
+    storage.failPutsAfter = 3;
+
+    const response = await postService(
+      agent,
+      { customerId: customer.id, deviceIds: [phone.id], date: "2026-03-15" },
+      "Two photos",
+      [{ photo: JPEG }, { photo: WEBP }],
+    );
+
+    expect(response.status).toBe(502);
+    expect(await prisma.service.count()).toBe(1);
+    expect(await prisma.serviceLogEntry.count()).toBe(0);
+    expect(await prisma.photo.count()).toBe(0);
+    expect(storage.objects.size).toBe(0);
+  });
+
+  it("leaves no service, no note and no objects when the service can't be written", async () => {
+    const { storage, agent, service } = await setUp();
+    const other = await create(agent, "/api/customers", { name: "Ana", phone: "0601" });
+    const tablet = await create(agent, "/api/devices", { model: "iPad", ownerId: other.id });
+    // The device is deleted while the photos upload, so writing the service fails.
+    storage.duringPut = async () => {
+      await prisma.device.deleteMany({ where: { id: tablet.id } });
+    };
+
+    const response = await postService(
+      agent,
+      { customerId: other.id, deviceIds: [tablet.id], date: "2026-03-15" },
+      "Too late",
+      [{ photo: JPEG }],
+    );
+
+    expect(response.status).toBe(400);
+    expect(response.body.details.fieldErrors.deviceIds).toBeDefined();
+    expect(await prisma.service.findMany({ select: { id: true } })).toEqual([{ id: service.id }]);
+    expect(await prisma.serviceLogEntry.count()).toBe(0);
+    expect(await prisma.photo.count()).toBe(0);
+    expect(storage.objects.size).toBe(0);
   });
 });
 

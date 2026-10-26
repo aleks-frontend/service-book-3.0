@@ -4,19 +4,23 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "react-i18next";
 import { Plus } from "lucide-react";
 import {
+  LOG_NOTE_MAX,
+  serviceCreateInputSchema,
   serviceInputSchema,
   type CustomerSummary,
   type Service,
   type DeviceSummary,
-  type ServiceInput,
-  type ServiceInputValues,
+  type ServiceCreateInput,
+  type ServiceCreateInputValues,
 } from "@servicebook/schemas";
 import { todayPlainDate } from "@/lib/format";
+import type { PhotoPickerState } from "@/lib/usePhotoPicker";
 import { cn } from "@/lib/utils";
 import { CustomerFormDialog } from "./CustomerFormDialog";
 import { CustomerPicker } from "./CustomerPicker";
 import { DeviceFormDialog } from "./DeviceFormDialog";
 import { DevicePicker } from "./DevicePicker";
+import { PhotoPicker } from "./PhotoPicker";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
@@ -26,14 +30,23 @@ type ServiceFormProps = {
   id: string;
   /** The service to edit; omitted when creating one. */
   service?: Service;
-  onSubmit: (input: ServiceInput) => void;
+  /**
+   * The intake note's photos, held by the caller so they outlive a failed
+   * save. Given when creating a service only, which adds the optional
+   * "Condition at intake" section: a note and its photos.
+   */
+  intakePhotos?: PhotoPickerState;
+  /** Whether the service is being saved, which locks the intake photos. */
+  saving?: boolean;
+  /** The service's fields; `intakeNote` is set when creating only. */
+  onSubmit: (input: ServiceCreateInput) => void;
 };
 
 /**
  * The customer, devices, date and description of a service. The customer and
  * devices can be picked or created inline; the date starts as today.
  */
-export function ServiceForm({ id, service, onSubmit }: ServiceFormProps) {
+export function ServiceForm({ id, service, intakePhotos, saving, onSubmit }: ServiceFormProps) {
   const { t } = useTranslation();
 
   // The form only holds ids; the pickers also need the names to show.
@@ -51,13 +64,13 @@ export function ServiceForm({ id, service, onSubmit }: ServiceFormProps) {
     reset,
     setValue,
     formState: { errors, isSubmitted },
-  } = useForm<ServiceInputValues, unknown, ServiceInput>({
+  } = useForm<ServiceCreateInputValues, unknown, ServiceCreateInput>({
     // zodResolver submits the schema's parsed output, but @hookform/resolvers
-    // v3 only types it as the input.
-    resolver: zodResolver(serviceInputSchema) as Resolver<
-      ServiceInputValues,
+    // v3 only types it as the input. An edit has no intake note to submit.
+    resolver: zodResolver(service ? serviceInputSchema : serviceCreateInputSchema) as Resolver<
+      ServiceCreateInputValues,
       unknown,
-      ServiceInput
+      ServiceCreateInput
     >,
   });
 
@@ -67,6 +80,7 @@ export function ServiceForm({ id, service, onSubmit }: ServiceFormProps) {
       deviceIds: service?.devices.map((device) => device.id) ?? [],
       description: service?.description ?? "",
       date: service?.date ?? todayPlainDate(),
+      intakeNote: "",
     });
     setCustomer(service?.customer ?? null);
     setDevices(service?.devices ?? []);
@@ -189,6 +203,25 @@ export function ServiceForm({ id, service, onSubmit }: ServiceFormProps) {
           </label>
           <Textarea id={`${id}-description`} rows={4} {...register("description")} />
         </div>
+
+        {intakePhotos && (
+          <fieldset className="space-y-1.5 border-t pt-4">
+            <legend className="float-left mb-1.5 w-full text-sm font-medium">
+              {t("Condition at intake")}
+            </legend>
+            <label htmlFor={`${id}-intake-note`} className="sr-only">
+              {t("Intake note")}
+            </label>
+            <Textarea
+              id={`${id}-intake-note`}
+              rows={3}
+              maxLength={LOG_NOTE_MAX}
+              placeholder={t("Scratches, cracks, dents… Saved as the first note in the log.")}
+              {...register("intakeNote")}
+            />
+            <PhotoPicker id={`${id}-intake-photos`} picker={intakePhotos} disabled={saving} />
+          </fieldset>
+        )}
       </form>
 
       {/* Outside the form: a nested dialog's submit would otherwise bubble up to it through the React tree. */}

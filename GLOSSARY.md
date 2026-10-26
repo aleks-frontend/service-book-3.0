@@ -82,6 +82,10 @@ _Avoid_: Comment, remark
 An image attached to a log entry; internal, like the log. Only staff notes carry photos, and a note needs text, photos or both. A service's photos are the photos of its log's notes (Serbian: fotografija).
 _Avoid_: Attachment, image, picture, file
 
+**Intake note**:
+The optional note written while registering a service, recording the device's condition at intake (scratches, cracks, dents) in text, photos or both. It is saved with the service, as the first note in its log (Serbian: stanje pri prijemu).
+_Avoid_: Intake photos, damage report
+
 **Customer report**:
 The final customer-facing text describing what was done on a service.
 _Avoid_: Remark, note, summary, description

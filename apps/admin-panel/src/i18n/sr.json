@@ -301,5 +301,8 @@
   "Public link": "Javni link",
   "Copy public link": "Kopiraj javni link",
   "Public link copied": "Javni link je kopiran",
-  "Could not copy the public link.": "Kopiranje javnog linka nije uspelo."
+  "Could not copy the public link.": "Kopiranje javnog linka nije uspelo.",
+  "Condition at intake": "Stanje pri prijemu",
+  "Intake note": "Beleška o stanju pri prijemu",
+  "Scratches, cracks, dents… Saved as the first note in the log.": "Ogrebotine, pukotine, udubljenja… Čuva se kao prva beleška u dnevniku."
 }

@@ -9,6 +9,7 @@ export * from "./pagination.js";
 export * from "./photo.js";
 export * from "./publicService.js";
 export * from "./service.js";
+export * from "./serviceCreate.js";
 export * from "./serviceLine.js";
 export * from "./serviceLog.js";
 export * from "./settings.js";

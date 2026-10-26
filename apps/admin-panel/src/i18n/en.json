@@ -301,5 +301,8 @@
   "Public link": "Public link",
   "Copy public link": "Copy public link",
   "Public link copied": "Public link copied",
-  "Could not copy the public link.": "Could not copy the public link."
+  "Could not copy the public link.": "Could not copy the public link.",
+  "Condition at intake": "Condition at intake",
+  "Intake note": "Intake note",
+  "Scratches, cracks, dents… Saved as the first note in the log.": "Scratches, cracks, dents… Saved as the first note in the log."
 }
