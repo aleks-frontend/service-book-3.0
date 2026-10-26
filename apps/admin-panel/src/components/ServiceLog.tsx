@@ -37,7 +37,7 @@ export function ServiceLog({ serviceId }: { serviceId: string }) {
       ) : (
         <ol className="border-l-2">
           {entries.map((entry) => (
-            <LogEntryItem key={entry.id} entry={entry} />
+            <LogEntryItem key={entry.id} serviceId={serviceId} entry={entry} />
           ))}
         </ol>
       )}
@@ -46,7 +46,7 @@ export function ServiceLog({ serviceId }: { serviceId: string }) {
   );
 }
 
-function LogEntryItem({ entry }: { entry: LogEntry }) {
+function LogEntryItem({ serviceId, entry }: { serviceId: string; entry: LogEntry }) {
   const { t, i18n } = useTranslation();
   const author = entry.author?.name ?? t("Former staff member");
 
@@ -73,7 +73,9 @@ function LogEntryItem({ entry }: { entry: LogEntry }) {
       ) : (
         entry.text && <p className="whitespace-pre-line">{entry.text}</p>
       )}
-      {entry.photos.length > 0 && <PhotoThumbnails photos={entry.photos} className="pt-1" />}
+      {entry.photos.length > 0 && (
+        <PhotoThumbnails serviceId={serviceId} photos={entry.photos} className="pt-1" />
+      )}
     </li>
   );
 }

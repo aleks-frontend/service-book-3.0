@@ -474,3 +474,109 @@ describe("the filesystem photo storage", () => {
     expect(anonymous.status).toBe(401);
   });
 });
+
+describe("deleting a photo", () => {
+  it("is only allowed for a logged-in staff member", async () => {
+    const response = await request(createApp()).delete(`/api/photos/${UNKNOWN_ID}`);
+
+    expect(response.status).toBe(401);
+  });
+
+  it("removes the photo and both of its objects, keeping the note's other photos", async () => {
+    const { storage, agent, service } = await setUp();
+    const added = await postNote(agent, service.id, null, [{ photo: JPEG }, { photo: WEBP }]);
+    const [first, second] = added.body.photos;
+
+    const deleted = await agent.delete(`/api/photos/${first.id}`);
+
+    expect(deleted.status).toBe(204);
+    expect((await agent.get(`/api/photos/${first.id}`)).status).toBe(404);
+    expect(await readLog(agent, service.id)).toMatchObject([{ photos: [{ id: second.id }] }]);
+    // Only the second photo and its thumbnail are left.
+    expect(storage.objects.size).toBe(2);
+    expect([...storage.objects.values()].map(({ type }) => type).sort()).toEqual([
+      "image/jpeg",
+      "image/webp",
+    ]);
+  });
+
+  it("removes a note with no text along with its last photo", async () => {
+    const { storage, agent, service } = await setUp();
+    const added = await postNote(agent, service.id, null, [{ photo: JPEG }]);
+
+    expect((await agent.delete(`/api/photos/${added.body.photos[0].id}`)).status).toBe(204);
+
+    expect(await readLog(agent, service.id)).toEqual([]);
+    expect(storage.objects.size).toBe(0);
+  });
+
+  it("keeps a note with text when its last photo is removed", async () => {
+    const { storage, agent, service } = await setUp();
+    const added = await postNote(agent, service.id, "Cracked back", [{ photo: JPEG }]);
+
+    expect((await agent.delete(`/api/photos/${added.body.photos[0].id}`)).status).toBe(204);
+
+    expect(await readLog(agent, service.id)).toMatchObject([
+      { id: added.body.id, text: "Cracked back", photos: [] },
+    ]);
+    expect(storage.objects.size).toBe(0);
+  });
+
+  it("answers 404 for an unknown photo, or one already deleted", async () => {
+    const { agent, service } = await setUp();
+    const added = await postNote(agent, service.id, "Cracked back", [{ photo: JPEG }]);
+    const { id } = added.body.photos[0];
+    await agent.delete(`/api/photos/${id}`);
+
+    expect((await agent.delete(`/api/photos/${id}`)).status).toBe(404);
+    expect((await agent.delete(`/api/photos/${UNKNOWN_ID}`)).status).toBe(404);
+    expect((await agent.delete("/api/photos/not-a-uuid")).status).toBe(404);
+  });
+
+  it("is still done when the storage can't delete the objects", async () => {
+    const { storage, agent, service } = await setUp();
+    const added = await postNote(agent, service.id, "Cracked back", [{ photo: JPEG }]);
+    storage.failDeletes = true;
+
+    const deleted = await agent.delete(`/api/photos/${added.body.photos[0].id}`);
+
+    expect(deleted.status).toBe(204);
+    expect(await readLog(agent, service.id)).toMatchObject([{ photos: [] }]);
+  });
+});
+
+describe("deleting a service", () => {
+  it("removes every photo of its log from the storage", async () => {
+    const { storage, agent, service, customer, phone } = await setUp();
+    await postNote(agent, service.id, "Cracked back", [{ photo: JPEG }, { photo: WEBP }]);
+    await postNote(agent, service.id, null, [{ photo: JPEG }]);
+    // Another service's photos stay.
+    const other = await create(agent, "/api/services", {
+      customerId: customer.id,
+      deviceIds: [phone.id],
+      date: "2026-03-15",
+    });
+    const kept = await postNote(agent, other.id, null, [{ photo: WEBP }]);
+
+    expect((await agent.delete(`/api/services/${service.id}`)).status).toBe(204);
+
+    expect(storage.objects.size).toBe(2);
+    expect((await agent.get(`/api/photos/${kept.body.photos[0].id}`)).status).toBe(302);
+  });
+
+  it("removes the photos of its intake note too", async () => {
+    const { storage, agent, customer, phone } = await setUp();
+    const registered = await postService(
+      agent,
+      { customerId: customer.id, deviceIds: [phone.id], date: "2026-03-15" },
+      null,
+      [{ photo: JPEG }],
+    );
+    expect(registered.status).toBe(201);
+    expect(storage.objects.size).toBe(2);
+
+    expect((await agent.delete(`/api/services/${registered.body.id}`)).status).toBe(204);
+
+    expect(storage.objects.size).toBe(0);
+  });
+});

@@ -275,3 +275,25 @@ export function useAddNoteMutation(serviceId: string) {
     onError: () => toast.error(t("Could not add the note. Please try again.")),
   });
 }
+
+/** Deletes a photo from the service's log, and its note too if nothing else is left in it. */
+export function useDeletePhotoMutation(serviceId: string) {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
+  const refetch = () => queryClient.invalidateQueries({ queryKey: serviceKeys.log(serviceId) });
+
+  return useMutation({
+    mutationFn: (photoId: string) => request<void>(`/photos/${photoId}`, { method: "DELETE" }),
+    onSuccess: () => {
+      toast.success(t("Photo deleted"));
+      return refetch();
+    },
+    onError: (error: HttpError) => {
+      if (error.status === 404) {
+        toast.error(t("This photo was already deleted."));
+        return refetch();
+      }
+      toast.error(t("Could not delete the photo. Please try again."));
+    },
+  });
+}
