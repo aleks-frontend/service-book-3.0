@@ -59,6 +59,7 @@ describe("service status", () => {
         fromStatus: "RECEIVED",
         toStatus: "IN_PROGRESS",
         author: { id: staffMember.id, name: STAFF.name },
+        photos: [],
         createdAt: expect.any(String),
       },
     ]);
@@ -133,6 +134,7 @@ describe("service log", () => {
       fromStatus: null,
       toStatus: null,
       author: { id: staffMember.id, name: STAFF.name },
+      photos: [],
       createdAt: expect.any(String),
     });
     expect(await readLog(agent, service.id)).toEqual([added.body]);

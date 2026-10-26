@@ -120,6 +120,7 @@ describe("legacy import", () => {
         fromStatus: null,
         toStatus: null,
         author: null,
+        photos: [],
         createdAt: "2025-01-02T06:40:00.000Z",
       },
     ]);

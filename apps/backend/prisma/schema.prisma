@@ -247,7 +247,8 @@ model ServiceLogEntry {
   serviceId  String       @db.Uuid
   service    Service      @relation(fields: [serviceId], references: [id], onDelete: Cascade)
   type       LogEntryType
-  /// A note's or legacy remark's text; null on a status change (enforced by a check constraint).
+  /// A legacy remark's text, or a note's; null on a status change, and on a note that has only
+  /// photos (enforced by a check constraint; a note's "text or photos" is enforced by the routes).
   text       String?
   /// Set on status changes only (enforced by a check constraint).
   fromStatus Status?
@@ -255,11 +256,36 @@ model ServiceLogEntry {
   /// The staff member who wrote the note or changed the status; null on a legacy remark.
   authorId   String?
   author     User?        @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  /// Notes only, in the order they were picked.
+  photos     Photo[]
   createdAt  DateTime     @default(now())
 
   @@index([serviceId, createdAt])
   @@index([authorId])
   @@map("service_log_entry")
+}
+
+/// An image attached to a note in the log; internal, like the log (see GLOSSARY.md, ADR-0006).
+/// The bytes live in the photo storage, not in the database.
+model Photo {
+  id           String          @id @db.Uuid
+  logEntryId   String          @db.Uuid
+  logEntry     ServiceLogEntry @relation(fields: [logEntryId], references: [id], onDelete: Cascade)
+  /// The order the photos were picked in, from 0.
+  position     Int
+  /// The storage keys of the full-size photo and its thumbnail.
+  key          String
+  thumbnailKey String
+  /// The full-size photo's media type: image/jpeg or image/webp.
+  type         String
+  width        Int
+  height       Int
+  /// The full-size photo's size in bytes.
+  size         Int
+  createdAt    DateTime        @default(now())
+
+  @@unique([logEntryId, position])
+  @@map("photo")
 }
 
 /// The company's identity used on documents; a single row (see GLOSSARY.md, ADR-0002).

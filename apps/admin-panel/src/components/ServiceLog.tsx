@@ -1,4 +1,4 @@
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "react-i18next";
 import { ArrowRight, Loader2 } from "lucide-react";
@@ -7,9 +7,13 @@ import {
   logNoteInputSchema,
   type LogEntry,
   type LogNoteInput,
+  type LogNoteInputValues,
 } from "@servicebook/schemas";
 import { formatDateTime } from "@/lib/format";
+import { photoUrl, thumbnailUrl } from "@/lib/photos";
 import { useAddNoteMutation, useServiceLogQuery } from "@/lib/services";
+import { usePhotoPicker } from "@/lib/usePhotoPicker";
+import { PhotoPicker } from "./PhotoPicker";
 import { StatusBadge } from "./StatusBadge";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
@@ -67,24 +71,63 @@ function LogEntryItem({ entry }: { entry: LogEntry }) {
           <StatusBadge status={entry.toStatus} />
         </div>
       ) : (
-        <p className="whitespace-pre-line">{entry.text}</p>
+        entry.text && <p className="whitespace-pre-line">{entry.text}</p>
+      )}
+      {entry.photos.length > 0 && (
+        <ul className="flex flex-wrap gap-2 pt-1" aria-label={t("Photos")}>
+          {entry.photos.map((photo, n) => (
+            <li key={photo.id}>
+              <a href={photoUrl(photo.id)} target="_blank" rel="noreferrer">
+                <img
+                  src={thumbnailUrl(photo.id)}
+                  alt={t("Photo {{n}}", { n: n + 1 })}
+                  width={photo.width}
+                  height={photo.height}
+                  loading="lazy"
+                  className="h-20 w-20 rounded-md border object-cover"
+                />
+              </a>
+            </li>
+          ))}
+        </ul>
       )}
     </li>
   );
 }
 
-/** A new note; Ctrl+Enter (⌘+Enter) adds it too. */
+/** A new note with text, photos or both; Ctrl+Enter (⌘+Enter) adds it too. */
 function NoteForm({ serviceId }: { serviceId: string }) {
   const { t } = useTranslation();
   const addNote = useAddNoteMutation(serviceId);
-  const { register, handleSubmit, reset, watch } = useForm<LogNoteInput>({
-    resolver: zodResolver(logNoteInputSchema),
+  const picker = usePhotoPicker();
+  const { register, handleSubmit, reset, watch } = useForm<
+    LogNoteInputValues,
+    unknown,
+    LogNoteInput
+  >({
+    // zodResolver submits the schema's parsed output (blank text as null), but
+    // @hookform/resolvers v3 only types it as the input.
+    resolver: zodResolver(logNoteInputSchema) as Resolver<
+      LogNoteInputValues,
+      unknown,
+      LogNoteInput
+    >,
     defaultValues: { text: "" },
   });
-  const canAdd = watch("text").trim() !== "" && !addNote.isPending;
+  const hasContent = (watch("text") ?? "").trim() !== "" || picker.photos.length > 0;
+  const canAdd = hasContent && !picker.processing && !addNote.isPending;
 
   const submit = handleSubmit(({ text }) => {
-    if (!addNote.isPending) addNote.mutate(text, { onSuccess: () => reset() });
+    if (!canAdd) return;
+    addNote.mutate(
+      { text, photos: picker.photos },
+      {
+        onSuccess: () => {
+          reset();
+          picker.clear();
+        },
+      },
+    );
   });
 
   return (
@@ -105,7 +148,8 @@ function NoteForm({ serviceId }: { serviceId: string }) {
         }}
         {...register("text")}
       />
-      <div className="flex justify-end">
+      <div className="flex items-start justify-between gap-2">
+        <PhotoPicker id="log-photos" picker={picker} disabled={addNote.isPending} />
         <Button type="submit" size="sm" disabled={!canAdd}>
           {addNote.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
           {t("Add note")}

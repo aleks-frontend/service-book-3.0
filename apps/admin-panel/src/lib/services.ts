@@ -20,7 +20,9 @@ import type {
   ServiceListQuery,
   Status,
 } from "@servicebook/schemas";
+import { PHOTO_FIELD, THUMBNAIL_FIELD } from "@servicebook/schemas";
 import { request, toSearchParams, type HttpError } from "./http";
+import type { PickedPhoto } from "./photos";
 
 export const serviceKeys = {
   all: ["services"] as const,
@@ -213,14 +215,29 @@ export function useServiceLogQuery(serviceId: string) {
   });
 }
 
-/** Adds a staff member's note to the end of a service's log. */
+/** A note's text and photos as the API takes them: JSON for text only, multipart with photos. */
+function noteBody(text: string | null, photos: PickedPhoto[]) {
+  if (photos.length === 0) return { text };
+  const body = new FormData();
+  if (text) body.append("text", text);
+  for (const { name, photo, thumbnail } of photos) {
+    body.append(PHOTO_FIELD, photo, name);
+    body.append(THUMBNAIL_FIELD, thumbnail, name);
+  }
+  return body;
+}
+
+/** Adds a staff member's note, with text, photos or both, to the end of a service's log. */
 export function useAddNoteMutation(serviceId: string) {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
 
   return useMutation({
-    mutationFn: (text: string) =>
-      request<LogEntry>(`/services/${serviceId}/log`, { method: "POST", body: { text } }),
+    mutationFn: ({ text, photos }: { text: string | null; photos: PickedPhoto[] }) =>
+      request<LogEntry>(`/services/${serviceId}/log`, {
+        method: "POST",
+        body: noteBody(text, photos),
+      }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: serviceKeys.log(serviceId) }),
     onError: () => toast.error(t("Could not add the note. Please try again.")),
   });

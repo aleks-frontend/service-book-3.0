@@ -46,3 +46,4 @@ playwright-report/
 
 # Prisma
 apps/backend/src/generated/
+apps/backend/storage/

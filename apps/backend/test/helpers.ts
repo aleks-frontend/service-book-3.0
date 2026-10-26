@@ -1,5 +1,5 @@
 import request from "supertest";
-import { createApp } from "../src/app.js";
+import { createApp, type AppOptions } from "../src/app.js";
 import { createStaffMember, type NewStaffMember } from "../src/lib/staffMembers.js";
 
 export const STAFF: NewStaffMember = {
@@ -12,9 +12,9 @@ export const STAFF: NewStaffMember = {
  * A Supertest agent logged in as a freshly seeded staff member. The agent
  * keeps the session cookie, so every later request is authenticated.
  */
-export async function authenticatedAgent() {
+export async function authenticatedAgent(options?: AppOptions) {
   const staffMember = await createStaffMember(STAFF);
-  const agent = request.agent(createApp());
+  const agent = request.agent(createApp(options));
 
   const response = await agent
     .post("/api/auth/sign-in/email")

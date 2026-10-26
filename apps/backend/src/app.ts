@@ -2,12 +2,14 @@ import path from "node:path";
 import express from "express";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./lib/auth.js";
+import { PHOTO_FILES_PATH, photoStorageFromEnv, type PhotoStorage } from "./lib/photoStorage.js";
 import { requireAuth } from "./middleware/requireAuth.js";
 import { actionsRouter } from "./routes/actions.js";
 import { customersRouter } from "./routes/customers.js";
 import { debugRouter } from "./routes/debug.js";
 import { devicesRouter } from "./routes/devices.js";
 import { meRouter } from "./routes/me.js";
+import { photosRouter } from "./routes/photos.js";
 import { publicServicesRouter } from "./routes/publicServices.js";
 import { servicesRouter } from "./routes/services.js";
 import { publicSettingsRouter, settingsRouter } from "./routes/settings.js";
@@ -19,10 +21,17 @@ const SETTINGS_BODY_LIMIT = "4mb";
 export type AppOptions = {
   /** The admin panel's built `dist` directory. When set, it is served from `/` (ADR-0001). */
   adminPanelDir?: string;
+  /** Where photos are stored. Defaults to the one the environment configures (`.env.example`). */
+  photoStorage?: PhotoStorage;
 };
 
-export function createApp({ adminPanelDir }: AppOptions = {}) {
+export function createApp({
+  adminPanelDir,
+  photoStorage = photoStorageFromEnv(),
+}: AppOptions = {}) {
   const app = express();
+  // Read by the routes through `photoStorageOf(req)`.
+  app.locals.photoStorage = photoStorage;
 
   // Better Auth reads the raw request body itself, so it must be mounted
   // before express.json() consumes it.
@@ -39,6 +48,7 @@ export function createApp({ adminPanelDir }: AppOptions = {}) {
 
   // The settings carry the logo and signature images inline.
   app.use("/api/settings", express.json({ limit: SETTINGS_BODY_LIMIT }));
+  // Notes with photos are multipart, parsed by their own route (lib/photoUploads.ts).
   app.use(express.json());
 
   app.use("/api/me", meRouter);
@@ -49,6 +59,8 @@ export function createApp({ adminPanelDir }: AppOptions = {}) {
   app.use("/api/services", servicesRouter);
   app.use("/api/settings", settingsRouter);
   app.use("/api/statistics", statisticsRouter);
+  app.use("/api/photos", photosRouter);
+  if (photoStorage.files) app.use(PHOTO_FILES_PATH, photoStorage.files);
 
   // Unknown API paths must never fall through to the admin panel's index.html.
   app.use("/api", (_req, res) => {
