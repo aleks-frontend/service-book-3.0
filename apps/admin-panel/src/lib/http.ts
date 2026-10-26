@@ -23,16 +23,22 @@ function redirectToLogin() {
   }
 }
 
-/** Calls the backend's `/api` on the page's own origin with the session cookie. */
+/**
+ * Calls the backend's `/api` on the page's own origin with the session cookie.
+ * A `FormData` body is sent as multipart (the browser sets its boundary);
+ * anything else as JSON.
+ */
 export async function request<T>(
   path: string,
   options: { method?: string; body?: unknown } = {},
 ): Promise<T> {
+  const { body } = options;
+  const isJson = body !== undefined && !(body instanceof FormData);
   const response = await fetch(`/api${path}`, {
     method: options.method ?? "GET",
     credentials: "include",
-    headers: options.body !== undefined ? { "Content-Type": "application/json" } : undefined,
-    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+    headers: isJson ? { "Content-Type": "application/json" } : undefined,
+    body: isJson ? JSON.stringify(body) : (body as FormData | undefined),
   });
 
   if (response.status === 401) {

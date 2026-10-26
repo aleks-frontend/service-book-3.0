@@ -1,3 +1,4 @@
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { config } from "dotenv";
@@ -29,4 +30,6 @@ export const e2eEnv = {
   NODE_ENV: "production",
   // The tests log in back to back, faster than Better Auth's sign-in rate limit allows.
   AUTH_RATE_LIMIT_DISABLED: "true",
+  // Photos go to the filesystem storage; it is never cleaned, as each run's database starts empty.
+  PHOTO_STORAGE_DIR: path.join(tmpdir(), "servicebook-e2e-photos"),
 };

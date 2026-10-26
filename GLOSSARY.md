@@ -78,6 +78,10 @@ _Avoid_: Notes, comments, history, remarks
 One item in the log: a staff note, an automatic status change record, or an imported Firebase `remark`.
 _Avoid_: Comment, remark
 
+**Photo**:
+An image attached to a log entry; internal, like the log. Only staff notes carry photos, and a note needs text, photos or both. A service's photos are the photos of its log's notes (Serbian: fotografija).
+_Avoid_: Attachment, image, picture, file
+
 **Customer report**:
 The final customer-facing text describing what was done on a service.
 _Avoid_: Remark, note, summary, description

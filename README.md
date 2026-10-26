@@ -60,6 +60,9 @@ Variables on the app service:
 | `BETTER_AUTH_SECRET` | A fresh `openssl rand -base64 32`, not the local one |
 | `BETTER_AUTH_URL` | The public URL: the `https://….up.railway.app` one until the custom domain exists, then `https://servis.lisztrapszodia.in.rs` |
 | `TRUSTED_ORIGINS` | Every exact URL staff log in on, comma-separated, e.g. `https://servis.lisztrapszodia.in.rs,https://app-production-xxxx.up.railway.app` (no wildcards, no trailing slash) |
+| `R2_BUCKET` | The deployment's own private R2 bucket for photos ([ADR-0006](./docs/adr/0006-photos-in-private-r2.md)). Required: production won't start without it |
+| `R2_ACCOUNT_ID` | The Cloudflare account ID |
+| `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | An R2 API token with Object Read & Write on that bucket only |
 | `SENTRY_DSN` | DSN of the backend Sentry project |
 | `VITE_SENTRY_DSN` | DSN of the admin-panel Sentry project. Inlined at build time (Docker build arg), so changing it needs a redeploy |
 
