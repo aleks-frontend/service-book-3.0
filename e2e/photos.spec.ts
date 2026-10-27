@@ -28,7 +28,7 @@ async function openServiceLog(page: Page, customerName: string) {
 
   await page.goto(`/services?service=${service.id}`);
   const drawer = page.getByRole("dialog", { name: `Servis ${service.number}` });
-  await drawer.getByRole("tab", { name: "Dnevnik" }).click();
+  await drawer.getByRole("tab", { name: "Dnevnik rada" }).click();
   return { drawer, serviceId: service.id as string };
 }
 
@@ -133,7 +133,7 @@ test("photos open in a lightbox from a note and from the Photos strip", async ({
   await postPhotoNote(page, serviceId, "Prijem", 2);
   await postPhotoNote(page, serviceId, "Posle popravke", 1);
   await page.reload();
-  await drawer.getByRole("tab", { name: "Dnevnik" }).click();
+  await drawer.getByRole("tab", { name: "Dnevnik rada" }).click();
 
   const lightbox = page.getByRole("dialog", { name: "Pregled fotografija" });
   const current = lightbox.locator(".yarl__slide_current img");
@@ -183,7 +183,7 @@ test("a staff member deletes photos from a note's thumbnails and from the lightb
   await postPhotoNote(page, serviceId, "Napukao ekran", 2);
   await postPhotoNote(page, serviceId, null, 1);
   await page.reload();
-  await drawer.getByRole("tab", { name: "Dnevnik" }).click();
+  await drawer.getByRole("tab", { name: "Dnevnik rada" }).click();
 
   const entries = drawer.getByTestId("log-entry");
   const strip = drawer.getByRole("region", { name: "Fotografije" });
@@ -286,7 +286,7 @@ test("a staff member registers a service with photos of its condition at intake,
   await page.goto(`/services?service=${service.id}`);
   const drawer = page.getByRole("dialog", { name: `Servis ${service.number}` });
   await expect(drawer.getByRole("region", { name: "Fotografije" }).getByRole("img")).toHaveCount(2);
-  await drawer.getByRole("tab", { name: "Dnevnik" }).click();
+  await drawer.getByRole("tab", { name: "Dnevnik rada" }).click();
   const entries = drawer.getByTestId("log-entry");
   await expect(entries).toHaveCount(1);
   await expect(entries.first()).toContainText("Napukao ekran u donjem uglu");

@@ -27,7 +27,10 @@ export function ServiceLog({ serviceId }: { serviceId: string }) {
   const { data: entries, isError } = useServiceLogQuery(serviceId);
 
   return (
-    <section className="space-y-4" aria-label={t("Log")}>
+    <section className="space-y-4" aria-label={t("Work log")}>
+      <p className="text-sm text-muted-foreground">
+        {t("Internal notes kept during the work. The customer never sees them.")}
+      </p>
       {isError ? (
         <p className="text-sm text-destructive">{t("Could not load the log.")}</p>
       ) : !entries ? (

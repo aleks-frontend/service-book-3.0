@@ -93,17 +93,17 @@ export function ServiceDrawer({ serviceId, place, onOpen }: ServiceDrawerProps) 
             <Tabs defaultValue="details">
               <TabsList>
                 <TabsTrigger value="details">{t("Details")}</TabsTrigger>
+                <TabsTrigger value="log">{t("Work log")}</TabsTrigger>
                 <TabsTrigger value="customer-report">{t("Customer report")}</TabsTrigger>
-                <TabsTrigger value="log">{t("Log")}</TabsTrigger>
               </TabsList>
               <TabsContent value="details">
                 <ServiceLines service={service} />
               </TabsContent>
-              <TabsContent value="customer-report">
-                <CustomerReport service={service} />
-              </TabsContent>
               <TabsContent value="log">
                 <ServiceLog serviceId={service.id} />
+              </TabsContent>
+              <TabsContent value="customer-report">
+                <CustomerReport service={service} />
               </TabsContent>
             </Tabs>
           </>

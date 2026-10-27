@@ -297,7 +297,18 @@ test("a one-click status change from the list shows in the badge and in the Log 
   // The change is in the service's log, and a note joins it below.
   await row.click();
   const drawer = page.getByRole("dialog", { name: `Servis ${service.number}` });
-  await drawer.getByRole("tab", { name: "Dnevnik" }).click();
+  // The tabs follow the work: details, then the internal log, then the report.
+  await expect(drawer.getByRole("tab")).toHaveText([
+    "Detalji",
+    "Dnevnik rada",
+    "Izveštaj za mušteriju",
+  ]);
+  await expect(drawer.getByRole("tab", { name: "Detalji" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await drawer.getByRole("tab", { name: "Dnevnik rada" }).click();
+  await expect(drawer.getByText("Interne beleške tokom rada. Mušterija ih ne vidi.")).toBeVisible();
   const entries = drawer.getByTestId("log-entry");
   await expect(entries).toHaveCount(1);
   await expect(entries.first()).toContainText("Status promenjen");
