@@ -98,12 +98,12 @@ Empty-string arrays are treated as empty. Public tokens are generated freshly. T
 
 ## Phase 2+: after parity (roadmap)
 
-These are roughly in order. Each will get its own spec and tickets. Item 2 is done; item 1 is next.
+These are roughly in order. Each will get its own spec and tickets. Items 2 and 3 are done; item 1 is next.
 
 1. **Customer page:** a dedicated customer detail page with full service history.
 2. ~~**Public status page**~~ **(done, #22):** a read-only `/s/<publicToken>` page showing status, service lines and the customer report. The QR codes on intake receipts and service reports printed in phase 1 point here.
-3. **Service photos:** photos on services and log entries, stored in Cloudflare R2, with thumbnails and a lightbox. Photos of damage at intake are the priority.
-4. **Device photos.**
+3. ~~**Service photos**~~ **(done, #36; slices #37–#40):** photos on log notes, stored in a private Cloudflare R2 bucket and served to staff through short-lived links. Notes show thumbnails, the service drawer has a Photos strip and a lightbox, the create form has a "Condition at intake" section, and deleting a photo or a service cleans up storage. Photos stay internal: they never appear on the public status page or the documents.
+4. **Device photos.** These can reuse `PhotoStorage` and the lightbox from service photos.
 5. **Device extras** beyond the serial number, which phase 1 already stores (still to be discussed).
 6. **Barcode/QR camera scanning**.
 7. **Richer status workflows.**
