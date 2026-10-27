@@ -21,7 +21,8 @@ type StatusSelectProps = {
 /**
  * A service's status badge that opens a menu of the statuses; picking one
  * saves it at once. While it saves, the badge already shows the new status.
- * Once a change to Completed saves, it offers the service report.
+ * Once a change to Completed saves, it asks for the customer report and offers the
+ * service report.
  */
 export function StatusSelect({ serviceId, status }: StatusSelectProps) {
   const { t } = useTranslation();

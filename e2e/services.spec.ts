@@ -281,7 +281,7 @@ test("a one-click status change from the list shows in the badge and in the Log 
 
   let downloaded = false;
   page.on("download", () => (downloaded = true));
-  const reportPrompt = page.getByRole("dialog", { name: "Odštampati izveštaj o servisu?" });
+  const completion = page.getByRole("dialog", { name: `Servis ${service.number} je završen` });
 
   // Choosing a status in the row saves it without opening the service.
   const row = page.getByRole("row", { name: new RegExp(service.number) });
@@ -289,8 +289,8 @@ test("a one-click status change from the list shows in the badge and in the Log 
   await page.getByRole("menuitemradio", { name: "U radu" }).click();
   await expect(row.getByRole("button", { name: /Promeni status/ })).toHaveText("U radu");
   await expect(page).toHaveURL("/services");
-  // Only a change to Completed offers the service report.
-  await expect(reportPrompt).toBeHidden();
+  // Only a change to Completed asks for the customer report.
+  await expect(completion).toBeHidden();
   await page.reload();
   await expect(row.getByRole("button", { name: /Promeni status/ })).toHaveText("U radu");
 
@@ -325,12 +325,9 @@ test("a one-click status change from the list shows in the badge and in the Log 
   await drawer.getByRole("button", { name: /Promeni status/ }).click();
   await page.getByRole("menuitemradio", { name: "Završen" }).click();
 
-  // Completing it offers the service report; "Not now" downloads nothing.
-  await expect(reportPrompt).toContainText(
-    `Servis ${service.number} je završen. Generisati izveštaj o servisu za mušteriju?`,
-  );
-  await reportPrompt.getByRole("button", { name: "Ne sada" }).click();
-  await expect(reportPrompt).toBeHidden();
+  // Completing it asks for the customer report; "Skip" downloads nothing.
+  await completion.getByRole("button", { name: "Preskoči" }).click();
+  await expect(completion).toBeHidden();
   await expect(entries).toHaveCount(3);
   await expect(entries.nth(2)).toContainText("Završen");
   expect(downloaded).toBe(false);

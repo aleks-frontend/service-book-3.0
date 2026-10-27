@@ -156,31 +156,150 @@ test("a staff member writes the customer report and prints the service report, i
   expect(english.qrCodes).toEqual([`${baseURL}/s/${service.publicToken}`]);
 });
 
-test("completing a service from the list offers its service report", async ({ page }) => {
+/** Opens the status menu of the service's card in the list and chooses a status. */
+async function chooseStatus(page: Page, number: string, status: string) {
+  const card = page.getByRole("listitem").filter({ hasText: number });
+  await card.getByRole("button", { name: /Promeni status/ }).click();
+  await page.getByRole("menuitemradio", { name: status }).click();
+  return card;
+}
+
+/** Fails the test if the page downloads anything from here on. */
+function noDownloads(page: Page) {
+  let downloaded = false;
+  page.on("download", () => (downloaded = true));
+  return () => expect(downloaded).toBe(false);
+}
+
+test("completing a service asks for its customer report, then saves it and generates the service report", async ({
+  page,
+}) => {
   await logIn(page);
   await expect(page).toHaveURL("/services");
   const service = await createService(page, "Jelena Ilić", "Pixel 7");
+  await send(page, "put", `/api/services/${service.id}/customer-report`, {
+    customerReport: "Zamenjen ekran.",
+  });
   await page.reload();
 
-  // The list opens in cards; choosing Completed on one saves it, then offers the report.
-  const card = page.getByRole("listitem").filter({ hasText: service.number });
-  await card.getByRole("button", { name: /Promeni status/ }).click();
-  await page.getByRole("menuitemradio", { name: "Završen" }).click();
+  // The list opens in cards; choosing Completed on one saves it, then asks for the report.
+  const card = await chooseStatus(page, service.number, "Završen");
+  const dialog = page.getByRole("dialog", { name: `Servis ${service.number} je završen` });
+  const report = dialog.getByRole("textbox", { name: "Izveštaj za mušteriju" });
+  await expect(report).toHaveValue("Zamenjen ekran.");
+  await report.fill("Zamenjen ekran i baterija.");
 
-  const prompt = page.getByRole("dialog", { name: "Odštampati izveštaj o servisu?" });
   const download = page.waitForEvent("download");
-  await prompt.getByRole("button", { name: "Generiši" }).click();
-  await expect(prompt).toBeHidden();
+  await dialog.getByRole("button", { name: "Sačuvaj i generiši izveštaj" }).click();
+  await expect(dialog).toBeHidden();
   await expect(card.getByRole("button", { name: /Promeni status/ })).toHaveText("Završen");
   expect((await download).suggestedFilename()).toBe(`izvestaj-o-servisu-${service.number}.pdf`);
   const pdf = await readDownload(await download);
   expect(pdf.text).toContain(`Izveštaj o servisu ${service.number}`);
   expect(pdf.text).toContain("Ime Jelena Ilić");
-  // The prompt sits over the list; the service did not open.
+  expect(pdf.text).toContain("Zamenjen ekran i baterija.");
+  // The dialog sat over the list; the service did not open.
   await expect(page).toHaveURL("/services");
+
+  // The edit is saved: the customer report tab shows it.
+  await card.click();
+  const drawer = page.getByRole("dialog", { name: `Servis ${service.number}` });
+  await drawer.getByRole("tab", { name: "Izveštaj za mušteriju" }).click();
+  await expect(drawer.getByRole("textbox", { name: "Izveštaj za mušteriju" })).toHaveValue(
+    "Zamenjen ekran i baterija.",
+  );
 });
 
-test("completing a service in a list filtered to another status still offers its report", async ({
+test("“Save only” saves the customer report and generates nothing", async ({ page }) => {
+  await logIn(page);
+  await expect(page).toHaveURL("/services");
+  const service = await createService(page, "Milan Perić", "Galaxy S21");
+  await page.goto(`/services?service=${service.id}`);
+  const assertNoDownloads = noDownloads(page);
+
+  // Completing from the drawer asks too; with nothing saved yet, the report starts empty.
+  const drawer = page.getByRole("dialog", { name: `Servis ${service.number}` });
+  await drawer.getByRole("button", { name: /Promeni status/ }).click();
+  await page.getByRole("menuitemradio", { name: "Završen" }).click();
+  const dialog = page.getByRole("dialog", { name: `Servis ${service.number} je završen` });
+  const report = dialog.getByRole("textbox", { name: "Izveštaj za mušteriju" });
+  await expect(report).toHaveValue("");
+  await report.fill("Očišćen port za punjenje.");
+  await dialog.getByRole("button", { name: "Samo sačuvaj" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByText("Izveštaj za mušteriju je sačuvan")).toBeVisible();
+
+  await drawer.getByRole("tab", { name: "Izveštaj za mušteriju" }).click();
+  await expect(drawer.getByRole("textbox", { name: "Izveštaj za mušteriju" })).toHaveValue(
+    "Očišćen port za punjenje.",
+  );
+  assertNoDownloads();
+});
+
+test("skipping the completion dialog saves nothing, generates nothing and keeps the service completed", async ({
+  page,
+}) => {
+  await logIn(page);
+  await expect(page).toHaveURL("/services");
+  const service = await createService(page, "Ivana Kostić", "iPhone 12");
+  await send(page, "put", `/api/services/${service.id}/customer-report`, {
+    customerReport: "Zamenjena baterija.",
+  });
+  await page.reload();
+  const assertNoDownloads = noDownloads(page);
+
+  const card = await chooseStatus(page, service.number, "Završen");
+  const dialog = page.getByRole("dialog", { name: `Servis ${service.number} je završen` });
+  await dialog.getByRole("textbox", { name: "Izveštaj za mušteriju" }).fill("Ne čuva se.");
+  await dialog.getByRole("button", { name: "Preskoči" }).click();
+  await expect(dialog).toBeHidden();
+
+  // Escape skips too.
+  await chooseStatus(page, service.number, "U radu");
+  await expect(card.getByRole("button", { name: /Promeni status/ })).toHaveText("U radu");
+  await chooseStatus(page, service.number, "Završen");
+  await expect(dialog.getByRole("textbox", { name: "Izveštaj za mušteriju" })).toHaveValue(
+    "Zamenjena baterija.",
+  );
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+
+  await expect(card.getByRole("button", { name: /Promeni status/ })).toHaveText("Završen");
+  const saved = await (await page.request.get(`/api/services/${service.id}`)).json();
+  expect(saved.status).toBe("COMPLETED");
+  expect(saved.customerReport).toBe("Zamenjena baterija.");
+  assertNoDownloads();
+});
+
+test("a customer report that fails to save keeps the dialog open and generates nothing", async ({
+  page,
+}) => {
+  await logIn(page);
+  await expect(page).toHaveURL("/services");
+  const service = await createService(page, "Dragan Lukić", "Xperia 10");
+  await page.reload();
+  const assertNoDownloads = noDownloads(page);
+  await page.route(`**/api/services/${service.id}/customer-report`, (route) =>
+    route.fulfill({ status: 500 }),
+  );
+
+  await chooseStatus(page, service.number, "Završen");
+  const dialog = page.getByRole("dialog", { name: `Servis ${service.number} je završen` });
+  const report = dialog.getByRole("textbox", { name: "Izveštaj za mušteriju" });
+  await report.fill("Zamenjen zvučnik.");
+  // Ctrl+Enter in the textarea is the primary action.
+  await report.press("Control+Enter");
+
+  await expect(
+    page.getByText("Čuvanje izveštaja za mušteriju nije uspelo. Pokušajte ponovo."),
+  ).toBeVisible();
+  await expect(dialog).toBeVisible();
+  await expect(report).toHaveValue("Zamenjen zvučnik.");
+  await expect(dialog.getByRole("button", { name: "Sačuvaj i generiši izveštaj" })).toBeEnabled();
+  assertNoDownloads();
+});
+
+test("completing a service in a list filtered to another status still asks for its report", async ({
   page,
 }) => {
   await logIn(page);
@@ -190,33 +309,31 @@ test("completing a service in a list filtered to another status still offers its
 
   await page.getByRole("combobox", { name: "Filtriraj po statusu" }).click();
   await page.getByRole("option", { name: "Primljen" }).click();
-  const card = page.getByRole("listitem").filter({ hasText: service.number });
-  await card.getByRole("button", { name: /Promeni status/ }).click();
-  await page.getByRole("menuitemradio", { name: "Završen" }).click();
+  const card = await chooseStatus(page, service.number, "Završen");
 
-  // The completed service leaves the filtered list, but the offer stays.
-  const prompt = page.getByRole("dialog", { name: "Odštampati izveštaj o servisu?" });
-  await expect(prompt).toContainText(`Servis ${service.number} je završen.`);
+  // The completed service leaves the filtered list, but the dialog stays.
+  const dialog = page.getByRole("dialog", { name: `Servis ${service.number} je završen` });
+  await expect(dialog).toBeVisible();
   await expect(card).toHaveCount(0);
-  await expect(prompt).toBeVisible();
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("textbox", { name: "Izveštaj za mušteriju" }).fill("Zamenjen konektor.");
   const download = page.waitForEvent("download");
-  await prompt.getByRole("button", { name: "Generiši" }).click();
-  await expect(prompt).toBeHidden();
+  await dialog.getByRole("button", { name: "Sačuvaj i generiši izveštaj" }).click();
+  await expect(dialog).toBeHidden();
   expect((await download).suggestedFilename()).toBe(`izvestaj-o-servisu-${service.number}.pdf`);
   const pdf = await readDownload(await download);
   expect(pdf.text).toContain("Ime Nikola Tesić");
+  expect(pdf.text).toContain("Zamenjen konektor.");
 });
 
-test("delivering a completed service offers no report", async ({ page }) => {
+test("delivering a completed service asks for no report", async ({ page }) => {
   await logIn(page);
   await expect(page).toHaveURL("/services");
   const service = await createService(page, "Vesna Marić", "iPad Air");
   await send(page, "put", `/api/services/${service.id}/status`, { status: "COMPLETED" });
   await page.reload();
 
-  let downloaded = false;
-  page.on("download", () => (downloaded = true));
-  const card = page.getByRole("listitem").filter({ hasText: service.number });
+  const assertNoDownloads = noDownloads(page);
   const saved = page.waitForResponse((response) =>
     response.url().endsWith(`/api/services/${service.id}/status`),
   );
@@ -224,12 +341,13 @@ test("delivering a completed service offers no report", async ({ page }) => {
   const refetched = page.waitForResponse(
     (response) => /\/api\/services\?/.test(response.url()) && response.request().method() === "GET",
   );
-  await card.getByRole("button", { name: /Promeni status/ }).click();
-  await page.getByRole("menuitemradio", { name: "Isporučen" }).click();
+  const card = await chooseStatus(page, service.number, "Isporučen");
   expect((await saved).ok()).toBe(true);
   await refetched;
 
   await expect(card.getByRole("button", { name: /Promeni status/ })).toHaveText("Isporučen");
-  await expect(page.getByRole("dialog", { name: "Odštampati izveštaj o servisu?" })).toBeHidden();
-  expect(downloaded).toBe(false);
+  await expect(
+    page.getByRole("dialog", { name: `Servis ${service.number} je završen` }),
+  ).toBeHidden();
+  assertNoDownloads();
 });

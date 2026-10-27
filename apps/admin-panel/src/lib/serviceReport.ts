@@ -29,9 +29,10 @@ export const ServiceReportOfferContext = createContext<((service: ServiceDetail)
 );
 
 /**
- * Returns `offerServiceReport(service)`, which asks whether to generate the service's
- * report. The offer lives above the page, so it stays up when whatever asked for it
- * (a list row that a status filter now hides, …) unmounts.
+ * Returns `offerServiceReport(service)`, which asks for the completed service's
+ * customer report, then offers to generate its service report. The offer lives above
+ * the page, so it stays up when whatever asked for it (a list row that a status filter
+ * now hides, …) unmounts.
  */
 export function useOfferServiceReport() {
   const offerServiceReport = useContext(ServiceReportOfferContext);
