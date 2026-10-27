@@ -307,6 +307,7 @@
   "Save and generate the service report": "Mentés és szervizjelentés létrehozása",
   "Save only": "Csak mentés",
   "Skip": "Kihagyás",
+  "The service report will go out without a customer report.": "A szervizjelentés ügyféljelentés nélkül készül el.",
   "Public link": "Nyilvános link",
   "Copy public link": "Nyilvános link másolása",
   "Public link copied": "Nyilvános link kimásolva",

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Loader2 } from "lucide-react";
+import { AlertTriangle, Loader2 } from "lucide-react";
 import { CUSTOMER_REPORT_MAX, type ServiceDetail } from "@servicebook/schemas";
 import { useSaveCustomerReportMutation } from "@/lib/services";
 import { Button } from "./ui/button";
@@ -61,9 +61,16 @@ function CompletionForm({ service, open, onClose, onGenerate }: CompletionFormPr
   const [customerReport, setCustomerReport] = useState(prefill);
   // Which button is saving, to show its spinner.
   const [finishing, setFinishing] = useState<Finish>();
+  // Whether generating with an empty report has been warned about; generating again proceeds.
+  const [warned, setWarned] = useState(false);
+  const isEmpty = customerReport.trim() === "";
 
   async function finish(action: Finish) {
     if (finishing) return;
+    if (action === "generate" && isEmpty && !warned) {
+      setWarned(true);
+      return;
+    }
     setFinishing(action);
     let saved = service;
     if (customerReport !== prefill) {
@@ -108,6 +115,16 @@ function CompletionForm({ service, open, onClose, onGenerate }: CompletionFormPr
               }
             }}
           />
+          {warned && isEmpty && (
+            // Yellow marks what needs action (ADR-0005): an edge, since it is never text.
+            <p
+              role="alert"
+              className="flex items-start gap-2 border-l-4 border-primary bg-muted px-3 py-2 text-sm"
+            >
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+              {t("The service report will go out without a customer report.")}
+            </p>
+          )}
         </div>
         <DialogFooter className="gap-2">
           <Button variant="ghost" disabled={!!finishing} onClick={onClose}>

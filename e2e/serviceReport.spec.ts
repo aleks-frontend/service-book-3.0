@@ -271,6 +271,91 @@ test("skipping the completion dialog saves nothing, generates nothing and keeps 
   assertNoDownloads();
 });
 
+/** The completion dialog's warning that the service report would carry no customer report. */
+const EMPTY_REPORT_WARNING = "Izveštaj o servisu će biti bez izveštaja za mušteriju.";
+
+test("an empty customer report warns before generating the service report", async ({ page }) => {
+  await logIn(page);
+  await expect(page).toHaveURL("/services");
+  const service = await createService(page, "Zoran Babić", "Redmi Note 12");
+  const other = await createService(page, "Sanja Đurić", "Nokia G21");
+  await page.reload();
+
+  // A whitespace-only report counts as empty: the first click only warns.
+  let downloads = 0;
+  page.on("download", () => downloads++);
+  await chooseStatus(page, service.number, "Završen");
+  const dialog = page.getByRole("dialog", { name: `Servis ${service.number} je završen` });
+  const generate = dialog.getByRole("button", { name: "Sačuvaj i generiši izveštaj" });
+  const warning = dialog.getByText(EMPTY_REPORT_WARNING);
+  await dialog.getByRole("textbox", { name: "Izveštaj za mušteriju" }).fill("   ");
+  await expect(warning).toBeHidden();
+  await generate.click();
+  await expect(warning).toBeVisible();
+  await expect(dialog).toBeVisible();
+
+  // The second click generates it anyway, and only it downloads.
+  const download = page.waitForEvent("download");
+  await generate.click();
+  await expect(dialog).toBeHidden();
+  expect((await download).suggestedFilename()).toBe(`izvestaj-o-servisu-${service.number}.pdf`);
+  expect(downloads).toBe(1);
+
+  // Typing a report once warned clears the warning and generates in one click.
+  await chooseStatus(page, other.number, "Završen");
+  const otherDialog = page.getByRole("dialog", { name: `Servis ${other.number} je završen` });
+  const otherGenerate = otherDialog.getByRole("button", { name: "Sačuvaj i generiši izveštaj" });
+  const otherWarning = otherDialog.getByText(EMPTY_REPORT_WARNING);
+  await otherGenerate.click();
+  await expect(otherWarning).toBeVisible();
+  await otherDialog
+    .getByRole("textbox", { name: "Izveštaj za mušteriju" })
+    .fill("Zamenjen displej.");
+  await expect(otherWarning).toBeHidden();
+  const otherDownload = page.waitForEvent("download");
+  await otherGenerate.click();
+  await expect(otherDialog).toBeHidden();
+  const pdf = await readDownload(await otherDownload);
+  expect(pdf.text).toContain("Zamenjen displej.");
+});
+
+test("“Save only” and “Skip” close the dialog with an empty customer report, warned or not", async ({
+  page,
+}) => {
+  await logIn(page);
+  await expect(page).toHaveURL("/services");
+  const service = await createService(page, "Petar Vasić", "Honor 90");
+  await page.reload();
+  const assertNoDownloads = noDownloads(page);
+  const dialog = page.getByRole("dialog", { name: `Servis ${service.number} je završen` });
+  const warning = dialog.getByText(EMPTY_REPORT_WARNING);
+
+  /** Completes the service again, so the dialog opens afresh. */
+  async function complete() {
+    await chooseStatus(page, service.number, "U radu");
+    await chooseStatus(page, service.number, "Završen");
+    await expect(dialog).toBeVisible();
+  }
+
+  // Unwarned, each closes on the first click.
+  await chooseStatus(page, service.number, "Završen");
+  await dialog.getByRole("button", { name: "Samo sačuvaj" }).click();
+  await expect(dialog).toBeHidden();
+  await complete();
+  await dialog.getByRole("button", { name: "Preskoči" }).click();
+  await expect(dialog).toBeHidden();
+
+  // Once warned, neither generates.
+  for (const button of ["Samo sačuvaj", "Preskoči"]) {
+    await complete();
+    await dialog.getByRole("button", { name: "Sačuvaj i generiši izveštaj" }).click();
+    await expect(warning).toBeVisible();
+    await dialog.getByRole("button", { name: button }).click();
+    await expect(dialog).toBeHidden();
+  }
+  assertNoDownloads();
+});
+
 test("a customer report that fails to save keeps the dialog open and generates nothing", async ({
   page,
 }) => {
