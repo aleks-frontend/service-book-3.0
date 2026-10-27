@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import { Copy, Loader2, Printer } from "lucide-react";
@@ -176,7 +176,16 @@ function ServiceSummary({ service, onOpen }: { service: ServiceDetail; onOpen: O
         </a>
       </DrawerSummaryRow>
       <DrawerSummaryRow label={t("Devices")}>
-        {service.devices.map(deviceLabel).join(", ") || "—"}
+        {service.devices.length === 0
+          ? "—"
+          : service.devices.map((device, index) => (
+              <Fragment key={device.id}>
+                {index > 0 && ", "}
+                <DrawerLink onClick={() => onOpen("device", device.id)}>
+                  {deviceLabel(device)}
+                </DrawerLink>
+              </Fragment>
+            ))}
       </DrawerSummaryRow>
       <DrawerSummaryRow label={t("Date")}>
         {formatPlainDate(service.date, i18n.language)}

@@ -160,7 +160,7 @@ test("a customer's name in a device's drawer opens the customer's drawer on top,
   const deviceDrawer = page.getByRole("dialog", { name: `Xiaomi ${device.model}` });
   await deviceDrawer
     .getByRole("region", { name: "Detalji uređaja" })
-    .getByRole("button", { name: "Petar Perić" })
+    .getByRole("button", { name: "Petar Perić", exact: true })
     .click();
   const customerUrl = `${deviceUrl}&customer=${customer.id}`;
   await expect(page).toHaveURL(customerUrl);
@@ -175,7 +175,7 @@ test("a customer's name in a device's drawer opens the customer's drawer on top,
   // The customer is already open below, so the stack goes back to them.
   await serviceDrawer
     .getByRole("region", { name: "Detalji servisa" })
-    .getByRole("button", { name: "Petar Perić" })
+    .getByRole("button", { name: "Petar Perić", exact: true })
     .click();
   await expect(page).toHaveURL(customerUrl);
   await expect(serviceDrawer).toBeHidden();
@@ -190,6 +190,28 @@ test("a customer's name in a device's drawer opens the customer's drawer on top,
   await expect(deviceDrawer).toBeHidden();
 });
 
+test("a device in a service's drawer opens the device's drawer on top", async ({ page }) => {
+  await logIn(page);
+  await expect(page).toHaveURL("/services");
+  const { device, service } = await customerWithService(page, "Sanja Sanić");
+  const serviceUrl = `/services?service=${service.id}`;
+
+  await page.goto(serviceUrl);
+  const serviceDrawer = page.getByRole("dialog", { name: `Servis ${service.number}` });
+  await serviceDrawer
+    .getByRole("region", { name: "Detalji servisa" })
+    .getByRole("button", { name: `Xiaomi ${device.model}` })
+    .click();
+  await expect(page).toHaveURL(`${serviceUrl}&device=${device.id}`);
+  const deviceDrawer = page.getByRole("dialog", { name: `Xiaomi ${device.model}` });
+  await expect(deviceDrawer).toBeVisible();
+
+  await page.keyboard.press("Escape");
+  await expect(deviceDrawer).toBeHidden();
+  await expect(page).toHaveURL(serviceUrl);
+  await expect(serviceDrawer).toBeVisible();
+});
+
 test("after a deep link, an entity already open below goes back to its drawer", async ({
   page,
 }) => {
@@ -202,7 +224,7 @@ test("after a deep link, an entity already open below goes back to its drawer", 
   const serviceDrawer = page.getByRole("dialog", { name: `Servis ${service.number}` });
   await serviceDrawer
     .getByRole("region", { name: "Detalji servisa" })
-    .getByRole("button", { name: "Jelena Jelić" })
+    .getByRole("button", { name: "Jelena Jelić", exact: true })
     .click();
   await expect(page).toHaveURL(customerUrl);
   await expect(serviceDrawer).toBeHidden();
