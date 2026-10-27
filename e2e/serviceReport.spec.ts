@@ -436,3 +436,54 @@ test("delivering a completed service asks for no report", async ({ page }) => {
   ).toBeHidden();
   assertNoDownloads();
 });
+
+test("the completion dialog lists the service's staff notes for reference, never in the report", async ({
+  page,
+}) => {
+  await logIn(page);
+  await expect(page).toHaveURL("/services");
+  const service = await createService(page, "Dragan Simić", "Moto G84");
+  await send(page, "put", `/api/services/${service.id}/status`, { status: "IN_PROGRESS" });
+  await send(page, "post", `/api/services/${service.id}/log`, { text: "Naručen novi ekran." });
+  await send(page, "post", `/api/services/${service.id}/log`, {
+    text: "Ekran zamenjen, testirano.",
+  });
+  await page.reload();
+
+  await chooseStatus(page, service.number, "Završen");
+  const dialog = page.getByRole("dialog", { name: `Servis ${service.number} je završen` });
+  const report = dialog.getByRole("textbox", { name: "Izveštaj za mušteriju" });
+  await expect(report).toHaveValue("");
+
+  // Collapsed at first, so the notes don't crowd out the report.
+  const toggle = dialog.getByRole("button", { name: "Beleške iz dnevnika rada" });
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(dialog.getByText("Naručen novi ekran.")).toBeHidden();
+
+  // Expanded: the staff notes, oldest first, with author and time; the two status
+  // changes are left out.
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  const notes = dialog.getByTestId("staff-note");
+  await expect(notes).toHaveCount(2);
+  await expect(notes.nth(0)).toContainText("Naručen novi ekran.");
+  await expect(notes.nth(1)).toContainText("Ekran zamenjen, testirano.");
+  await expect(notes.nth(0)).toContainText("E2E Staff");
+  await expect(notes.nth(0).locator("time")).toBeVisible();
+  // Read-only, and never copied into the report.
+  await expect(dialog.getByRole("textbox")).toHaveCount(1);
+  await expect(report).toHaveValue("");
+});
+
+test("the completion dialog shows when a service has no staff notes", async ({ page }) => {
+  await logIn(page);
+  await expect(page).toHaveURL("/services");
+  const service = await createService(page, "Ana Kovač", "Redmi Note 12");
+  await page.reload();
+
+  await chooseStatus(page, service.number, "Završen");
+  const dialog = page.getByRole("dialog", { name: `Servis ${service.number} je završen` });
+  await dialog.getByRole("button", { name: "Beleške iz dnevnika rada" }).click();
+  await expect(dialog.getByText("U dnevniku rada još nema beleški.")).toBeVisible();
+  await expect(dialog.getByTestId("staff-note")).toHaveCount(0);
+});

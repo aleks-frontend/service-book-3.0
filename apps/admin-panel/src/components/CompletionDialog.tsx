@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle, ChevronRight, Loader2 } from "lucide-react";
 import { CUSTOMER_REPORT_MAX, type ServiceDetail } from "@servicebook/schemas";
-import { useSaveCustomerReportMutation } from "@/lib/services";
+import { cn } from "@/lib/utils";
+import { useSaveCustomerReportMutation, useServiceLogQuery } from "@/lib/services";
+import { LogEntryByline } from "./ServiceLog";
 import { Button } from "./ui/button";
 import {
   Dialog,
@@ -126,6 +128,7 @@ function CompletionForm({ service, open, onClose, onGenerate }: CompletionFormPr
             </p>
           )}
         </div>
+        <StaffNotes serviceId={service.id} />
         <DialogFooter className="gap-2">
           <Button variant="ghost" disabled={!!finishing} onClick={onClose}>
             {t("Skip")}
@@ -143,5 +146,59 @@ function CompletionForm({ service, open, onClose, onGenerate }: CompletionFormPr
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/**
+ * The log's staff notes, read-only and collapsed at first, to write the customer report
+ * from. Status changes, imported remarks and photos are left out; nothing is copied.
+ */
+function StaffNotes({ serviceId }: { serviceId: string }) {
+  const { t } = useTranslation();
+  const [expanded, setExpanded] = useState(false);
+  const { data: entries, isError } = useServiceLogQuery(serviceId);
+  const notes = entries?.filter((entry) => entry.type === "NOTE");
+  const contentId = useId();
+
+  return (
+    <section className="space-y-2">
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="-ml-2"
+        aria-expanded={expanded}
+        aria-controls={contentId}
+        onClick={() => setExpanded(!expanded)}
+      >
+        <ChevronRight
+          className={cn("mr-1 h-4 w-4 transition-transform", expanded && "rotate-90")}
+          aria-hidden
+        />
+        {t("Notes from the work log")}
+      </Button>
+      <div id={contentId} hidden={!expanded} className="max-h-48 overflow-y-auto">
+        {isError ? (
+          <p className="text-sm text-destructive">{t("Could not load the log.")}</p>
+        ) : !notes ? (
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        ) : notes.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{t("No notes in the work log yet.")}</p>
+        ) : (
+          <ol className="space-y-3 border-l-2 pl-3">
+            {notes.map((note) => (
+              <li key={note.id} className="space-y-1 text-sm" data-testid="staff-note">
+                <LogEntryByline entry={note} />
+                {note.text ? (
+                  <p className="whitespace-pre-line">{note.text}</p>
+                ) : (
+                  <p className="text-muted-foreground">{t("Photos only")}</p>
+                )}
+              </li>
+            ))}
+          </ol>
+        )}
+      </div>
+    </section>
   );
 }

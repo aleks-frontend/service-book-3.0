@@ -50,22 +50,14 @@ export function ServiceLog({ serviceId }: { serviceId: string }) {
 }
 
 function LogEntryItem({ serviceId, entry }: { serviceId: string; entry: LogEntry }) {
-  const { t, i18n } = useTranslation();
-  const author = entry.author?.name ?? t("Former staff member");
+  const { t } = useTranslation();
 
   return (
     <li
       className="relative space-y-1 pb-4 pl-4 pt-1 text-sm before:absolute before:-left-[5px] before:top-2.5 before:h-2 before:w-2 before:bg-foreground"
       data-testid="log-entry"
     >
-      <div className="flex items-baseline justify-between gap-2 text-xs text-muted-foreground">
-        <span className="font-medium text-foreground">
-          {entry.type === "LEGACY_REMARK" ? t("Imported from the old app") : author}
-        </span>
-        <time dateTime={entry.createdAt.toISOString()}>
-          {formatDateTime(entry.createdAt, i18n.language)}
-        </time>
-      </div>
+      <LogEntryByline entry={entry} />
       {entry.type === "STATUS_CHANGE" && entry.fromStatus && entry.toStatus ? (
         <div className="flex flex-wrap items-center gap-1.5">
           <span>{t("Status changed")}</span>
@@ -80,6 +72,23 @@ function LogEntryItem({ serviceId, entry }: { serviceId: string; entry: LogEntry
         <PhotoThumbnails serviceId={serviceId} photos={entry.photos} className="pt-1" />
       )}
     </li>
+  );
+}
+
+/** Who made a log entry, and when. */
+export function LogEntryByline({ entry }: { entry: LogEntry }) {
+  const { t, i18n } = useTranslation();
+  const author = entry.author?.name ?? t("Former staff member");
+
+  return (
+    <div className="flex items-baseline justify-between gap-2 text-xs text-muted-foreground">
+      <span className="font-medium text-foreground">
+        {entry.type === "LEGACY_REMARK" ? t("Imported from the old app") : author}
+      </span>
+      <time dateTime={entry.createdAt.toISOString()}>
+        {formatDateTime(entry.createdAt, i18n.language)}
+      </time>
+    </div>
   );
 }
 
