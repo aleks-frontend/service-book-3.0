@@ -19,7 +19,7 @@ Vocabulary is in [`GLOSSARY.md`](./GLOSSARY.md), the stack is in [`techstack.md`
   - Handle the Delivered status.
   - Fix the device in-use check.
 - A modernised UI built from bakery-mono components:
-  - **Services list:** infinite scroll, a table/cards toggle, an "Add" modal, and a `?service=` drawer with Details, Customer report and Log tabs.
+  - **Services list:** infinite scroll, a table/cards toggle, an "Add" modal, and a `?service=` drawer with Details, Log and Customer report tabs.
   - **Customers and Devices:** paged tables with history drawers. Devices also support bulk delete.
 
 ### Tickets
