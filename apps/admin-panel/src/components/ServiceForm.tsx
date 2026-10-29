@@ -20,7 +20,7 @@ import { CustomerFormDialog } from "./CustomerFormDialog";
 import { CustomerPicker } from "./CustomerPicker";
 import { DeviceFormDialog } from "./DeviceFormDialog";
 import { DevicePicker } from "./DevicePicker";
-import { PhotoPicker } from "./PhotoPicker";
+import { NoteComposer } from "./NoteComposer";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
@@ -213,14 +213,18 @@ export function ServiceForm({ id, service, intakeNotePhotos, saving, onSubmit }:
             <label htmlFor={`${id}-intake-note`} className="sr-only">
               {t("Intake note")}
             </label>
-            <Textarea
-              id={`${id}-intake-note`}
-              rows={3}
-              maxLength={LOG_NOTE_MAX}
-              placeholder={t("Scratches, cracks, dents… Saved as the first note in the log.")}
-              {...register("intakeNote")}
+            <NoteComposer
+              textarea={{
+                id: `${id}-intake-note`,
+                rows: 3,
+                maxLength: LOG_NOTE_MAX,
+                placeholder: t("Scratches, cracks, dents… Saved as the first note in the log."),
+                ...register("intakeNote"),
+              }}
+              picker={intakeNotePhotos}
+              photosId={`${id}-intake-photos`}
+              disabled={saving}
             />
-            <PhotoPicker id={`${id}-intake-photos`} picker={intakeNotePhotos} disabled={saving} />
           </fieldset>
         )}
       </form>

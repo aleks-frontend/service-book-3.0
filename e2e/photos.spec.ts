@@ -36,7 +36,16 @@ test("a staff member adds a note with photos from the drawer, shrunk before uplo
   page,
 }) => {
   const { drawer, serviceId } = await openServiceLog(page, "Jelena Jović");
-  const picked = drawer.getByRole("list", { name: "Izabrane fotografije" }).getByRole("img");
+  const composer = drawer.getByTestId("note-composer");
+  const picked = composer.getByRole("list", { name: "Izabrane fotografije" }).getByRole("img");
+  // The note's text and its Photos button share one box; "Add note" is outside it.
+  await expect(composer.getByLabel("Beleška")).toBeVisible();
+  await expect(composer.getByRole("button", { name: "Fotografije", exact: true })).toBeEnabled();
+  await expect(composer.getByRole("button", { name: "Dodaj belešku" })).toHaveCount(0);
+  // Clicking an empty part of the box, right of the Photos button, puts the cursor in the text.
+  const box = (await composer.boundingBox())!;
+  await composer.click({ position: { x: box.width - 8, y: box.height - 8 } });
+  await expect(composer.getByLabel("Beleška")).toBeFocused();
 
   // A file the browser can't decode is named in a toast; the others are still picked.
   await drawer
@@ -100,7 +109,9 @@ test("a note can be only photos, and no more than 10 can be picked", async ({ pa
     );
   await expect(page.getByText("Beleška može imati najviše 10 fotografija.")).toBeVisible();
   await expect(picked).toHaveCount(10);
-  await expect(drawer.getByRole("button", { name: "Dodaj fotografije" })).toBeDisabled();
+  await expect(
+    drawer.getByTestId("note-composer").getByRole("button", { name: "Fotografije", exact: true }),
+  ).toBeDisabled();
 
   // No text is needed when there are photos.
   await add.click();
@@ -244,11 +255,14 @@ test("a staff member registers a service with photos of its condition at intake,
   await page.getByRole("option", { name: /^Samsung Galaxy A54/ }).click();
 
   await expect(addDialog.getByRole("group", { name: "Stanje pri prijemu" })).toBeVisible();
-  await addDialog.getByLabel("Beleška o stanju pri prijemu").fill("Napukao ekran u donjem uglu");
+  // The intake note is a composer too: its text, previews and Photos button in one box.
+  const composer = addDialog.getByTestId("note-composer");
+  await composer.getByLabel("Beleška o stanju pri prijemu").fill("Napukao ekran u donjem uglu");
+  await expect(composer.getByRole("button", { name: "Fotografije", exact: true })).toBeEnabled();
   await addDialog
     .getByLabel("Fotografije za belešku")
     .setInputFiles([image("photo.jpg", "image/jpeg"), image("photo.webp", "image/webp")]);
-  const picked = addDialog.getByRole("list", { name: "Izabrane fotografije" }).getByRole("img");
+  const picked = composer.getByRole("list", { name: "Izabrane fotografije" }).getByRole("img");
   await expect(picked).toHaveCount(2);
 
   // The first save fails; the form keeps everything, photos included.

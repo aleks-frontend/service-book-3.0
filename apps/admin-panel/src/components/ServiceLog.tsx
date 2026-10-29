@@ -12,11 +12,10 @@ import {
 import { formatDateTime } from "@/lib/format";
 import { useAddNoteMutation, useServiceLogQuery } from "@/lib/services";
 import { usePhotoPicker } from "@/lib/usePhotoPicker";
-import { PhotoPicker } from "./PhotoPicker";
+import { NoteComposer } from "./NoteComposer";
 import { PhotoThumbnails } from "./PhotoThumbnails";
 import { StatusBadge } from "./StatusBadge";
 import { Button } from "./ui/button";
-import { Textarea } from "./ui/textarea";
 
 /**
  * A service's internal log: staff notes, status changes and imported remarks,
@@ -132,21 +131,25 @@ function NoteForm({ serviceId }: { serviceId: string }) {
       <label htmlFor="log-note" className="sr-only">
         {t("Note")}
       </label>
-      <Textarea
-        id="log-note"
-        rows={3}
-        maxLength={LOG_NOTE_MAX}
-        placeholder={t("Add an internal note…")}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
-            event.preventDefault();
-            void submit();
-          }
+      <NoteComposer
+        textarea={{
+          id: "log-note",
+          rows: 3,
+          maxLength: LOG_NOTE_MAX,
+          placeholder: t("Add an internal note…"),
+          onKeyDown: (event) => {
+            if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+              event.preventDefault();
+              void submit();
+            }
+          },
+          ...register("text"),
         }}
-        {...register("text")}
+        picker={picker}
+        photosId="log-photos"
+        disabled={addNote.isPending}
       />
-      <div className="flex items-start justify-between gap-2">
-        <PhotoPicker id="log-photos" picker={picker} disabled={addNote.isPending} />
+      <div className="flex justify-end">
         <Button type="submit" size="sm" disabled={!canAdd}>
           {addNote.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
           {t("Add note")}
