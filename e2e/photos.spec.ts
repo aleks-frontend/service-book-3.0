@@ -15,33 +15,67 @@ function image(file: string, mimeType: string, name = file) {
 /** A file that isn't an image, which a note can't carry. */
 const PDF = { name: "racun.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4") };
 
+/** A fixture file, as `image` builds one. */
+type Fixture = ReturnType<typeof image>;
+
 /**
- * Pastes files into `target` as Ctrl+V (⌘+V) would: a `paste` event carrying a
- * `DataTransfer` of them, built in the page. Returns whether the paste was
- * taken over, i.e. kept from the browser.
+ * Fires a clipboard or drag event of `type` at `target`, carrying a
+ * `DataTransfer` built in the page: of `files`, or of `text` when dragging a
+ * selection. Returns whether the event was taken over, i.e. kept from the
+ * browser.
  */
-async function paste(target: Locator, files: ReturnType<typeof image>[]) {
+async function fire(
+  target: Locator,
+  type: "paste" | "dragenter" | "dragover" | "dragleave" | "drop",
+  { files = [], text }: { files?: Fixture[]; text?: string },
+) {
   return target.evaluate(
-    (element, files) => {
+    (element, { type, files, text }) => {
       const data = new DataTransfer();
       for (const { name, mimeType, base64 } of files) {
         const bytes = Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
         data.items.add(new File([bytes], name, { type: mimeType }));
       }
-      const event = new ClipboardEvent("paste", {
-        clipboardData: data,
-        bubbles: true,
-        cancelable: true,
-      });
+      if (text !== undefined) data.setData("text/plain", text);
+      const init = { bubbles: true, cancelable: true };
+      const event =
+        type === "paste"
+          ? new ClipboardEvent(type, { ...init, clipboardData: data })
+          : new DragEvent(type, { ...init, dataTransfer: data });
       element.dispatchEvent(event);
       return event.defaultPrevented;
     },
-    files.map(({ name, mimeType, buffer }) => ({
-      name,
-      mimeType,
-      base64: buffer.toString("base64"),
-    })),
+    {
+      type,
+      text,
+      files: files.map(({ name, mimeType, buffer }) => ({
+        name,
+        mimeType,
+        base64: buffer.toString("base64"),
+      })),
+    },
   );
+}
+
+/** Pastes files into `target` as Ctrl+V (⌘+V) would. Returns whether the paste was taken over. */
+function paste(target: Locator, files: Fixture[]) {
+  return fire(target, "paste", { files });
+}
+
+/** Fires a drag event of `type` at `target`, of `files` or of selected `text`. Returns whether it was taken over. */
+function drag(
+  target: Locator,
+  type: "dragenter" | "dragover" | "dragleave" | "drop",
+  data: { files?: Fixture[]; text?: string },
+) {
+  return fire(target, type, data);
+}
+
+/** Drops `files` onto `target` as dragging them from a file manager would: entering, moving over, then dropping. */
+async function drop(target: Locator, files: Fixture[]) {
+  await drag(target, "dragenter", { files });
+  await drag(target, "dragover", { files });
+  return drag(target, "drop", { files });
 }
 
 /** A fresh service, opened in the drawer on its Log tab. */
@@ -243,6 +277,106 @@ test("pasting into the note while it is saving adds nothing", async ({ page }) =
   await expect(entries.first().getByRole("img")).toHaveCount(0);
 });
 
+test("a staff member drops photos onto the note, highlighted while dragged over, shrunk before upload like picked ones", async ({
+  page,
+}) => {
+  const { drawer, serviceId } = await openServiceLog(page, "Marko Marković");
+  const composer = drawer.getByTestId("note-composer");
+  const text = composer.getByLabel("Beleška");
+  const photosButton = composer.getByRole("button", { name: "Fotografije", exact: true });
+  const picked = composer.getByRole("list", { name: "Izabrane fotografije" }).getByRole("img");
+  const onlyPhotos = page.getByText("Belešci se mogu dodati samo fotografije.");
+  const photo = [image("photo.jpg", "image/jpeg")];
+  await text.fill("Pukla maska");
+
+  // Dragging selected text over the box doesn't highlight it, nor is it taken over.
+  expect(await drag(composer, "dragenter", { text: "Pukla" })).toBe(false);
+  await expect(composer).not.toHaveAttribute("data-drag-over");
+  await drag(composer, "dragleave", { text: "Pukla" });
+
+  // Files dragged over the box highlight it, and moving over its children doesn't clear that.
+  await drag(composer, "dragenter", { files: photo });
+  await expect(composer).toHaveAttribute("data-drag-over");
+  expect(await drag(composer, "dragover", { files: photo })).toBe(true);
+  await drag(text, "dragenter", { files: photo });
+  await drag(composer, "dragleave", { files: photo });
+  await expect(composer).toHaveAttribute("data-drag-over");
+  await drag(photosButton, "dragenter", { files: photo });
+  await drag(text, "dragleave", { files: photo });
+  await expect(composer).toHaveAttribute("data-drag-over");
+  // Leaving the box clears it, and nothing is added.
+  await drag(photosButton, "dragleave", { files: photo });
+  await expect(composer).not.toHaveAttribute("data-drag-over");
+  await expect(picked).toHaveCount(0);
+
+  // Several images dropped at once; a file that isn't one is skipped with a toast, the images still added.
+  expect(
+    await drop(text, [image("large.jpg", "image/jpeg"), PDF, image("photo.webp", "image/webp")]),
+  ).toBe(true);
+  await expect(composer).not.toHaveAttribute("data-drag-over");
+  await expect(onlyPhotos).toBeVisible();
+  await expect(picked).toHaveCount(2);
+  await expect(picked.first()).toHaveAccessibleName("large.jpg");
+  await expect(composer.getByText("2/10")).toBeVisible();
+  await expect(text).toHaveValue("Pukla maska");
+
+  // Only a file that isn't an image: nothing is added, and the toast says why.
+  await expect(onlyPhotos).toBeHidden({ timeout: 10_000 });
+  await drop(composer, [PDF]);
+  await expect(onlyPhotos).toBeVisible();
+  await expect(picked).toHaveCount(2);
+
+  // Dropped photos count towards the limit, the first ones that fit kept.
+  await drop(
+    photosButton,
+    Array.from({ length: 9 }, (_, n) => image("photo.jpg", "image/jpeg", `photo-${n + 1}.jpg`)),
+  );
+  await expect(page.getByText("Beleška može imati najviše 10 fotografija.")).toBeVisible();
+  await expect(picked).toHaveCount(10);
+  await expect(composer.getByText("10/10")).toBeVisible();
+
+  await drawer.getByRole("button", { name: "Dodaj belešku" }).click();
+  const entries = drawer.getByTestId("log-entry");
+  await expect(entries).toHaveCount(1);
+  await expect(entries.first()).toContainText("Pukla maska");
+  await expect(entries.first().getByRole("img")).toHaveCount(10);
+
+  // The 4000 × 3000 fixture was shrunk to 2048 px on its long edge before upload.
+  const log = await (await page.request.get(`/api/services/${serviceId}/log`)).json();
+  expect(log[0].photos[0]).toEqual({ id: expect.any(String), width: 2048, height: 1536 });
+});
+
+test("dropping onto the note while it is saving adds nothing, and the box isn't highlighted", async ({
+  page,
+}) => {
+  const { drawer } = await openServiceLog(page, "Nikola Nikolić");
+  const composer = drawer.getByTestId("note-composer");
+  await drawer.getByLabel("Beleška").fill("Zamenjen konektor");
+
+  // The note's post hangs until released.
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => (release = resolve));
+  await page.route("**/api/services/*/log", async (route) => {
+    if (route.request().method() !== "POST") return route.fallback();
+    await held;
+    await route.fallback();
+  });
+  await drawer.getByRole("button", { name: "Dodaj belešku" }).click();
+  await expect(drawer.getByRole("button", { name: "Dodaj belešku" })).toBeDisabled();
+
+  const photo = [image("photo.jpg", "image/jpeg")];
+  await drag(composer, "dragenter", { files: photo });
+  await drag(composer, "dragover", { files: photo });
+  await expect(composer).not.toHaveAttribute("data-drag-over");
+  await drag(composer, "drop", { files: photo });
+  await expect(drawer.getByRole("list", { name: "Izabrane fotografije" })).toHaveCount(0);
+
+  release();
+  const entries = drawer.getByTestId("log-entry");
+  await expect(entries).toHaveCount(1);
+  await expect(entries.first().getByRole("img")).toHaveCount(0);
+});
+
 /** Posts a note with photos straight to the API: each one `photo.jpg` (640 × 480) with its 160 px thumbnail. */
 async function postPhotoNote(page: Page, serviceId: string, text: string | null, count: number) {
   const body = new FormData();
@@ -386,16 +520,17 @@ test("a staff member registers a service with photos of its condition at intake,
   );
   await composer.getByLabel("Beleška o stanju pri prijemu").fill("Napukao ekran u donjem uglu");
   await expect(composer.getByRole("button", { name: "Fotografije", exact: true })).toBeEnabled();
-  // One photo picked, one pasted into the note's text.
+  // One photo picked, one pasted into the note's text and one dropped onto the box.
   await addDialog
     .getByLabel("Fotografije za belešku")
     .setInputFiles([image("photo.jpg", "image/jpeg")]);
   await paste(composer.getByLabel("Beleška o stanju pri prijemu"), [
     image("photo.webp", "image/webp"),
   ]);
+  await drop(composer, [image("large.jpg", "image/jpeg")]);
   const picked = composer.getByRole("list", { name: "Izabrane fotografije" }).getByRole("img");
-  await expect(picked).toHaveCount(2);
-  await expect(composer.getByText("2/10")).toBeVisible();
+  await expect(picked).toHaveCount(3);
+  await expect(composer.getByText("3/10")).toBeVisible();
 
   // The first save fails, after a while; the form keeps everything, photos included.
   let release!: () => void;
@@ -411,19 +546,20 @@ test("a staff member registers a service with photos of its condition at intake,
   );
   const add = addDialog.getByRole("button", { name: "Dodaj servis" });
   await add.click();
-  // While the service is saving, a pasted photo isn't added.
+  // While the service is saving, a pasted or dropped photo isn't added.
   await expect(composer.getByRole("button", { name: "Fotografije", exact: true })).toBeDisabled();
   await paste(composer.getByLabel("Beleška o stanju pri prijemu"), [
     image("photo.jpg", "image/jpeg"),
   ]);
-  await expect(picked).toHaveCount(2);
+  await drop(composer, [image("photo.jpg", "image/jpeg")]);
+  await expect(picked).toHaveCount(3);
   release();
   await expect(page.getByText("Čuvanje servisa nije uspelo. Pokušajte ponovo.")).toBeVisible();
   await expect(addDialog).toBeVisible();
   await expect(addDialog.getByLabel("Beleška o stanju pri prijemu")).toHaveValue(
     "Napukao ekran u donjem uglu",
   );
-  await expect(picked).toHaveCount(2);
+  await expect(picked).toHaveCount(3);
 
   // The retry registers the service with its intake note and photos.
   const [created] = await Promise.all([
@@ -441,13 +577,13 @@ test("a staff member registers a service with photos of its condition at intake,
 
   await page.goto(`/services?service=${service.id}`);
   const drawer = page.getByRole("dialog", { name: `Servis ${service.number}` });
-  await expect(drawer.getByRole("region", { name: "Fotografije" }).getByRole("img")).toHaveCount(2);
+  await expect(drawer.getByRole("region", { name: "Fotografije" }).getByRole("img")).toHaveCount(3);
   await drawer.getByRole("tab", { name: "Dnevnik rada" }).click();
   const entries = drawer.getByTestId("log-entry");
   await expect(entries).toHaveCount(1);
   await expect(entries.first()).toContainText("Napukao ekran u donjem uglu");
   await expect(entries.first()).toContainText("E2E Staff");
-  await expect(entries.first().getByRole("img")).toHaveCount(2);
+  await expect(entries.first().getByRole("img")).toHaveCount(3);
 
   // A new service's form starts without the previous intake photos.
   await page.goto("/services");
