@@ -109,6 +109,8 @@ These are roughly in order. Each will get its own spec and tickets. Items 2 and 
 5. **Device extras** beyond the serial number, which phase 1 already stores (still to be discussed).
 6. **Barcode/QR camera scanning**.
 7. **Richer status workflows.**
+8. **AI polish for the customer report** *(to be grilled on Mon 2026-11-02)*: a button by the customer report that fixes a staff member's grammar and makes the text sound professional, using the AI SDK with a free Gemini model. Open questions: whether the polished text replaces the draft or is offered for review first, which languages it must handle, what happens when the free tier's limits are hit, and where the API key lives.
+9. **Add photos from the drawer's Photos strip** *(to be grilled on Mon 2026-11-02)*: a button in the service drawer's Photos strip, so that photos can be added without going to the Log tab. Open question: a photo always belongs to a staff note, so does the button post a photos-only note, or open the note composer?
 
 Explicitly out of scope for now:
 - roles and permissions
