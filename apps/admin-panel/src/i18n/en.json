@@ -203,12 +203,13 @@
   "Imported from the old app": "Imported from the old app",
   "Status changed": "Status changed",
   "Note": "Note",
-  "Add an internal note…": "Add an internal note…",
+  "Add an internal note or photos…": "Add an internal note or photos…",
   "Add note": "Add note",
   "Photos": "Photos",
   "Photos for the note": "Photos for the note",
   "Picked photos": "Picked photos",
   "Preparing photos…": "Preparing photos…",
+  "{{n}} of {{max}} photos": "{{n}} of {{max}} photos",
   "Photo {{n}}": "Photo {{n}}",
   "Photo viewer": "Photo viewer",
   "gallery": "gallery",
@@ -316,5 +317,5 @@
   "Could not copy the public link.": "Could not copy the public link.",
   "Condition at intake": "Condition at intake",
   "Intake note": "Intake note",
-  "Scratches, cracks, dents… Saved as the first note in the log.": "Scratches, cracks, dents… Saved as the first note in the log."
+  "Scratches, cracks, dents… or add photos. Saved as the first note in the log.": "Scratches, cracks, dents… or add photos. Saved as the first note in the log."
 }

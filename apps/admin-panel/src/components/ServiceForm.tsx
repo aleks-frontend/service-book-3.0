@@ -218,7 +218,9 @@ export function ServiceForm({ id, service, intakeNotePhotos, saving, onSubmit }:
                 id: `${id}-intake-note`,
                 rows: 3,
                 maxLength: LOG_NOTE_MAX,
-                placeholder: t("Scratches, cracks, dents… Saved as the first note in the log."),
+                placeholder: t(
+                  "Scratches, cracks, dents… or add photos. Saved as the first note in the log.",
+                ),
                 ...register("intakeNote"),
               }}
               picker={intakeNotePhotos}
