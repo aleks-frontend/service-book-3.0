@@ -1,5 +1,6 @@
 import { useRef, type Ref } from "react";
 import { useTranslation } from "react-i18next";
+import toast from "react-hot-toast";
 import { Camera, Loader2, X } from "lucide-react";
 import { PHOTOS_PER_NOTE_MAX } from "@servicebook/schemas";
 import type { PhotoPickerState } from "@/lib/usePhotoPicker";
@@ -23,7 +24,8 @@ type NoteComposerProps = {
  * its picked photos and a toolbar with a button that picks more (offering the
  * camera on phones) and, once any are picked, a count of them out of the most
  * allowed. The box shows focus while the text has it, and clicking an empty
- * part of it puts the cursor in the text.
+ * part of it puts the cursor in the text. Photos pasted into the text are
+ * added as if picked.
  */
 export function NoteComposer({ textarea, picker, photosId, disabled }: NoteComposerProps) {
   const { t } = useTranslation();
@@ -37,6 +39,13 @@ export function NoteComposer({ textarea, picker, photosId, disabled }: NoteCompo
     textRef.current = element;
     if (typeof fieldRef === "function") fieldRef(element);
     else if (fieldRef) (fieldRef as { current: HTMLTextAreaElement | null }).current = element;
+  }
+
+  /** Adds the photos among pasted files as if picked; any other files are skipped with a toast. */
+  function addPhotos(files: File[]) {
+    const photos = files.filter((file) => file.type.startsWith("image/"));
+    if (photos.length < files.length) toast.error(t("Only photos can be added to a note."));
+    if (photos.length > 0) void add(photos);
   }
 
   return (
@@ -56,6 +65,15 @@ export function NoteComposer({ textarea, picker, photosId, disabled }: NoteCompo
           className,
         )}
         {...textareaProps}
+        onPaste={(event) => {
+          textareaProps.onPaste?.(event);
+          const files = [...event.clipboardData.files];
+          // Text is left to the browser, and so is everything while the note is saving.
+          if (files.length === 0 || disabled) return;
+          // A file copied in a file manager carries its name as text, which mustn't land in the note.
+          event.preventDefault();
+          addPhotos(files);
+        }}
       />
       <input
         ref={inputRef}

@@ -220,6 +220,7 @@
   "Zoom in": "Nagyítás",
   "Zoom out": "Kicsinyítés",
   "A note can have at most {{max}} photos.": "Egy jegyzethez legfeljebb {{max}} fénykép tartozhat.",
+  "Only photos can be added to a note.": "Jegyzethez csak fényképek adhatók hozzá.",
   "Could not read \"{{name}}\". Save it as JPEG and try again.": "A(z) „{{name}}” nem olvasható. Mentse JPEG formátumban, és próbálja újra.",
   "Could not add the note. Please try again.": "A jegyzet hozzáadása nem sikerült. Próbálja újra.",
   "Delete photo": "Fénykép törlése",
