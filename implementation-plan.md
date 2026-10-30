@@ -104,6 +104,7 @@ These are roughly in order. Each will get its own spec and tickets. Items 2 and 
 1. **Customer page:** a dedicated customer detail page with full service history.
 2. ~~**Public status page**~~ **(done, #22):** a read-only `/s/<publicToken>` page showing status, service lines and the customer report. The QR codes on intake receipts and service reports printed in phase 1 point here.
 3. ~~**Service photos**~~ **(done, #36; slices #37–#40):** photos on log notes, stored in a private Cloudflare R2 bucket and served to staff through short-lived links. Notes show thumbnails, the service drawer has a Photos strip and a lightbox, the create form has a "Condition at intake" section, and deleting a photo or a service cleans up storage. Photos stay internal: they never appear on the public status page or the documents.
+   - **Note composer** **(done, #47; slices #48–#51):** in the Work log and the intake note, a note's photos sit inside the note's box, with a Photos button and a counter such as 3/10. Photos can be picked, pasted into the text or dragged onto the box, and all three ways shrink them and count them towards the 10-photo limit. A file dropped anywhere else is no longer opened by the browser.
 4. **Device photos.** These can reuse `PhotoStorage` and the lightbox from service photos.
 5. **Device extras** beyond the serial number, which phase 1 already stores (still to be discussed).
 6. **Barcode/QR camera scanning**.
