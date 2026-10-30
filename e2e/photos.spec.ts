@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { today } from "./dates.js";
 import { logIn } from "./logIn.js";
 
@@ -10,6 +10,38 @@ const IMAGES = "apps/backend/test/fixtures/images";
 /** A fixture as a file to pick; `setInputFiles` can't mix paths with buffers. */
 function image(file: string, mimeType: string, name = file) {
   return { name, mimeType, buffer: readFileSync(`${IMAGES}/${file}`) };
+}
+
+/** A file that isn't an image, which a note can't carry. */
+const PDF = { name: "racun.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4") };
+
+/**
+ * Pastes files into `target` as Ctrl+V (⌘+V) would: a `paste` event carrying a
+ * `DataTransfer` of them, built in the page. Returns whether the paste was
+ * taken over, i.e. kept from the browser.
+ */
+async function paste(target: Locator, files: ReturnType<typeof image>[]) {
+  return target.evaluate(
+    (element, files) => {
+      const data = new DataTransfer();
+      for (const { name, mimeType, base64 } of files) {
+        const bytes = Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
+        data.items.add(new File([bytes], name, { type: mimeType }));
+      }
+      const event = new ClipboardEvent("paste", {
+        clipboardData: data,
+        bubbles: true,
+        cancelable: true,
+      });
+      element.dispatchEvent(event);
+      return event.defaultPrevented;
+    },
+    files.map(({ name, mimeType, buffer }) => ({
+      name,
+      mimeType,
+      base64: buffer.toString("base64"),
+    })),
+  );
 }
 
 /** A fresh service, opened in the drawer on its Log tab. */
@@ -131,6 +163,84 @@ test("a note can be only photos, and no more than 10 can be picked", async ({ pa
   await expect(entries.first().getByRole("img")).toHaveCount(10);
   // The counter goes with the photos.
   await expect(composer.getByText("10/10")).toHaveCount(0);
+});
+
+test("a staff member pastes photos into the note's text, shrunk before upload like picked ones", async ({
+  page,
+}) => {
+  const { drawer, serviceId } = await openServiceLog(page, "Petar Perić");
+  const composer = drawer.getByTestId("note-composer");
+  const text = composer.getByLabel("Beleška");
+  const picked = composer.getByRole("list", { name: "Izabrane fotografije" }).getByRole("img");
+  const onlyPhotos = page.getByText("Belešci se mogu dodati samo fotografije.");
+
+  // Plain text pastes as before.
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.evaluate(() => navigator.clipboard.writeText("Ne pali se"));
+  await text.focus();
+  await page.keyboard.press("ControlOrMeta+V");
+  await expect(text).toHaveValue("Ne pali se");
+
+  // Several images at once; a file that isn't one is skipped with a toast, the images still added.
+  expect(
+    await paste(text, [image("large.jpg", "image/jpeg"), PDF, image("photo.webp", "image/webp")]),
+  ).toBe(true);
+  await expect(onlyPhotos).toBeVisible();
+  await expect(picked).toHaveCount(2);
+  await expect(picked.first()).toHaveAccessibleName("large.jpg");
+  await expect(composer.getByText("2/10")).toBeVisible();
+  // Nothing went into the text.
+  await expect(text).toHaveValue("Ne pali se");
+
+  // Only a file that isn't an image: nothing is added, not even its name to the text, and the toast says why.
+  await expect(onlyPhotos).toBeHidden({ timeout: 10_000 });
+  expect(await paste(text, [PDF])).toBe(true);
+  await expect(onlyPhotos).toBeVisible();
+  await expect(picked).toHaveCount(2);
+
+  // Pasted photos count towards the limit, the first ones that fit kept.
+  await paste(
+    text,
+    Array.from({ length: 9 }, (_, n) => image("photo.jpg", "image/jpeg", `photo-${n + 1}.jpg`)),
+  );
+  await expect(page.getByText("Beleška može imati najviše 10 fotografija.")).toBeVisible();
+  await expect(picked).toHaveCount(10);
+  await expect(composer.getByText("10/10")).toBeVisible();
+
+  await drawer.getByRole("button", { name: "Dodaj belešku" }).click();
+  const entries = drawer.getByTestId("log-entry");
+  await expect(entries).toHaveCount(1);
+  await expect(entries.first()).toContainText("Ne pali se");
+  await expect(entries.first().getByRole("img")).toHaveCount(10);
+
+  // The 4000 × 3000 fixture was shrunk to 2048 px on its long edge before upload.
+  const log = await (await page.request.get(`/api/services/${serviceId}/log`)).json();
+  expect(log[0].photos[0]).toEqual({ id: expect.any(String), width: 2048, height: 1536 });
+});
+
+test("pasting into the note while it is saving adds nothing", async ({ page }) => {
+  const { drawer } = await openServiceLog(page, "Sava Savić");
+  const text = drawer.getByLabel("Beleška");
+  await text.fill("Zamenjena baterija");
+
+  // The note's post hangs until released.
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => (release = resolve));
+  await page.route("**/api/services/*/log", async (route) => {
+    if (route.request().method() !== "POST") return route.fallback();
+    await held;
+    await route.fallback();
+  });
+  await drawer.getByRole("button", { name: "Dodaj belešku" }).click();
+  await expect(drawer.getByRole("button", { name: "Dodaj belešku" })).toBeDisabled();
+
+  await paste(text, [image("photo.jpg", "image/jpeg")]);
+  await expect(drawer.getByRole("list", { name: "Izabrane fotografije" })).toHaveCount(0);
+
+  release();
+  const entries = drawer.getByTestId("log-entry");
+  await expect(entries).toHaveCount(1);
+  await expect(entries.first().getByRole("img")).toHaveCount(0);
 });
 
 /** Posts a note with photos straight to the API: each one `photo.jpg` (640 × 480) with its 160 px thumbnail. */
@@ -276,24 +386,38 @@ test("a staff member registers a service with photos of its condition at intake,
   );
   await composer.getByLabel("Beleška o stanju pri prijemu").fill("Napukao ekran u donjem uglu");
   await expect(composer.getByRole("button", { name: "Fotografije", exact: true })).toBeEnabled();
+  // One photo picked, one pasted into the note's text.
   await addDialog
     .getByLabel("Fotografije za belešku")
-    .setInputFiles([image("photo.jpg", "image/jpeg"), image("photo.webp", "image/webp")]);
+    .setInputFiles([image("photo.jpg", "image/jpeg")]);
+  await paste(composer.getByLabel("Beleška o stanju pri prijemu"), [
+    image("photo.webp", "image/webp"),
+  ]);
   const picked = composer.getByRole("list", { name: "Izabrane fotografije" }).getByRole("img");
   await expect(picked).toHaveCount(2);
   await expect(composer.getByText("2/10")).toBeVisible();
 
-  // The first save fails; the form keeps everything, photos included.
+  // The first save fails, after a while; the form keeps everything, photos included.
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => (release = resolve));
   await page.route(
     "**/api/services",
-    (route) =>
-      route.request().method() === "POST"
-        ? route.fulfill({ status: 500, json: { error: "Internal server error" } })
-        : route.fallback(),
+    async (route) => {
+      if (route.request().method() !== "POST") return route.fallback();
+      await held;
+      await route.fulfill({ status: 500, json: { error: "Internal server error" } });
+    },
     { times: 1 },
   );
   const add = addDialog.getByRole("button", { name: "Dodaj servis" });
   await add.click();
+  // While the service is saving, a pasted photo isn't added.
+  await expect(composer.getByRole("button", { name: "Fotografije", exact: true })).toBeDisabled();
+  await paste(composer.getByLabel("Beleška o stanju pri prijemu"), [
+    image("photo.jpg", "image/jpeg"),
+  ]);
+  await expect(picked).toHaveCount(2);
+  release();
   await expect(page.getByText("Čuvanje servisa nije uspelo. Pokušajte ponovo.")).toBeVisible();
   await expect(addDialog).toBeVisible();
   await expect(addDialog.getByLabel("Beleška o stanju pri prijemu")).toHaveValue(

@@ -220,6 +220,7 @@
   "Zoom in": "Uvećaj",
   "Zoom out": "Umanji",
   "A note can have at most {{max}} photos.": "Beleška može imati najviše {{max}} fotografija.",
+  "Only photos can be added to a note.": "Belešci se mogu dodati samo fotografije.",
   "Could not read \"{{name}}\". Save it as JPEG and try again.": "Nije moguće pročitati „{{name}}”. Sačuvajte je kao JPEG i pokušajte ponovo.",
   "Could not add the note. Please try again.": "Dodavanje beleške nije uspelo. Pokušajte ponovo.",
   "Delete photo": "Obriši fotografiju",
