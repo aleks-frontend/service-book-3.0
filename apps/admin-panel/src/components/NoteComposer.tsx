@@ -1,8 +1,9 @@
-import { useRef, useState, type DragEvent, type Ref } from "react";
+import { useEffect, useRef, useState, type Ref } from "react";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import { Camera, Loader2, X } from "lucide-react";
 import { PHOTOS_PER_NOTE_MAX } from "@servicebook/schemas";
+import { carriesFiles } from "@/lib/fileDrag";
 import type { PhotoPickerState } from "@/lib/usePhotoPicker";
 import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
@@ -30,6 +31,7 @@ type NoteComposerProps = {
  */
 export function NoteComposer({ textarea, picker, photosId, disabled }: NoteComposerProps) {
   const { t } = useTranslation();
+  const boxRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLTextAreaElement | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { photos, processing, add, remove } = picker;
@@ -38,6 +40,27 @@ export function NoteComposer({ textarea, picker, photosId, disabled }: NoteCompo
   // Entering a child fires before leaving the box, so a drag is over the box until the count is back at 0.
   const dragDepth = useRef(0);
   const [dragOver, setDragOver] = useState(false);
+
+  // A leave can go missing, e.g. when the element under the cursor re-renders: the drag
+  // moving on beside the box, or ending anywhere, clears the highlight all the same.
+  useEffect(() => {
+    if (!dragOver) return;
+    function clear() {
+      dragDepth.current = 0;
+      setDragOver(false);
+    }
+    function clearBeside(event: DragEvent) {
+      if (!boxRef.current?.contains(event.target as Node)) clear();
+    }
+    window.addEventListener("dragover", clearBeside);
+    window.addEventListener("drop", clear);
+    window.addEventListener("dragend", clear);
+    return () => {
+      window.removeEventListener("dragover", clearBeside);
+      window.removeEventListener("drop", clear);
+      window.removeEventListener("dragend", clear);
+    };
+  }, [dragOver]);
 
   function setTextRef(element: HTMLTextAreaElement | null) {
     textRef.current = element;
@@ -52,13 +75,9 @@ export function NoteComposer({ textarea, picker, photosId, disabled }: NoteCompo
     if (photos.length > 0) void add(photos);
   }
 
-  /** Whether a drag carries files, as opposed to, say, selected text, which is left to the browser. */
-  function carriesFiles(event: DragEvent) {
-    return event.dataTransfer.types.includes("Files");
-  }
-
   return (
     <div
+      ref={boxRef}
       data-testid="note-composer"
       data-drag-over={dragOver && !disabled ? "" : undefined}
       className="cursor-text rounded-md border border-input bg-card has-[textarea:focus-visible]:ring-2 has-[textarea:focus-visible]:ring-ring has-[textarea:focus-visible]:ring-offset-1 has-[textarea:focus-visible]:ring-offset-background data-[drag-over]:border-primary data-[drag-over]:bg-accent"

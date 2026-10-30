@@ -26,7 +26,7 @@ type Fixture = ReturnType<typeof image>;
  */
 async function fire(
   target: Locator,
-  type: "paste" | "dragenter" | "dragover" | "dragleave" | "drop",
+  type: "paste" | "dragstart" | "dragenter" | "dragover" | "dragleave" | "drop" | "dragend",
   { files = [], text }: { files?: Fixture[]; text?: string },
 ) {
   return target.evaluate(
@@ -65,7 +65,7 @@ function paste(target: Locator, files: Fixture[]) {
 /** Fires a drag event of `type` at `target`, of `files` or of selected `text`. Returns whether it was taken over. */
 function drag(
   target: Locator,
-  type: "dragenter" | "dragover" | "dragleave" | "drop",
+  type: "dragstart" | "dragenter" | "dragover" | "dragleave" | "drop" | "dragend",
   data: { files?: Fixture[]; text?: string },
 ) {
   return fire(target, type, data);
@@ -344,6 +344,78 @@ test("a staff member drops photos onto the note, highlighted while dragged over,
   // The 4000 × 3000 fixture was shrunk to 2048 px on its long edge before upload.
   const log = await (await page.request.get(`/api/services/${serviceId}/log`)).json();
   expect(log[0].photos[0]).toEqual({ id: expect.any(String), width: 2048, height: 1536 });
+});
+
+test("files dropped beside the note aren't opened by the browser, and the box doesn't stay highlighted", async ({
+  page,
+}) => {
+  const { drawer } = await openServiceLog(page, "Ivana Ivić");
+  const composer = drawer.getByTestId("note-composer");
+  const text = composer.getByLabel("Beleška");
+  const outside = drawer.getByRole("tab", { name: "Dnevnik rada" });
+  const picked = composer.getByRole("list", { name: "Izabrane fotografije" });
+  const photo = [image("photo.jpg", "image/jpeg")];
+  await text.fill("Ne puni");
+
+  // A drop that misses the box is taken over, so the browser doesn't open the file in place of the app.
+  expect(await drag(outside, "dragover", { files: photo })).toBe(true);
+  expect(await drag(outside, "drop", { files: photo })).toBe(true);
+  await expect(picked).toHaveCount(0);
+  // Dragged text is still left to the browser.
+  expect(await drag(outside, "dragover", { text: "Ne" })).toBe(false);
+
+  // The leave events went missing: the drag moving on beside the box clears the highlight.
+  await drag(composer, "dragenter", { files: photo });
+  await drag(text, "dragenter", { files: photo });
+  await expect(composer).toHaveAttribute("data-drag-over");
+  await drag(outside, "dragover", { files: photo });
+  await expect(composer).not.toHaveAttribute("data-drag-over");
+
+  // So does a drop anywhere else, and the next drag over the box highlights it afresh.
+  await drag(composer, "dragenter", { files: photo });
+  await drag(text, "dragenter", { files: photo });
+  await expect(composer).toHaveAttribute("data-drag-over");
+  await drag(outside, "drop", { files: photo });
+  await expect(composer).not.toHaveAttribute("data-drag-over");
+  await drag(composer, "dragenter", { files: photo });
+  await expect(composer).toHaveAttribute("data-drag-over");
+  await drag(composer, "dragleave", { files: photo });
+  await expect(composer).not.toHaveAttribute("data-drag-over");
+
+  await expect(text).toHaveValue("Ne puni");
+  await expect(page).toHaveURL(/\/services/);
+});
+
+test("a photo dragged from the page onto the note isn't added", async ({ page }) => {
+  const { drawer } = await openServiceLog(page, "Zoran Zorić");
+  const composer = drawer.getByTestId("note-composer");
+  const picked = composer.getByRole("list", { name: "Izabrane fotografije" }).getByRole("img");
+  await drawer
+    .getByLabel("Fotografije za belešku")
+    .setInputFiles([image("photo.jpg", "image/jpeg")]);
+  await expect(picked).toHaveCount(1);
+  // Chrome lists an image dragged from the page as carrying a file.
+  const thumbnail = [image("photo.jpg", "image/jpeg")];
+
+  // Its own thumbnail, dragged back onto the box: not highlighted, nothing added.
+  await drag(picked.first(), "dragstart", { files: thumbnail });
+  await drag(composer, "dragenter", { files: thumbnail });
+  await expect(composer).not.toHaveAttribute("data-drag-over");
+  await drag(composer, "dragover", { files: thumbnail });
+  await drag(composer, "drop", { files: thumbnail });
+  await drag(picked.first(), "dragend", { files: thumbnail });
+  await expect(picked).toHaveCount(1);
+
+  // Once that drag has ended, files from the computer are taken again.
+  await drop(composer, [image("photo.webp", "image/webp")]);
+  await expect(picked).toHaveCount(2);
+
+  // A drag whose end never reached the page (its source went away) counts as over once the mouse moves.
+  await drag(picked.first(), "dragstart", { files: thumbnail });
+  await page.mouse.move(10, 10);
+  await page.mouse.move(20, 20);
+  await drop(composer, [image("large.jpg", "image/jpeg")]);
+  await expect(picked).toHaveCount(3);
 });
 
 test("dropping onto the note while it is saving adds nothing, and the box isn't highlighted", async ({
