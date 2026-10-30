@@ -21,8 +21,9 @@ type NoteComposerProps = {
 /**
  * One bordered box holding a staff note being written: its text, previews of
  * its picked photos and a toolbar with a button that picks more (offering the
- * camera on phones). The box shows focus while the text has it, and clicking
- * an empty part of it puts the cursor in the text.
+ * camera on phones) and, once any are picked, a count of them out of the most
+ * allowed. The box shows focus while the text has it, and clicking an empty
+ * part of it puts the cursor in the text.
  */
 export function NoteComposer({ textarea, picker, photosId, disabled }: NoteComposerProps) {
   const { t } = useTranslation();
@@ -111,6 +112,16 @@ export function NoteComposer({ textarea, picker, photosId, disabled }: NoteCompo
           <Camera className="mr-1.5 h-4 w-4" aria-hidden />
           {t("Photos")}
         </Button>
+        {photos.length > 0 && (
+          <span className="text-xs tabular-nums text-muted-foreground">
+            <span aria-hidden>
+              {photos.length}/{PHOTOS_PER_NOTE_MAX}
+            </span>
+            <span className="sr-only">
+              {t("{{n}} of {{max}} photos", { n: photos.length, max: PHOTOS_PER_NOTE_MAX })}
+            </span>
+          </span>
+        )}
       </div>
     </div>
   );

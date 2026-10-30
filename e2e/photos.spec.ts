@@ -42,6 +42,13 @@ test("a staff member adds a note with photos from the drawer, shrunk before uplo
   await expect(composer.getByLabel("Beleška")).toBeVisible();
   await expect(composer.getByRole("button", { name: "Fotografije", exact: true })).toBeEnabled();
   await expect(composer.getByRole("button", { name: "Dodaj belešku" })).toHaveCount(0);
+  await expect(composer.getByLabel("Beleška")).toHaveAttribute(
+    "placeholder",
+    "Dodajte internu belešku ili fotografije…",
+  );
+  // No photo picked, no counter.
+  const counter = composer.getByText(/^\d+\/10$/);
+  await expect(counter).toHaveCount(0);
   // Clicking an empty part of the box, right of the Photos button, puts the cursor in the text.
   const box = (await composer.boundingBox())!;
   await composer.click({ position: { x: box.width - 8, y: box.height - 8 } });
@@ -61,10 +68,13 @@ test("a staff member adds a note with photos from the drawer, shrunk before uplo
     ),
   ).toBeVisible();
   await expect(picked).toHaveCount(2);
+  await expect(counter).toHaveText("2/10");
+  await expect(composer.getByText("2 od 10 fotografija")).toBeAttached();
 
   // A picked photo can be removed before posting.
   await drawer.getByRole("button", { name: "Ukloni: photo.webp" }).click();
   await expect(picked).toHaveCount(1);
+  await expect(counter).toHaveText("1/10");
   await expect(picked.first()).toHaveAccessibleName("large.jpg");
 
   await drawer.getByLabel("Beleška").fill("Ogrebotine na poleđini");
@@ -85,6 +95,7 @@ test("a staff member adds a note with photos from the drawer, shrunk before uplo
   // The composer is empty again.
   await expect(drawer.getByLabel("Beleška")).toHaveValue("");
   await expect(picked).toHaveCount(0);
+  await expect(counter).toHaveCount(0);
 
   // The 4000 × 3000 fixture was shrunk to 2048 px on its long edge before upload.
   const log = await (await page.request.get(`/api/services/${serviceId}/log`)).json();
@@ -109,15 +120,17 @@ test("a note can be only photos, and no more than 10 can be picked", async ({ pa
     );
   await expect(page.getByText("Beleška može imati najviše 10 fotografija.")).toBeVisible();
   await expect(picked).toHaveCount(10);
-  await expect(
-    drawer.getByTestId("note-composer").getByRole("button", { name: "Fotografije", exact: true }),
-  ).toBeDisabled();
+  const composer = drawer.getByTestId("note-composer");
+  await expect(composer.getByText("10/10")).toBeVisible();
+  await expect(composer.getByRole("button", { name: "Fotografije", exact: true })).toBeDisabled();
 
   // No text is needed when there are photos.
   await add.click();
   const entries = drawer.getByTestId("log-entry");
   await expect(entries).toHaveCount(1);
   await expect(entries.first().getByRole("img")).toHaveCount(10);
+  // The counter goes with the photos.
+  await expect(composer.getByText("10/10")).toHaveCount(0);
 });
 
 /** Posts a note with photos straight to the API: each one `photo.jpg` (640 × 480) with its 160 px thumbnail. */
@@ -257,6 +270,10 @@ test("a staff member registers a service with photos of its condition at intake,
   await expect(addDialog.getByRole("group", { name: "Stanje pri prijemu" })).toBeVisible();
   // The intake note is a composer too: its text, previews and Photos button in one box.
   const composer = addDialog.getByTestId("note-composer");
+  await expect(composer.getByLabel("Beleška o stanju pri prijemu")).toHaveAttribute(
+    "placeholder",
+    "Ogrebotine, pukotine, udubljenja… ili dodajte fotografije. Čuva se kao prva beleška u dnevniku.",
+  );
   await composer.getByLabel("Beleška o stanju pri prijemu").fill("Napukao ekran u donjem uglu");
   await expect(composer.getByRole("button", { name: "Fotografije", exact: true })).toBeEnabled();
   await addDialog
@@ -264,6 +281,7 @@ test("a staff member registers a service with photos of its condition at intake,
     .setInputFiles([image("photo.jpg", "image/jpeg"), image("photo.webp", "image/webp")]);
   const picked = composer.getByRole("list", { name: "Izabrane fotografije" }).getByRole("img");
   await expect(picked).toHaveCount(2);
+  await expect(composer.getByText("2/10")).toBeVisible();
 
   // The first save fails; the form keeps everything, photos included.
   await page.route(

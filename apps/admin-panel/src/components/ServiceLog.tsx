@@ -136,7 +136,7 @@ function NoteForm({ serviceId }: { serviceId: string }) {
           id: "log-note",
           rows: 3,
           maxLength: LOG_NOTE_MAX,
-          placeholder: t("Add an internal note…"),
+          placeholder: t("Add an internal note or photos…"),
           onKeyDown: (event) => {
             if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
               event.preventDefault();

@@ -203,12 +203,13 @@
   "Imported from the old app": "A régi programból importálva",
   "Status changed": "Állapot módosítva",
   "Note": "Jegyzet",
-  "Add an internal note…": "Belső jegyzet hozzáadása…",
+  "Add an internal note or photos…": "Belső jegyzet vagy fényképek hozzáadása…",
   "Add note": "Jegyzet hozzáadása",
   "Photos": "Fényképek",
   "Photos for the note": "Fényképek a jegyzethez",
   "Picked photos": "Kiválasztott fényképek",
   "Preparing photos…": "Fényképek előkészítése…",
+  "{{n}} of {{max}} photos": "{{n}} / {{max}} fénykép",
   "Photo {{n}}": "{{n}}. fénykép",
   "Photo viewer": "Fényképnézegető",
   "gallery": "galéria",
@@ -316,5 +317,5 @@
   "Could not copy the public link.": "Nem sikerült kimásolni a nyilvános linket.",
   "Condition at intake": "Állapot átvételkor",
   "Intake note": "Jegyzet az átvételkori állapotról",
-  "Scratches, cracks, dents… Saved as the first note in the log.": "Karcok, repedések, horpadások… Az első jegyzetként kerül a naplóba."
+  "Scratches, cracks, dents… or add photos. Saved as the first note in the log.": "Karcok, repedések, horpadások… vagy fényképek hozzáadása. Az első jegyzetként kerül a naplóba."
 }
