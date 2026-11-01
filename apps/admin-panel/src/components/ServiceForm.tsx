@@ -213,20 +213,23 @@ export function ServiceForm({ id, service, intakeNotePhotos, saving, onSubmit }:
             <label htmlFor={`${id}-intake-note`} className="sr-only">
               {t("Intake note")}
             </label>
-            <NoteComposer
-              textarea={{
-                id: `${id}-intake-note`,
-                rows: 3,
-                maxLength: LOG_NOTE_MAX,
-                placeholder: t(
-                  "Scratches, cracks, dents… or add photos. Saved as the first note in the log.",
-                ),
-                ...register("intakeNote"),
-              }}
-              picker={intakeNotePhotos}
-              photosId={`${id}-intake-photos`}
-              disabled={saving}
-            />
+            {/* Clears the floated legend, or the composer's border would start at the legend's top. */}
+            <div className="clear-left">
+              <NoteComposer
+                textarea={{
+                  id: `${id}-intake-note`,
+                  rows: 3,
+                  maxLength: LOG_NOTE_MAX,
+                  placeholder: t(
+                    "Scratches, cracks, dents… or add photos. Saved as the first note in the log.",
+                  ),
+                  ...register("intakeNote"),
+                }}
+                picker={intakeNotePhotos}
+                photosId={`${id}-intake-photos`}
+                disabled={saving}
+              />
+            </div>
           </fieldset>
         )}
       </form>
