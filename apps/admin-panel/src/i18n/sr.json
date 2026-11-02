@@ -322,5 +322,8 @@
   "Polish": "Doteraj",
   "Polishing…": "Doterujem…",
   "Polished by AI": "Doterano uz AI",
-  "Undo": "Poništi"
+  "Undo": "Poništi",
+  "Looks good, no changes needed.": "Izgleda dobro, nema potrebe za izmenama.",
+  "AI polish is unavailable right now. Try again later.": "AI doterivanje trenutno nije dostupno. Pokušajte ponovo kasnije.",
+  "(daily limit reached)": "(dostignut dnevni limit)"
 }

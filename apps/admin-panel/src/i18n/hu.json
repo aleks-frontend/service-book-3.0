@@ -322,5 +322,8 @@
   "Polish": "Csiszolás",
   "Polishing…": "Csiszolás…",
   "Polished by AI": "MI-vel csiszolva",
-  "Undo": "Visszavonás"
+  "Undo": "Visszavonás",
+  "Looks good, no changes needed.": "Jól néz ki, nincs szükség változtatásra.",
+  "AI polish is unavailable right now. Try again later.": "Az MI-csiszolás jelenleg nem érhető el. Próbálja újra később.",
+  "(daily limit reached)": "(elérte a napi korlátot)"
 }

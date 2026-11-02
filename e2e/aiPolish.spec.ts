@@ -4,7 +4,8 @@ import { readDownload } from "./documents.js";
 import { logIn } from "./logIn.js";
 
 // The UI defaults to Serbian (sr). The backend runs the fake polisher (AI_POLISH_FAKE),
-// which appends " (polished)" to the text it is sent.
+// which appends " (polished)" to the text it is sent, unless the text holds a marker:
+// "[unchanged]", "[unavailable]", "[daily limit]" or "[slow]" (polished after 2s).
 
 async function send(page: Page, path: string, data: object) {
   const response = await page.request.post(path, { data });
@@ -113,14 +114,7 @@ test("while a polish is in flight the text is read-only and Save is disabled", a
   await expect(page).toHaveURL("/services");
   const { report, polish, save } = await openCustomerReport(page);
 
-  let release = () => {};
-  const released = new Promise<void>((resolve) => (release = resolve));
-  await page.route("**/customer-report/polish", async (route) => {
-    await released;
-    await route.continue();
-  });
-
-  await report.fill("zamenjena baterija");
+  await report.fill("zamenjena baterija [slow]");
   await expect(save).toBeEnabled();
   await polish.click();
   const polishing = page.getByRole("button", { name: "Doterujem…" });
@@ -128,10 +122,57 @@ test("while a polish is in flight the text is read-only and Save is disabled", a
   await expect(report).toHaveAttribute("readonly", "");
   await expect(save).toBeDisabled();
 
-  release();
-  await expect(report).toHaveValue("zamenjena baterija (polished)");
+  await expect(report).toHaveValue("zamenjena baterija [slow] (polished)");
   await expect(report).not.toHaveAttribute("readonly");
   await expect(save).toBeEnabled();
+});
+
+test("a polish that changes nothing leaves the text alone and says it looks good", async ({
+  page,
+}) => {
+  await logIn(page);
+  await expect(page).toHaveURL("/services");
+  const { report, polish, bar } = await openCustomerReport(page);
+  const looksGood = page.getByText("Izgleda dobro, nema potrebe za izmenama.");
+
+  await report.fill("Zamenjena baterija. [unchanged]");
+  await polish.click();
+  await expect(looksGood).toBeVisible();
+  await expect(report).toHaveValue("Zamenjena baterija. [unchanged]");
+  await expect(bar).toBeHidden();
+
+  // The note goes once the text is edited.
+  await report.press("End");
+  await report.pressSequentially(" Radi.");
+  await expect(looksGood).toBeHidden();
+});
+
+test("a failed polish leaves the text alone, says so in a toast, and Save works again", async ({
+  page,
+}) => {
+  await logIn(page);
+  await expect(page).toHaveURL("/services");
+  const { service, report, polish, save, bar } = await openCustomerReport(page);
+  const unavailable = "AI doterivanje trenutno nije dostupno. Pokušajte ponovo kasnije.";
+
+  await report.fill("zamenjena baterija [unavailable]");
+  await polish.click();
+  await expect(page.getByText(unavailable, { exact: true })).toBeVisible();
+  await expect(report).toHaveValue("zamenjena baterija [unavailable]");
+  await expect(report).not.toHaveAttribute("readonly");
+  await expect(bar).toBeHidden();
+  await expect(save).toBeEnabled();
+
+  // The provider's daily limit is named.
+  await report.fill("zamenjena baterija [daily limit]");
+  await polish.click();
+  await expect(page.getByText(`${unavailable} (dostignut dnevni limit)`)).toBeVisible();
+  await expect(report).toHaveValue("zamenjena baterija [daily limit]");
+
+  await save.click();
+  await expect(page.getByText("Izveštaj za mušteriju je sačuvan")).toBeVisible();
+  const saved = await page.request.get(`/api/services/${service.id}`);
+  expect((await saved.json()).customerReport).toBe("zamenjena baterija [daily limit]");
 });
 
 test("the Polish button is hidden when the deployment has no AI provider key", async ({ page }) => {

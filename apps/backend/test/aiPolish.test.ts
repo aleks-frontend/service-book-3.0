@@ -1,5 +1,7 @@
 import request from "supertest";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import * as Sentry from "@sentry/node";
+import { APICallError } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
 import type TestAgent from "supertest/lib/agent.js";
 import { CUSTOMER_REPORT_MAX } from "@servicebook/schemas";
@@ -10,6 +12,12 @@ import {
   type TextPolisher,
 } from "../src/lib/textPolisher.js";
 import { authenticatedAgent } from "./helpers.js";
+
+// Sentry's exports can't be spied on in ESM, so its reporting is mocked for every test here.
+vi.mock("@sentry/node", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@sentry/node")>()),
+  captureMessage: vi.fn(),
+}));
 
 const UNKNOWN_ID = "00000000-0000-4000-8000-000000000000";
 
@@ -133,6 +141,198 @@ describe("AI polish", () => {
     const response = await agent.get("/api/me");
 
     expect(response.body.features).toEqual({ aiPolish: true });
+  });
+});
+
+/** A provider error, as the AI SDK reports a failed call. */
+function providerError(statusCode: number, message = "Provider error") {
+  return new APICallError({
+    message,
+    url: "https://api.openai.com/v1/responses",
+    requestBodyValues: {},
+    statusCode,
+    responseBody: JSON.stringify({ error: { message } }),
+    data: { error: { message } },
+    isRetryable: statusCode === 429 || statusCode >= 500,
+  });
+}
+
+/** A model that fails with each of `errors` in turn, then answers `reply`. */
+function failingModel(errors: unknown[], reply = "Uređaj radi.") {
+  const replies = mockModel(reply);
+  let call = 0;
+  return new MockLanguageModelV4({
+    doGenerate: async (options) => {
+      const error = errors[call++];
+      if (error) throw error;
+      return replies.doGenerate(options);
+    },
+  });
+}
+
+/** A model that never answers, until the call is aborted. */
+function hangingModel() {
+  return new MockLanguageModelV4({
+    doGenerate: (options) =>
+      new Promise((_resolve, reject) => {
+        options.abortSignal?.addEventListener("abort", () => reject(options.abortSignal?.reason));
+      }),
+  });
+}
+
+/** Quick to give up, so a test doesn't wait the real 20s. */
+const quickly = { timeoutMs: 100, retryDelayMs: 1 };
+
+describe("AI polish of the model's output", () => {
+  it("leaves the draft alone when the output reads the same, but for whitespace", async () => {
+    const { agent, service } = await setUp(mockModel("  Uređaj  radi.\n"));
+
+    const response = await agent.post(polishPath(service.id)).send({ text: "Uređaj radi." });
+
+    expect(response.status).toBe(200);
+    expect(response.body.changed).toBe(false);
+  });
+
+  it.each([
+    ['"Uređaj radi ispravno."'],
+    ["„Uređaj radi ispravno.“"],
+    ["“Uređaj radi ispravno.”"],
+    ["«Uređaj radi ispravno.»"],
+    ["‘Uređaj radi ispravno.’"],
+    ["Here’s the polished text:\nUređaj radi ispravno."],
+    ["Ево дотераног текста:\nUređaj radi ispravno."],
+    ["Here is the polished text:\n\nUređaj radi ispravno."],
+    ['Here\'s the polished report: "Uređaj radi ispravno."'],
+    ['  Here is the polished text:\n"Uređaj radi ispravno."  '],
+  ])("strips wrapping quotes and a preamble from %j", async (reply) => {
+    const { agent, service } = await setUp(mockModel(reply));
+
+    const response = await agent.post(polishPath(service.id)).send({ text: "radi" });
+
+    expect(response.status).toBe(200);
+    expect(response.body.text).toBe("Uređaj radi ispravno.");
+  });
+
+  it("keeps a report that itself starts like a preamble", async () => {
+    const reply = "Here is what we did: replaced the screen.";
+    const { agent, service } = await setUp(mockModel(reply));
+
+    const response = await agent.post(polishPath(service.id)).send({ text: "radi" });
+
+    expect(response.body.text).toBe(reply);
+  });
+
+  it("keeps quotes that don't wrap the whole text", async () => {
+    const reply = '"Ekran" je zamenjen, a uređaj je "očišćen".';
+    const { agent, service } = await setUp(mockModel(reply));
+
+    const response = await agent.post(polishPath(service.id)).send({ text: "radi" });
+
+    expect(response.body.text).toBe(reply);
+  });
+
+  it.each([
+    ["empty", ""],
+    ["blank", "  \n "],
+    ["only quotes", '""'],
+    ["over-length", "a".repeat(CUSTOMER_REPORT_MAX + 1)],
+  ])("rejects %s output with 502 invalid_output", async (_case, reply) => {
+    const { agent, service } = await setUp(mockModel(reply));
+
+    const response = await agent.post(polishPath(service.id)).send({ text: "radi" });
+
+    expect(response.status).toBe(502);
+    expect(response.body.code).toBe("invalid_output");
+  });
+});
+
+describe("AI polish when the provider fails", () => {
+  /** A service whose polish goes through `model`, giving up quickly. */
+  const setUpWith = (model: MockLanguageModelV4) =>
+    setUp(model, createTextPolisher({ model, ...quickly }));
+
+  it.each([429, 500, 503])(
+    "retries a %i once, and succeeds when the retry does",
+    async (status) => {
+      const model = failingModel([providerError(status)]);
+      const { agent, service } = await setUpWith(model);
+
+      const response = await agent.post(polishPath(service.id)).send({ text: "radi" });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({ text: "Uređaj radi.", changed: true });
+      expect(model.doGenerateCalls).toHaveLength(2);
+    },
+  );
+
+  it.each([429, 500, 503])("answers 503 unavailable when a %i persists", async (status) => {
+    const model = failingModel([providerError(status), providerError(status)]);
+    const { agent, service } = await setUpWith(model);
+
+    const response = await agent.post(polishPath(service.id)).send({ text: "radi" });
+
+    expect(response.status).toBe(503);
+    expect(response.body.code).toBe("unavailable");
+    expect(response.body.dailyLimit).toBeUndefined();
+    expect(model.doGenerateCalls).toHaveLength(2);
+  });
+
+  it("says when the provider's daily limit was reached", async () => {
+    const daily = () =>
+      providerError(
+        429,
+        "Rate limit reached for gpt-5.4-mini in organization org-x on requests per day (RPD): Limit 200, Used 200.",
+      );
+    const { agent, service } = await setUpWith(failingModel([daily(), daily()]));
+
+    const response = await agent.post(polishPath(service.id)).send({ text: "radi" });
+
+    expect(response.status).toBe(503);
+    expect(response.body).toMatchObject({ code: "unavailable", dailyLimit: true });
+  });
+
+  it("doesn't retry an error a retry can't fix", async () => {
+    const model = failingModel([providerError(401)]);
+    const { agent, service } = await setUpWith(model);
+
+    const response = await agent.post(polishPath(service.id)).send({ text: "radi" });
+
+    expect(response.status).toBe(503);
+    expect(response.body.code).toBe("unavailable");
+    expect(model.doGenerateCalls).toHaveLength(1);
+  });
+
+  it("answers 504 timeout when the model hangs", async () => {
+    const { agent, service } = await setUpWith(hangingModel());
+
+    const response = await agent.post(polishPath(service.id)).send({ text: "radi" });
+
+    expect(response.status).toBe(504);
+    expect(response.body.code).toBe("timeout");
+  });
+
+  it("logs and reports only the failure code and status, never the text", async () => {
+    const text = "zamenjen kondenzator kod Marka";
+    const error = providerError(500, `Upstream failed on: ${text}`);
+    const { agent, service } = await setUpWith(failingModel([error, error]));
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    const reported = vi.mocked(Sentry.captureMessage);
+    reported.mockClear();
+
+    try {
+      await agent.post(polishPath(service.id)).send({ text });
+
+      const everything = JSON.stringify([logged.mock.calls, reported.mock.calls]);
+      expect(everything).not.toContain("kondenzator");
+      expect(everything).toContain("unavailable");
+      expect(reported).toHaveBeenCalledTimes(1);
+      expect(reported.mock.calls[0][1]).toEqual({
+        level: "warning",
+        tags: { aiPolishFailure: "unavailable", providerStatus: "500" },
+      });
+    } finally {
+      logged.mockRestore();
+    }
   });
 });
 
