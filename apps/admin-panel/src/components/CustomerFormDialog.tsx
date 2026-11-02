@@ -125,7 +125,7 @@ export function CustomerFormDialog({
           setFocus("phone");
         }}
       >
-        <DialogHeader className="pr-8">
+        <DialogHeader>
           <DialogTitle>{isEdit ? t("Edit customer") : t("New customer")}</DialogTitle>
           <DialogDescription>{t("Fields marked with * are required.")}</DialogDescription>
         </DialogHeader>

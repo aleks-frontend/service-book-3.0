@@ -110,7 +110,7 @@ export function DeviceFormDialog({
           setFocus("model", { shouldSelect: true });
         }}
       >
-        <DialogHeader className="pr-8">
+        <DialogHeader>
           <DialogTitle>{isEdit ? t("Edit device") : t("New device")}</DialogTitle>
           <DialogDescription>{t("Fields marked with * are required.")}</DialogDescription>
         </DialogHeader>

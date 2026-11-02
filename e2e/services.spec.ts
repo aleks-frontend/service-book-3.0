@@ -377,3 +377,28 @@ test("search, status filter and empty state narrow the services list", async ({ 
   await expect(page.getByText("Nijedan servis ne odgovara pretrazi.")).toBeVisible();
   await expect(rows).toHaveCount(0);
 });
+
+test("on a short screen the New service modal keeps its title and save button in view while its fields scroll", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 667 });
+  await logIn(page);
+  await expect(page).toHaveURL("/services");
+
+  await page.getByRole("button", { name: "Dodaj", exact: true }).click();
+  const addDialog = page.getByRole("dialog", { name: "Novi servis" });
+  const title = addDialog.getByRole("heading", { name: "Novi servis" });
+  const create = addDialog.getByRole("button", { name: "Dodaj servis" });
+
+  // The fields run past the bottom of the screen, yet the save button is in view.
+  await expect(create).toBeInViewport({ ratio: 1 });
+
+  // Scrolled to the bottom of its fields, the title and the save button are still in view.
+  const lastControl = addDialog.getByRole("button", { name: "Fotografije", exact: true });
+  await expect(lastControl).not.toBeInViewport();
+  await addDialog.getByLabel("Datum").hover();
+  await page.mouse.wheel(0, 2000);
+  await expect(lastControl).toBeInViewport({ ratio: 1 });
+  await expect(title).toBeInViewport({ ratio: 1 });
+  await expect(create).toBeInViewport({ ratio: 1 });
+});

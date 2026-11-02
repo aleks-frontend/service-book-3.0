@@ -10,6 +10,7 @@ import { ServiceForm } from "./ServiceForm";
 import { Button } from "./ui/button";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -49,33 +50,35 @@ export function ServiceFormDialog({ open, onOpenChange, service }: ServiceFormDi
     <>
       <Dialog open={open} onOpenChange={changeOpen}>
         <DialogContent className="max-w-lg">
-          <DialogHeader className="pr-8">
+          <DialogHeader>
             <DialogTitle>{service ? t("Edit service") : t("New service")}</DialogTitle>
             <DialogDescription>{t("Fields marked with * are required.")}</DialogDescription>
           </DialogHeader>
 
-          <ServiceForm
-            id={formId}
-            service={service}
-            intakeNotePhotos={service ? undefined : intakeNotePhotos}
-            saving={saveService.isPending}
-            onSubmit={(input) => {
-              if (intakeNotePhotos.processing) return;
-              saveService.mutate(
-                service
-                  ? { id: service.id, input }
-                  : { input, intakeNotePhotos: intakeNotePhotos.photos },
-                {
-                  onSuccess: (saved) => {
-                    changeOpen(false);
-                    if (!service) setCreated(saved);
+          <DialogBody>
+            <ServiceForm
+              id={formId}
+              service={service}
+              intakeNotePhotos={service ? undefined : intakeNotePhotos}
+              saving={saveService.isPending}
+              onSubmit={(input) => {
+                if (intakeNotePhotos.processing) return;
+                saveService.mutate(
+                  service
+                    ? { id: service.id, input }
+                    : { input, intakeNotePhotos: intakeNotePhotos.photos },
+                  {
+                    onSuccess: (saved) => {
+                      changeOpen(false);
+                      if (!service) setCreated(saved);
+                    },
                   },
-                },
-              );
-            }}
-          />
+                );
+              }}
+            />
+          </DialogBody>
 
-          <DialogFooter className="gap-2">
+          <DialogFooter>
             <Button variant="outline" onClick={() => changeOpen(false)}>
               {t("Cancel")}
             </Button>
