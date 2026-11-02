@@ -4,10 +4,11 @@ import type { AiPolish } from "@/lib/useAiPolish";
 import { Button } from "./ui/button";
 
 /**
- * The "Polish" button, on the left of the row with the save actions. Not
- * rendered when the deployment doesn't offer AI polish.
+ * The "Polish" button, by the customer report's save actions. Not rendered when
+ * the deployment doesn't offer AI polish. `disabled` is for the host's own
+ * reasons, e.g. while it saves.
  */
-export function PolishButton({ polish }: { polish: AiPolish }) {
+export function PolishButton({ polish, disabled }: { polish: AiPolish; disabled?: boolean }) {
   const { t } = useTranslation();
   if (!polish.enabled) return null;
 
@@ -16,7 +17,7 @@ export function PolishButton({ polish }: { polish: AiPolish }) {
       type="button"
       variant="outline"
       size="sm"
-      disabled={!polish.canPolish}
+      disabled={disabled || !polish.canPolish}
       onClick={() => void polish.polish()}
     >
       {polish.isPolishing ? (

@@ -65,7 +65,7 @@ export function CustomerReport({ service }: { service: ServiceDetail }) {
       />
       <PolishedBar polish={polish} />
       <div className="flex items-center gap-2">
-        <PolishButton polish={polish} />
+        <PolishButton polish={polish} disabled={save.isPending} />
         <Button type="submit" size="sm" className="ml-auto" disabled={!canSave}>
           {save.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
           {t("Save changes")}

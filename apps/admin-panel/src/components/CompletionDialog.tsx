@@ -1,9 +1,11 @@
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AlertTriangle, ChevronRight, Loader2 } from "lucide-react";
 import { CUSTOMER_REPORT_MAX, type ServiceDetail } from "@servicebook/schemas";
 import { cn } from "@/lib/utils";
 import { useSaveCustomerReportMutation, useServiceLogQuery } from "@/lib/services";
+import { useAiPolish } from "@/lib/useAiPolish";
+import { PolishButton, PolishedBar } from "./AiPolish";
 import { LogEntryByline } from "./ServiceLog";
 import { Button } from "./ui/button";
 import {
@@ -28,7 +30,8 @@ type CompletionDialogProps = {
 
 /**
  * Asks for the customer report once a service is completed: it saves the report, then
- * generates the service report from it. Skipping or dismissing it saves nothing.
+ * generates the service report from it. Skipping or dismissing it saves nothing. AI
+ * polish can tidy the draft, as in the Customer report tab.
  */
 export function CompletionDialog({ service, onClose, onGenerate }: CompletionDialogProps) {
   // The parent clears the service as soon as the dialog closes; keep showing the
@@ -67,9 +70,18 @@ function CompletionForm({ service, open, onClose, onGenerate }: CompletionFormPr
   // Whether generating with an empty report has been warned about; generating again proceeds.
   const [warned, setWarned] = useState(false);
   const isEmpty = customerReport.trim() === "";
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const polish = useAiPolish({
+    serviceId: service.id,
+    textareaRef,
+    text: customerReport,
+    setText: setCustomerReport,
+  });
+  // Nothing finishes, and the dialog doesn't close, while a polish is in flight.
+  const isBusy = !!finishing || polish.isPolishing;
 
   async function finish(action: Finish) {
-    if (finishing) return;
+    if (isBusy) return;
     if (action === "generate" && isEmpty && !warned) {
       setWarned(true);
       return;
@@ -85,13 +97,14 @@ function CompletionForm({ service, open, onClose, onGenerate }: CompletionFormPr
         return;
       }
     }
+    // No `polish.reset()`: the dialog closes, and the next offer starts a fresh form.
     // From the service as saved, so the report carries the text the server kept (trimmed).
     if (action === "generate") onGenerate(saved);
     onClose();
   }
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && !finishing && onClose()}>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && !isBusy && onClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>
@@ -107,11 +120,17 @@ function CompletionForm({ service, open, onClose, onGenerate }: CompletionFormPr
               {t("Customer report")}
             </label>
             <Textarea
+              ref={textareaRef}
               id="completion-customer-report"
               rows={8}
               maxLength={CUSTOMER_REPORT_MAX}
+              // Read-only rather than disabled, so the text stays readable while it is polished.
+              readOnly={polish.isPolishing}
               value={customerReport}
-              onChange={(event) => setCustomerReport(event.target.value)}
+              onChange={(event) => {
+                setCustomerReport(event.target.value);
+                polish.onEdit();
+              }}
               onKeyDown={(event) => {
                 if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
                   event.preventDefault();
@@ -119,6 +138,7 @@ function CompletionForm({ service, open, onClose, onGenerate }: CompletionFormPr
                 }
               }}
             />
+            <PolishedBar polish={polish} />
             {warned && isEmpty && (
               // Yellow marks what needs action (ADR-0005): an edge, since it is never text.
               <p
@@ -129,18 +149,20 @@ function CompletionForm({ service, open, onClose, onGenerate }: CompletionFormPr
                 {t("The service report will go out without a customer report.")}
               </p>
             )}
+            {/* Under the text rather than in the footer, which already holds three actions. */}
+            <PolishButton polish={polish} disabled={!!finishing} />
           </div>
           <StaffNotes serviceId={service.id} />
         </DialogBody>
         <DialogFooter>
-          <Button variant="ghost" disabled={!!finishing} onClick={onClose}>
+          <Button variant="ghost" disabled={isBusy} onClick={onClose}>
             {t("Skip")}
           </Button>
-          <Button variant="outline" disabled={!!finishing} onClick={() => void finish("save")}>
+          <Button variant="outline" disabled={isBusy} onClick={() => void finish("save")}>
             {finishing === "save" && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
             {t("Save only")}
           </Button>
-          <Button disabled={!!finishing} onClick={() => void finish("generate")}>
+          <Button disabled={isBusy} onClick={() => void finish("generate")}>
             {finishing === "generate" && (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
             )}
