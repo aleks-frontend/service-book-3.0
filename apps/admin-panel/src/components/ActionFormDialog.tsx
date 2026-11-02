@@ -10,6 +10,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -90,47 +91,49 @@ export function ActionFormDialog({
           <DialogDescription>{t("Fields marked with * are required.")}</DialogDescription>
         </DialogHeader>
 
-        <form
-          id="action-form"
-          onSubmit={handleSubmit(onSubmit)}
-          noValidate
-          autoComplete="off"
-          className="space-y-4"
-        >
-          <div className="space-y-1.5">
-            <label htmlFor="action-name" className="text-sm font-medium">
-              {t("Name", { context: "action" })} *
-            </label>
-            <Input
-              id="action-name"
-              aria-invalid={!!errors.name}
-              className={cn(errors.name && "border-destructive focus-visible:ring-destructive")}
-              {...register("name")}
-            />
-            {errors.name && <p className="text-sm text-destructive">{t("Enter a name")}</p>}
-          </div>
+        <DialogBody>
+          <form
+            id="action-form"
+            onSubmit={handleSubmit(onSubmit)}
+            noValidate
+            autoComplete="off"
+            className="space-y-4"
+          >
+            <div className="space-y-1.5">
+              <label htmlFor="action-name" className="text-sm font-medium">
+                {t("Name", { context: "action" })} *
+              </label>
+              <Input
+                id="action-name"
+                aria-invalid={!!errors.name}
+                className={cn(errors.name && "border-destructive focus-visible:ring-destructive")}
+                {...register("name")}
+              />
+              {errors.name && <p className="text-sm text-destructive">{t("Enter a name")}</p>}
+            </div>
 
-          <div className="space-y-1.5">
-            <label htmlFor="action-price" className="text-sm font-medium">
-              {t("Price (RSD)")} *
-            </label>
-            <Input
-              id="action-price"
-              type="number"
-              inputMode="numeric"
-              min={0}
-              step={1}
-              aria-invalid={!!errors.price}
-              className={cn(errors.price && "border-destructive focus-visible:ring-destructive")}
-              {...register("price", { valueAsNumber: true })}
-            />
-            {errors.price && (
-              <p className="text-sm text-destructive">{t("Enter a whole amount in dinars")}</p>
-            )}
-          </div>
-        </form>
+            <div className="space-y-1.5">
+              <label htmlFor="action-price" className="text-sm font-medium">
+                {t("Price (RSD)")} *
+              </label>
+              <Input
+                id="action-price"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                step={1}
+                aria-invalid={!!errors.price}
+                className={cn(errors.price && "border-destructive focus-visible:ring-destructive")}
+                {...register("price", { valueAsNumber: true })}
+              />
+              {errors.price && (
+                <p className="text-sm text-destructive">{t("Enter a whole amount in dinars")}</p>
+              )}
+            </div>
+          </form>
+        </DialogBody>
 
-        <DialogFooter className="gap-2">
+        <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t("Cancel")}
           </Button>

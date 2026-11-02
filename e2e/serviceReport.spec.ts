@@ -487,3 +487,37 @@ test("the completion dialog shows when a service has no staff notes", async ({ p
   await expect(dialog.getByText("U dnevniku rada još nema beleški.")).toBeVisible();
   await expect(dialog.getByTestId("staff-note")).toHaveCount(0);
 });
+
+test("on a short screen the completion dialog keeps its title and buttons in view while the report and notes scroll", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 568 });
+  await logIn(page);
+  await expect(page).toHaveURL("/services");
+  const service = await createService(page, "Nina Jović", "Pixel 9");
+  for (const text of ["Naručen novi ekran.", "Stigao ekran.", "Zamenjen ekran.", "Testirano."]) {
+    await send(page, "post", `/api/services/${service.id}/log`, { text });
+  }
+  await page.reload();
+
+  await chooseStatus(page, service.number, "Završen");
+  const dialog = page.getByRole("dialog", { name: `Servis ${service.number} je završen` });
+  const title = dialog.getByRole("heading", { name: `Servis ${service.number} je završen` });
+  const generate = dialog.getByRole("button", { name: "Sačuvaj i generiši izveštaj" });
+  await dialog
+    .getByRole("textbox", { name: "Izveštaj za mušteriju" })
+    .fill(Array.from({ length: 40 }, (_, i) => `Red ${i + 1} izveštaja.`).join("\n"));
+  await dialog.getByRole("button", { name: "Beleške iz dnevnika rada" }).click();
+  const lastNote = dialog.getByTestId("staff-note").last();
+
+  // The report and the notes run past the bottom of the screen, yet the buttons are in view.
+  await expect(lastNote).not.toBeInViewport({ ratio: 1 });
+  await expect(title).toBeInViewport({ ratio: 1 });
+  await expect(generate).toBeInViewport({ ratio: 1 });
+
+  // Scrolled to the notes, the title and the buttons are still in view.
+  await lastNote.scrollIntoViewIfNeeded();
+  await expect(lastNote).toBeInViewport({ ratio: 1 });
+  await expect(title).toBeInViewport({ ratio: 1 });
+  await expect(generate).toBeInViewport({ ratio: 1 });
+});

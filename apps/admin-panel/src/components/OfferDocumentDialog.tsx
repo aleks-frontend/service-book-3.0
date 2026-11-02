@@ -4,6 +4,7 @@ import type { ServiceDetail } from "@servicebook/schemas";
 import { Button } from "./ui/button";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -50,9 +51,11 @@ export function OfferDocumentDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{shown && description(shown)}</DialogDescription>
         </DialogHeader>
-        <DialogFooter className="gap-2">
+        <DialogBody>
+          <DialogDescription>{shown && description(shown)}</DialogDescription>
+        </DialogBody>
+        <DialogFooter>
           <Button variant="outline" onClick={onClose}>
             {t("Not now")}
           </Button>

@@ -24,6 +24,7 @@ import { DevicePicker } from "./DevicePicker";
 import { Button } from "./ui/button";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -372,107 +373,109 @@ function AddLineForm({ service, isAdding, onAdd, onDone }: AddLineFormProps) {
         </DialogDescription>
       </DialogHeader>
 
-      <form
-        id="add-line-form"
-        onSubmit={handleSubmit(submit)}
-        noValidate
-        autoComplete="off"
-        className="space-y-4"
-      >
-        <div className="inline-flex overflow-hidden rounded-md border border-input" role="group">
-          <button
-            type="button"
-            className={typeButtonClass("WORK")}
-            aria-pressed={type === "WORK"}
-            onClick={() => changeType("WORK")}
-          >
-            {t("Work")}
-          </button>
-          <button
-            type="button"
-            className={typeButtonClass("SALE")}
-            aria-pressed={type === "SALE"}
-            onClick={() => changeType("SALE")}
-          >
-            {t("Sale")}
-          </button>
-        </div>
-
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between gap-2">
-            <label htmlFor="add-line-reference" className="text-sm font-medium">
-              {type === "WORK" ? t("Action") : t("Device sold")} *
-            </label>
-            <Button
+      <DialogBody>
+        <form
+          id="add-line-form"
+          onSubmit={handleSubmit(submit)}
+          noValidate
+          autoComplete="off"
+          className="space-y-4"
+        >
+          <div className="inline-flex overflow-hidden rounded-md border border-input" role="group">
+            <button
               type="button"
-              variant="link"
-              size="xs"
-              onClick={() => (type === "WORK" ? setNewActionName("") : setNewDeviceModel(""))}
+              className={typeButtonClass("WORK")}
+              aria-pressed={type === "WORK"}
+              onClick={() => changeType("WORK")}
             >
-              <Plus className="mr-1 h-3.5 w-3.5" aria-hidden />
-              {type === "WORK" ? t("New action") : t("New device")}
-            </Button>
+              {t("Work")}
+            </button>
+            <button
+              type="button"
+              className={typeButtonClass("SALE")}
+              aria-pressed={type === "SALE"}
+              onClick={() => changeType("SALE")}
+            >
+              {t("Sale")}
+            </button>
           </div>
-          {type === "WORK" ? (
-            <ActionPicker
-              id="add-line-reference"
-              value={action}
-              onChange={pickAction}
-              onCreate={setNewActionName}
-              placeholder={t("Search the price list")}
-            />
-          ) : (
-            <DevicePicker
-              id="add-line-reference"
-              customerId={service.customer.id}
-              value={device}
-              onChange={setDevice}
-              onCreate={setNewDeviceModel}
-              placeholder={t("The customer's or generic devices")}
-            />
-          )}
-        </div>
 
-        <div className="flex flex-wrap items-end gap-3">
           <div className="space-y-1.5">
-            <label htmlFor="add-line-quantity" className="text-sm font-medium">
-              {t("Quantity")} *
-            </label>
-            <Input
-              id="add-line-quantity"
-              type="number"
-              inputMode="numeric"
-              min={1}
-              step={1}
-              aria-invalid={!!formState.errors.quantity}
-              className={cn("w-24", formState.errors.quantity && "border-destructive")}
-              {...register("quantity")}
-            />
+            <div className="flex items-center justify-between gap-2">
+              <label htmlFor="add-line-reference" className="text-sm font-medium">
+                {type === "WORK" ? t("Action") : t("Device sold")} *
+              </label>
+              <Button
+                type="button"
+                variant="link"
+                size="xs"
+                onClick={() => (type === "WORK" ? setNewActionName("") : setNewDeviceModel(""))}
+              >
+                <Plus className="mr-1 h-3.5 w-3.5" aria-hidden />
+                {type === "WORK" ? t("New action") : t("New device")}
+              </Button>
+            </div>
+            {type === "WORK" ? (
+              <ActionPicker
+                id="add-line-reference"
+                value={action}
+                onChange={pickAction}
+                onCreate={setNewActionName}
+                placeholder={t("Search the price list")}
+              />
+            ) : (
+              <DevicePicker
+                id="add-line-reference"
+                customerId={service.customer.id}
+                value={device}
+                onChange={setDevice}
+                onCreate={setNewDeviceModel}
+                placeholder={t("The customer's or generic devices")}
+              />
+            )}
           </div>
-          <div className="space-y-1.5">
-            <label htmlFor="add-line-price" className="text-sm font-medium">
-              {t("Unit price (RSD)")} *
-            </label>
-            <Input
-              id="add-line-price"
-              type="number"
-              inputMode="numeric"
-              min={0}
-              step={1}
-              className="w-32"
-              {...register("unitPrice")}
-            />
-          </div>
-          <p className="ml-auto pb-2 text-sm">
-            <span className="text-muted-foreground">{t("Total")}: </span>
-            <span className="font-medium tabular-nums">
-              {formatRsd((quantity ?? 0) * (unitPrice ?? 0), i18n.language)}
-            </span>
-          </p>
-        </div>
-      </form>
 
-      <DialogFooter className="gap-2">
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1.5">
+              <label htmlFor="add-line-quantity" className="text-sm font-medium">
+                {t("Quantity")} *
+              </label>
+              <Input
+                id="add-line-quantity"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                step={1}
+                aria-invalid={!!formState.errors.quantity}
+                className={cn("w-24", formState.errors.quantity && "border-destructive")}
+                {...register("quantity")}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="add-line-price" className="text-sm font-medium">
+                {t("Unit price (RSD)")} *
+              </label>
+              <Input
+                id="add-line-price"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                step={1}
+                className="w-32"
+                {...register("unitPrice")}
+              />
+            </div>
+            <p className="ml-auto pb-2 text-sm">
+              <span className="text-muted-foreground">{t("Total")}: </span>
+              <span className="font-medium tabular-nums">
+                {formatRsd((quantity ?? 0) * (unitPrice ?? 0), i18n.language)}
+              </span>
+            </p>
+          </div>
+        </form>
+      </DialogBody>
+
+      <DialogFooter>
         <Button variant="outline" onClick={onDone}>
           {t("Cancel")}
         </Button>
