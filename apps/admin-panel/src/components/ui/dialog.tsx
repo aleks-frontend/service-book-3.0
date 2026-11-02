@@ -62,9 +62,6 @@ const DialogContent = React.forwardRef<
       className={cn(
         // Dialogs cut in: a fast fade and no scale (ADR-0005). `dvh`, so a phone's address bar can't hide the footer.
         "fixed left-[50%] top-[50%] z-50 flex max-h-[90dvh] w-full max-w-lg translate-x-[-50%] translate-y-[-50%] flex-col overflow-hidden border bg-card data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 duration-[80ms] sm:rounded-lg",
-        // TODO(#55): a modal not yet moved into a `DialogBody` pads what is between its header
-        // and footer, and scrolls as one box under them.
-        "[&:not(:has(>[data-dialog-body]))]:gap-6 [&:not(:has(>[data-dialog-body]))]:overflow-y-auto [&>:not([data-dialog-header]):not([data-dialog-footer]):not([data-dialog-body])]:mx-6",
         className,
       )}
       onOpenAutoFocus={(event) => {
@@ -86,8 +83,9 @@ const DialogContent = React.forwardRef<
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
 /**
- * An ink header like the drawer's (without its yellow edge), holding the title, the
- * description and the close button. It stays put while the body scrolls.
+ * An ink header like the drawer's (without its yellow edge), holding the title, a form's
+ * description and the close button. It stays put while the body scrolls; a confirm's text
+ * goes in the `DialogBody` instead.
  */
 const DialogHeader = ({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) => {
   const { t } = useTranslation();
@@ -95,7 +93,7 @@ const DialogHeader = ({ className, children, ...props }: React.HTMLAttributes<HT
     <div
       data-dialog-header=""
       className={cn(
-        "dark sticky top-0 z-10 flex shrink-0 items-start justify-between gap-4 bg-bar py-4 pl-6 pr-4 text-foreground",
+        "dark flex shrink-0 items-start justify-between gap-4 bg-bar py-4 pl-6 pr-4 text-foreground",
         className,
       )}
       {...props}
@@ -127,7 +125,7 @@ const DialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivEleme
   <div
     data-dialog-footer=""
     className={cn(
-      "sticky bottom-0 z-10 flex shrink-0 flex-col-reverse gap-2 border-t bg-card px-6 py-4 sm:flex-row sm:justify-end",
+      "flex shrink-0 flex-col-reverse gap-2 border-t bg-card px-6 py-4 sm:flex-row sm:justify-end",
       className,
     )}
     {...props}

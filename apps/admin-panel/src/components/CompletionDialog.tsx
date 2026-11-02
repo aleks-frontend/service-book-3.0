@@ -8,6 +8,7 @@ import { LogEntryByline } from "./ServiceLog";
 import { Button } from "./ui/button";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -100,36 +101,38 @@ function CompletionForm({ service, open, onClose, onGenerate }: CompletionFormPr
             {t("What was done, as the customer reads it on the service report.")}
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-2">
-          <label htmlFor="completion-customer-report" className="text-sm font-medium">
-            {t("Customer report")}
-          </label>
-          <Textarea
-            id="completion-customer-report"
-            rows={8}
-            maxLength={CUSTOMER_REPORT_MAX}
-            value={customerReport}
-            onChange={(event) => setCustomerReport(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
-                event.preventDefault();
-                void finish("generate");
-              }
-            }}
-          />
-          {warned && isEmpty && (
-            // Yellow marks what needs action (ADR-0005): an edge, since it is never text.
-            <p
-              role="alert"
-              className="flex items-start gap-2 border-l-4 border-primary bg-muted px-3 py-2 text-sm"
-            >
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-              {t("The service report will go out without a customer report.")}
-            </p>
-          )}
-        </div>
-        <StaffNotes serviceId={service.id} />
-        <DialogFooter className="gap-2">
+        <DialogBody className="space-y-6">
+          <div className="space-y-2">
+            <label htmlFor="completion-customer-report" className="text-sm font-medium">
+              {t("Customer report")}
+            </label>
+            <Textarea
+              id="completion-customer-report"
+              rows={8}
+              maxLength={CUSTOMER_REPORT_MAX}
+              value={customerReport}
+              onChange={(event) => setCustomerReport(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+                  event.preventDefault();
+                  void finish("generate");
+                }
+              }}
+            />
+            {warned && isEmpty && (
+              // Yellow marks what needs action (ADR-0005): an edge, since it is never text.
+              <p
+                role="alert"
+                className="flex items-start gap-2 border-l-4 border-primary bg-muted px-3 py-2 text-sm"
+              >
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                {t("The service report will go out without a customer report.")}
+              </p>
+            )}
+          </div>
+          <StaffNotes serviceId={service.id} />
+        </DialogBody>
+        <DialogFooter>
           <Button variant="ghost" disabled={!!finishing} onClick={onClose}>
             {t("Skip")}
           </Button>

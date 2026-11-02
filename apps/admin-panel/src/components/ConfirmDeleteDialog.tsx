@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "./ui/button";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -42,11 +43,13 @@ export function ConfirmDeleteDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>{shown.title}</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
           <DialogDescription>
             {shown.description} {t("This cannot be undone.")}
           </DialogDescription>
-        </DialogHeader>
-        <DialogFooter className="gap-2">
+        </DialogBody>
+        <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isDeleting}>
             {t("Cancel")}
           </Button>

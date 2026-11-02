@@ -19,6 +19,7 @@ import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -115,79 +116,81 @@ export function DeviceFormDialog({
           <DialogDescription>{t("Fields marked with * are required.")}</DialogDescription>
         </DialogHeader>
 
-        <form
-          id="device-form"
-          onSubmit={handleSubmit(onSubmit)}
-          noValidate
-          autoComplete="off"
-          className="space-y-4"
-        >
-          <div className="space-y-1.5">
-            <label htmlFor="device-manufacturer" className="text-sm font-medium">
-              {t("Manufacturer")}
-            </label>
-            <Input id="device-manufacturer" {...register("manufacturer")} />
-          </div>
-
-          <div className="space-y-1.5">
-            <label htmlFor="device-model" className="text-sm font-medium">
-              {t("Model")} *
-            </label>
-            <Input
-              id="device-model"
-              aria-invalid={!!errors.model}
-              className={cn(errors.model && "border-destructive focus-visible:ring-destructive")}
-              {...register("model")}
-            />
-            {errors.model && <p className="text-sm text-destructive">{t("Enter a model")}</p>}
-          </div>
-
-          <div className="space-y-1.5">
-            <label htmlFor="device-serial-number" className="text-sm font-medium">
-              {t("Serial number")}
-            </label>
-            <Input id="device-serial-number" {...register("serialNumber")} />
-          </div>
-
-          <div className="space-y-1.5">
-            <label htmlFor="device-description" className="text-sm font-medium">
-              {t("Description")}
-            </label>
-            <Textarea id="device-description" rows={3} {...register("description")} />
-            <p className="text-sm text-muted-foreground">
-              {t("Facts about the device itself, e.g. colour or capacity.")}
-            </p>
-          </div>
-
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between gap-2">
-              <label htmlFor="device-owner" className="text-sm font-medium">
-                {t("Owner")}
+        <DialogBody>
+          <form
+            id="device-form"
+            onSubmit={handleSubmit(onSubmit)}
+            noValidate
+            autoComplete="off"
+            className="space-y-4"
+          >
+            <div className="space-y-1.5">
+              <label htmlFor="device-manufacturer" className="text-sm font-medium">
+                {t("Manufacturer")}
               </label>
-              <Button type="button" variant="link" size="xs" onClick={() => setNewOwnerName("")}>
-                <Plus className="mr-1 h-3.5 w-3.5" aria-hidden />
-                {t("New customer")}
-              </Button>
+              <Input id="device-manufacturer" {...register("manufacturer")} />
             </div>
-            <Controller
-              control={control}
-              name="ownerId"
-              render={() => (
-                <CustomerPicker
-                  id="device-owner"
-                  value={owner}
-                  onChange={changeOwner}
-                  onCreate={setNewOwnerName}
-                  placeholder={t("Search customers")}
-                  invalid={!!errors.ownerId}
-                />
-              )}
-            />
-            <p className="text-sm text-muted-foreground">
-              {t("Leave empty for a generic device.")}
-            </p>
-          </div>
-        </form>
+
+            <div className="space-y-1.5">
+              <label htmlFor="device-model" className="text-sm font-medium">
+                {t("Model")} *
+              </label>
+              <Input
+                id="device-model"
+                aria-invalid={!!errors.model}
+                className={cn(errors.model && "border-destructive focus-visible:ring-destructive")}
+                {...register("model")}
+              />
+              {errors.model && <p className="text-sm text-destructive">{t("Enter a model")}</p>}
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="device-serial-number" className="text-sm font-medium">
+                {t("Serial number")}
+              </label>
+              <Input id="device-serial-number" {...register("serialNumber")} />
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="device-description" className="text-sm font-medium">
+                {t("Description")}
+              </label>
+              <Textarea id="device-description" rows={3} {...register("description")} />
+              <p className="text-sm text-muted-foreground">
+                {t("Facts about the device itself, e.g. colour or capacity.")}
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <label htmlFor="device-owner" className="text-sm font-medium">
+                  {t("Owner")}
+                </label>
+                <Button type="button" variant="link" size="xs" onClick={() => setNewOwnerName("")}>
+                  <Plus className="mr-1 h-3.5 w-3.5" aria-hidden />
+                  {t("New customer")}
+                </Button>
+              </div>
+              <Controller
+                control={control}
+                name="ownerId"
+                render={() => (
+                  <CustomerPicker
+                    id="device-owner"
+                    value={owner}
+                    onChange={changeOwner}
+                    onCreate={setNewOwnerName}
+                    placeholder={t("Search customers")}
+                    invalid={!!errors.ownerId}
+                  />
+                )}
+              />
+              <p className="text-sm text-muted-foreground">
+                {t("Leave empty for a generic device.")}
+              </p>
+            </div>
+          </form>
+        </DialogBody>
 
         {/* Outside the form: a nested dialog's submit would otherwise bubble up to it through the React tree. */}
         <CustomerFormDialog
@@ -197,7 +200,7 @@ export function DeviceFormDialog({
           onSaved={({ id, name, phone }) => changeOwner({ id, name, phone })}
         />
 
-        <DialogFooter className="gap-2">
+        <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t("Cancel")}
           </Button>

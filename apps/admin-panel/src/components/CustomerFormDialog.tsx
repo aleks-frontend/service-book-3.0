@@ -15,6 +15,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -130,39 +131,41 @@ export function CustomerFormDialog({
           <DialogDescription>{t("Fields marked with * are required.")}</DialogDescription>
         </DialogHeader>
 
-        <form
-          id="customer-form"
-          onSubmit={handleSubmit(onSubmit)}
-          noValidate
-          autoComplete="off"
-          className="space-y-4"
-        >
-          {FIELDS.map((field) => {
-            const error = errors[field.name];
-            const id = `customer-${field.name}`;
-            return (
-              <div key={field.name} className="space-y-1.5">
-                <label htmlFor={id} className="text-sm font-medium">
-                  {t(field.label)}
-                  {"required" in field && " *"}
-                </label>
-                <Input
-                  id={id}
-                  type={"type" in field ? field.type : "text"}
-                  autoComplete={"autoComplete" in field ? field.autoComplete : undefined}
-                  aria-invalid={!!error}
-                  className={cn(error && "border-destructive focus-visible:ring-destructive")}
-                  {...register(field.name)}
-                />
-                {error && "error" in field && (
-                  <p className="text-sm text-destructive">{t(field.error)}</p>
-                )}
-              </div>
-            );
-          })}
-        </form>
+        <DialogBody>
+          <form
+            id="customer-form"
+            onSubmit={handleSubmit(onSubmit)}
+            noValidate
+            autoComplete="off"
+            className="space-y-4"
+          >
+            {FIELDS.map((field) => {
+              const error = errors[field.name];
+              const id = `customer-${field.name}`;
+              return (
+                <div key={field.name} className="space-y-1.5">
+                  <label htmlFor={id} className="text-sm font-medium">
+                    {t(field.label)}
+                    {"required" in field && " *"}
+                  </label>
+                  <Input
+                    id={id}
+                    type={"type" in field ? field.type : "text"}
+                    autoComplete={"autoComplete" in field ? field.autoComplete : undefined}
+                    aria-invalid={!!error}
+                    className={cn(error && "border-destructive focus-visible:ring-destructive")}
+                    {...register(field.name)}
+                  />
+                  {error && "error" in field && (
+                    <p className="text-sm text-destructive">{t(field.error)}</p>
+                  )}
+                </div>
+              );
+            })}
+          </form>
+        </DialogBody>
 
-        <DialogFooter className="gap-2">
+        <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t("Cancel")}
           </Button>
