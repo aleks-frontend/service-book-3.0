@@ -111,6 +111,7 @@ These are roughly in order. Each will get its own spec and tickets. Items 2 and 
 7. **Richer status workflows.**
 8. **AI polish for the customer report** *(to be grilled on Mon 2026-11-02)*: a button by the customer report that fixes a staff member's grammar and makes the text sound professional, using the AI SDK with a free Gemini model. Open questions: whether the polished text replaces the draft or is offered for review first, which languages it must handle, what happens when the free tier's limits are hit, and where the API key lives.
 9. **Add photos from the drawer's Photos strip** *(to be grilled on Mon 2026-11-02)*: a button in the service drawer's Photos strip, so that photos can be added without going to the Log tab. Open question: a photo always belongs to a staff note, so does the button post a photos-only note, or open the note composer?
+10. **Modal restyle** **(specced, #53):** every modal gets an ink header like the drawer's that stays put, a body that is the only part that scrolls, and a footer with a 1px rule that stays put. Save and Cancel stay in view on short screens. The modals stay centred boxes on phones, with no yellow edge on the header.
 
 Explicitly out of scope for now:
 - roles and permissions
