@@ -72,8 +72,10 @@ Variables on the app service:
 | `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | An R2 API token with Object Read & Write on that bucket only |
 | `SENTRY_DSN` | DSN of the backend Sentry project |
 | `VITE_SENTRY_DSN` | DSN of the admin-panel Sentry project. Inlined at build time (Docker build arg), so changing it needs a redeploy |
+| `AI_POLISH_MODEL` | The AI polish model as `provider:model`, a dated snapshot: `openai:gpt-5.4-mini-2026-03-17` ([ADR-0007](./docs/adr/0007-ai-polish-through-a-paid-provider.md)). Leave it and the key unset to keep AI polish off, with its button hidden |
+| `OPENAI_API_KEY` | A production-only key on a service account in the OpenAI `service-book` project, not the local one. The project's model allow-list (Project settings → Limits) must include that snapshot |
 
-Railway sets `PORT` itself. Don't set the `SEED_STAFF_*` variables on the service; pass them once when seeding.
+Railway sets `PORT` itself. Don't set the `SEED_STAFF_*` variables on the service; pass them once when seeding. Never set `AI_POLISH_FAKE` there: it's test-only and replaces the model with a fake.
 
 Create the first staff member from inside the running container (`railway ssh`, since the database is only reachable on Railway's private network):
 
