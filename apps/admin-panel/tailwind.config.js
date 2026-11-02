@@ -31,6 +31,10 @@ export default {
       colors: {
         bar: "hsl(var(--bar))",
         emphasis: "hsl(var(--emphasis))",
+        ai: {
+          DEFAULT: "hsl(var(--ai))",
+          tint: "hsl(var(--ai-tint))",
+        },
         status: {
           received: status("received"),
           "in-progress": status("in-progress"),

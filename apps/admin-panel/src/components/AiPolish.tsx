@@ -15,7 +15,7 @@ export function PolishButton({ polish, disabled }: { polish: AiPolish; disabled?
   return (
     <Button
       type="button"
-      variant="outline"
+      variant="ai"
       size="sm"
       disabled={disabled || !polish.canPolish}
       onClick={() => void polish.polish()}
@@ -43,7 +43,7 @@ export function PolishedBar({ polish }: { polish: AiPolish }) {
     <div role="status" className="text-sm text-muted-foreground empty:hidden">
       {polish.isPolished && (
         <p className="flex items-center gap-1.5">
-          <Sparkles className="h-4 w-4" aria-hidden />
+          <Sparkles className="h-4 w-4 text-ai" aria-hidden />
           {t("Polished by AI")}
           <span aria-hidden>·</span>
           <Button

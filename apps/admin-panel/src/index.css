@@ -35,6 +35,9 @@
     --input: 201.4 5.7% 52.2%; /* #7E878C */
     --ring: 202.5 12.5% 12.5%;
     --bar: 202.5 12.5% 12.5%; /* the header bar */
+    /* AI only: the Polish button and what it produced, never other actions. */
+    --ai: 263.4 70% 50.4%; /* #6D28D9, 7.1:1 on the surface */
+    --ai-tint: 261.4 70% 96.1%; /* #F3EEFC */
     --radius: 2px;
 
     --status-received: 209.7 49.2% 36.3%;
@@ -91,6 +94,8 @@
   /* Only the page's own theme moves the bar, not the header's dark scope. */
   :root.dark {
     --bar: 206.7 11.4% 15.5%; /* #23282C */
+    --ai: 256.4 100% 80.6%; /* #B79CFF, 6.5:1 on the surface */
+    --ai-tint: 255 16.7% 18.8%; /* #2C2838 */
   }
 }
 
