@@ -365,7 +365,7 @@ function AddLineForm({ service, isAdding, onAdd, onDone }: AddLineFormProps) {
 
   return (
     <>
-      <DialogHeader className="pr-8">
+      <DialogHeader>
         <DialogTitle>{t("Add a line")}</DialogTitle>
         <DialogDescription>
           {t("Work from the price list, or a device sold to the customer.")}

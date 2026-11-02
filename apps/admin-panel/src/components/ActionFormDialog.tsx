@@ -85,7 +85,7 @@ export function ActionFormDialog({
           setFocus("price");
         }}
       >
-        <DialogHeader className="pr-8">
+        <DialogHeader>
           <DialogTitle>{isEdit ? t("Edit action") : t("New action")}</DialogTitle>
           <DialogDescription>{t("Fields marked with * are required.")}</DialogDescription>
         </DialogHeader>
