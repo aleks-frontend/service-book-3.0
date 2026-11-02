@@ -30,6 +30,8 @@ export const e2eEnv = {
   NODE_ENV: "production",
   // The tests log in back to back, faster than Better Auth's sign-in rate limit allows.
   AUTH_RATE_LIMIT_DISABLED: "true",
+  // AI polish uses a deterministic fake instead of a real model.
+  AI_POLISH_FAKE: "true",
   // Photos go to the filesystem storage; it is never cleaned, as each run's database starts empty.
   PHOTO_STORAGE_DIR: path.join(tmpdir(), "servicebook-e2e-photos"),
 };

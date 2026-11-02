@@ -3,6 +3,7 @@ import express from "express";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./lib/auth.js";
 import { PHOTO_FILES_PATH, photoStorageFromEnv, type PhotoStorage } from "./lib/photoStorage.js";
+import { textPolisherFromEnv, type TextPolisher } from "./lib/textPolisher.js";
 import { requireAuth } from "./middleware/requireAuth.js";
 import { actionsRouter } from "./routes/actions.js";
 import { customersRouter } from "./routes/customers.js";
@@ -23,15 +24,22 @@ export type AppOptions = {
   adminPanelDir?: string;
   /** Where photos are stored. Defaults to the one the environment configures (`.env.example`). */
   photoStorage?: PhotoStorage;
+  /**
+   * What AI-polishes customer reports; null switches AI polish off. Defaults to
+   * the one the environment configures (`.env.example`).
+   */
+  textPolisher?: TextPolisher | null;
 };
 
 export function createApp({
   adminPanelDir,
   photoStorage = photoStorageFromEnv(),
+  textPolisher = textPolisherFromEnv(),
 }: AppOptions = {}) {
   const app = express();
-  // Read by the routes through `photoStorageOf(req)`.
+  // Read by the routes through `photoStorageOf(req)` and `textPolisherOf(req)`.
   app.locals.photoStorage = photoStorage;
+  app.locals.textPolisher = textPolisher;
 
   // Better Auth reads the raw request body itself, so it must be mounted
   // before express.json() consumes it.

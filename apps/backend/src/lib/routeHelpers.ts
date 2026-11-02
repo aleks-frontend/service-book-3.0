@@ -63,9 +63,14 @@ export function isForeignKeyViolation(error: unknown) {
   return cause?.code === "23503" || cause?.code === "23001";
 }
 
+/** An error with a machine-readable code the admin panel acts on or translates. */
+export function sendError(res: Response, status: number, error: string, code: string) {
+  res.status(status).json({ error, code });
+}
+
 /** 409 with a code the admin panel translates, e.g. "CUSTOMER_IN_USE". */
 export function sendConflict(res: Response, error: string, code: string) {
-  res.status(409).json({ error, code });
+  sendError(res, 409, error, code);
 }
 
 /**

@@ -9,6 +9,7 @@ import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import type {
   CursorPage,
+  CustomerReportPolish,
   DeviceService,
   LogEntry,
   Service,
@@ -218,6 +219,17 @@ export function useSaveCustomerReportMutation(serviceId: string) {
       queryClient.setQueryData(serviceKeys.detail(service.id), service);
     },
     onError: () => toast.error(t("Could not save the customer report. Please try again.")),
+  });
+}
+
+/** AI-polishes a draft customer report. Saves nothing; `useAiPolish` handles the result. */
+export function usePolishCustomerReportMutation(serviceId: string) {
+  return useMutation({
+    mutationFn: (text: string) =>
+      request<CustomerReportPolish>(`/services/${serviceId}/customer-report/polish`, {
+        method: "POST",
+        body: { text },
+      }),
   });
 }
 

@@ -90,6 +90,10 @@ _Avoid_: Intake photos, damage report
 The final customer-facing text describing what was done on a service.
 _Avoid_: Remark, note, summary, description
 
+**AI polish**:
+Rewriting a draft customer report for grammar and a professional tone with an AI model, keeping its language, script and facts (Serbian: doterivanje).
+_Avoid_: Rewrite, improve, AI fix, enhance
+
 ### Documents & identity
 
 **Intake receipt**:
