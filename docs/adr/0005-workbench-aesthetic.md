@@ -34,6 +34,7 @@ The owner picked **Workbench**. It is dense, flat and table-first, and its yello
   | Delivered   | `#5B646A` / `#FFFFFF` | `#B8C0C5` / `#1C2124` |
   | Cancelled   | `#B3261E` / `#FFFFFF` | `#F07B72` / `#2A0B08` |
 
+- **AI violet:** violet marks AI and nothing else: the Polish button (outlined, with a light tint) and the sparkles of "Polished by AI" (ADR-0007). It's `#6D28D9` on a `#F3EEFC` tint in light mode and `#B79CFF` on `#2C2838` in dark mode, at 6.2–7.1:1. It never fills a button, so yellow stays the mark of what needs action.
 - **Shape:** a 2px radius everywhere, and no shadows: depth comes from 1px rules, the ink header bar with its 4px yellow edge, and a dark scrim behind the drawer. A 4px spacing grid; 40px table rows. Cards are repair tags, with a notched end and a punched hole.
 - **Motion:** fast and mechanical. The drawer slides in from the right in 160ms with a sharp ease-out, dialogs fade in over 80ms with no scale, and a row whose status changes flashes its yellow edge once (300ms). Reduced motion turns all of it off.
 - **Logo:** a repair tag with a notched end, a punched hole and three lines, in yellow with an ink outline. It replaces lucide's `Wrench` and reads on both light and dark backgrounds. The final SVGs and favicon are #31's.
