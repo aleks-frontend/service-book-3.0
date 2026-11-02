@@ -322,5 +322,8 @@
   "Polish": "Polish",
   "Polishing…": "Polishing…",
   "Polished by AI": "Polished by AI",
-  "Undo": "Undo"
+  "Undo": "Undo",
+  "Looks good, no changes needed.": "Looks good, no changes needed.",
+  "AI polish is unavailable right now. Try again later.": "AI polish is unavailable right now. Try again later.",
+  "(daily limit reached)": "(daily limit reached)"
 }

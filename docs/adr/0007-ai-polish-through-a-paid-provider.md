@@ -18,4 +18,4 @@ Staff members write the customer report quickly, often as terse notes with typos
 - `AI_POLISH_MODEL` names a dated snapshot (e.g. `gpt-5.4-mini-2026-03-17`), never a moving alias, so behaviour only changes when the env does.
 - The OpenAI project's model allow-list (Project settings → Limits) must include that exact snapshot. Switching models means allowing the new snapshot there, re-running the prompt eval, then changing the env.
 - Adding another provider means adding its AI SDK package and an entry in the polisher's provider table, with the env var holding its key.
-- Report text is never logged; failures are logged by name only.
+- Report text is never logged; a failure is logged, and reported to Sentry, as its code (`unavailable`, `timeout`, `invalid_output`) and the provider's HTTP status only. Sentry attaches request bodies by default, so `beforeSend` drops them from events on the customer report routes.

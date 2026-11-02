@@ -72,6 +72,13 @@ export type CustomerReportPolish = { text: string; changed: boolean };
 /** Why AI polish answered with an error, as the response's `code`. */
 export type AiPolishErrorCode = "not_configured" | "unavailable" | "timeout" | "invalid_output";
 
+/**
+ * AI polish's error response: 503 `not_configured` or `unavailable`, 504 `timeout`,
+ * 502 `invalid_output`. `dailyLimit` is set on an `unavailable` when the
+ * provider's daily limit was reached.
+ */
+export type AiPolishError = { error: string; code: AiPolishErrorCode; dailyLimit?: true };
+
 export type ServiceInputValues = z.input<typeof serviceInputSchema>;
 export type ServiceInput = z.output<typeof serviceInputSchema>;
 

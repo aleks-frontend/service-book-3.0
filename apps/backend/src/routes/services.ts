@@ -1,4 +1,5 @@
 import { Router, type Response } from "express";
+import * as Sentry from "@sentry/node";
 import {
   customerReportInputSchema,
   customerReportPolishInputSchema,
@@ -7,6 +8,7 @@ import {
   serviceInputSchema,
   serviceListQuerySchema,
   statusChangeInputSchema,
+  type AiPolishError,
   type AiPolishErrorCode,
   type CursorPage,
   type Service,
@@ -24,7 +26,7 @@ import {
   storePhotosThen,
 } from "../lib/photoUploads.js";
 import { prisma } from "../lib/prisma.js";
-import { textPolisherOf } from "../lib/textPolisher.js";
+import { TextPolishError, textPolisherOf, type TextPolishFailure } from "../lib/textPolisher.js";
 import { listServiceIds } from "../lib/serviceList.js";
 import { newPublicToken, nextSequence } from "../lib/serviceNumbers.js";
 import { serviceSelect, toService } from "../lib/serviceRows.js";
@@ -227,6 +229,37 @@ servicesRouter.put("/:id/customer-report", async (req, res) => {
   }
 });
 
+const POLISH_FAILURE_STATUS: Record<TextPolishFailure, number> = {
+  unavailable: 503,
+  timeout: 504,
+  invalid_output: 502,
+};
+
+/**
+ * Answers a failed AI polish. The report text must not reach the logs or Sentry,
+ * and a provider's error may quote it, so only the failure code and the
+ * provider's status are recorded.
+ */
+function sendPolishFailure(res: Response, failure: TextPolishError) {
+  const status =
+    failure.providerStatus === undefined ? "" : ` (provider status ${failure.providerStatus})`;
+  console.error(`AI polish failed: ${failure.code}${status}`);
+  Sentry.captureMessage("AI polish failed", {
+    level: "warning",
+    tags: {
+      aiPolishFailure: failure.code,
+      ...(failure.providerStatus !== undefined && {
+        providerStatus: String(failure.providerStatus),
+      }),
+    },
+  });
+  res.status(POLISH_FAILURE_STATUS[failure.code]).json({
+    error: "AI polish failed",
+    code: failure.code,
+    ...(failure.dailyLimit && { dailyLimit: true }),
+  } satisfies AiPolishError);
+}
+
 // AI polish of the draft in the textarea, not the saved report. Saves nothing, and only
 // the text reaches the model: the service is looked up to scope the route, never sent.
 servicesRouter.post("/:id/customer-report/polish", async (req, res) => {
@@ -253,9 +286,10 @@ servicesRouter.post("/:id/customer-report/polish", async (req, res) => {
   try {
     res.json(await polisher.polish(input.text));
   } catch (error) {
-    // The report text must not reach the logs, and a provider's error may quote it.
-    console.error("AI polish failed:", error instanceof Error ? error.name : typeof error);
-    sendError(res, 503, "AI polish is unavailable", "unavailable" satisfies AiPolishErrorCode);
+    sendPolishFailure(
+      res,
+      error instanceof TextPolishError ? error : new TextPolishError("unavailable"),
+    );
   }
 });
 

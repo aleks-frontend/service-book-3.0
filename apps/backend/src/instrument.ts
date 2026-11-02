@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/node";
+import { withoutCustomerReports } from "./lib/sentryScrub.js";
 
 // Imported first in index.ts: Sentry has to register its instrumentation
 // before the modules it patches (Express, Prisma, …) are imported.
@@ -6,4 +7,5 @@ import * as Sentry from "@sentry/node";
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
   environment: process.env.NODE_ENV ?? "development",
+  beforeSend: withoutCustomerReports,
 });

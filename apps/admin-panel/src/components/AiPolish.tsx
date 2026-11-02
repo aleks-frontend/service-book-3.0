@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Loader2, Sparkles } from "lucide-react";
+import { Check, Loader2, Sparkles } from "lucide-react";
 import type { AiPolish } from "@/lib/useAiPolish";
 import { Button } from "./ui/button";
 
@@ -30,7 +30,10 @@ export function PolishButton({ polish, disabled }: { polish: AiPolish; disabled?
   );
 }
 
-/** "Polished by AI · Undo", under the textarea while the latest polish can be undone. */
+/**
+ * Under the textarea: "Polished by AI · Undo" while the latest polish can be
+ * undone, and "Looks good, no changes needed." when it found nothing to change.
+ */
 export function PolishedBar({ polish }: { polish: AiPolish }) {
   const { t } = useTranslation();
   if (!polish.enabled) return null;
@@ -52,6 +55,12 @@ export function PolishedBar({ polish }: { polish: AiPolish }) {
           >
             {t("Undo")}
           </Button>
+        </p>
+      )}
+      {polish.isUnchanged && (
+        <p className="flex items-center gap-1.5">
+          <Check className="h-4 w-4" aria-hidden />
+          {t("Looks good, no changes needed.")}
         </p>
       )}
     </div>
