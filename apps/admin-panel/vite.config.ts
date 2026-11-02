@@ -16,7 +16,9 @@ export default defineConfig({
     // Proxying keeps the API on the page's own origin in dev too, matching
     // production where Express serves this app (ADR-0001).
     proxy: {
-      "/api": "http://localhost:3001",
+      // 127.0.0.1, not localhost: Node resolves localhost to ::1 first, where another dev
+      // server can sit on the same port and answer instead of the backend.
+      "/api": "http://127.0.0.1:3001",
     },
   },
 });
