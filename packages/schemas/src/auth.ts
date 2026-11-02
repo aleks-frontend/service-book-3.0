@@ -15,3 +15,12 @@ export const staffMemberSchema = z.object({
 });
 
 export type StaffMember = z.infer<typeof staffMemberSchema>;
+
+/** What this deployment offers, switched on by its configuration. */
+export type Features = {
+  /** AI polish of the customer report: on when an AI provider key is configured. */
+  aiPolish: boolean;
+};
+
+/** `GET /api/me`: the logged-in staff member and the features they can use. */
+export type Me = StaffMember & { features: Features };

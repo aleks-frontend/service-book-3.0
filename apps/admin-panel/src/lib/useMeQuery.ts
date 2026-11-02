@@ -1,11 +1,11 @@
 import { queryOptions, useQuery } from "@tanstack/react-query";
-import type { StaffMember } from "@servicebook/schemas";
+import type { Me } from "@servicebook/schemas";
 import { request } from "./http";
 
-/** The logged-in staff member. */
+/** The logged-in staff member, and the features this deployment offers. */
 export const meQueryOptions = queryOptions({
   queryKey: ["me"],
-  queryFn: () => request<StaffMember>("/me"),
+  queryFn: () => request<Me>("/me"),
 });
 
 export function useMeQuery() {

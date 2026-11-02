@@ -1,10 +1,11 @@
 import { Router } from "express";
-import type { StaffMember } from "@servicebook/schemas";
+import type { Me } from "@servicebook/schemas";
+import { textPolisherOf } from "../lib/textPolisher.js";
 
 export const meRouter = Router();
 
 meRouter.get("/", (req, res) => {
   const { id, name, email } = req.user!;
-  const staffMember: StaffMember = { id, name, email };
-  res.json(staffMember);
+  const me: Me = { id, name, email, features: { aiPolish: textPolisherOf(req) !== null } };
+  res.json(me);
 });

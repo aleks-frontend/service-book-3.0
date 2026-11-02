@@ -318,5 +318,9 @@
   "Could not copy the public link.": "Kopiranje javnog linka nije uspelo.",
   "Condition at intake": "Stanje pri prijemu",
   "Intake note": "Beleška o stanju pri prijemu",
-  "Scratches, cracks, dents… or add photos. Saved as the first note in the log.": "Ogrebotine, pukotine, udubljenja… ili dodajte fotografije. Čuva se kao prva beleška u dnevniku."
+  "Scratches, cracks, dents… or add photos. Saved as the first note in the log.": "Ogrebotine, pukotine, udubljenja… ili dodajte fotografije. Čuva se kao prva beleška u dnevniku.",
+  "Polish": "Doteraj",
+  "Polishing…": "Doterujem…",
+  "Polished by AI": "Doterano uz AI",
+  "Undo": "Poništi"
 }

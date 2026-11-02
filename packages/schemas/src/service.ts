@@ -56,6 +56,22 @@ export const customerReportInputSchema = z.object({
 
 export type CustomerReportInput = z.output<typeof customerReportInputSchema>;
 
+/**
+ * `POST /api/services/:id/customer-report/polish`: the draft to AI-polish, which is
+ * the text in the textarea, not the saved report.
+ */
+export const customerReportPolishInputSchema = z.object({
+  text: z.string().trim().min(1).max(CUSTOMER_REPORT_MAX),
+});
+
+export type CustomerReportPolishInput = z.output<typeof customerReportPolishInputSchema>;
+
+/** The polished draft; `changed` is false when it reads the same as the one sent. */
+export type CustomerReportPolish = { text: string; changed: boolean };
+
+/** Why AI polish answered with an error, as the response's `code`. */
+export type AiPolishErrorCode = "not_configured" | "unavailable" | "timeout" | "invalid_output";
+
 export type ServiceInputValues = z.input<typeof serviceInputSchema>;
 export type ServiceInput = z.output<typeof serviceInputSchema>;
 

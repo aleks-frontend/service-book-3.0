@@ -1,11 +1,13 @@
 import { Router, type Response } from "express";
 import {
   customerReportInputSchema,
+  customerReportPolishInputSchema,
   plainDateToUtc,
   serviceCreateInputSchema,
   serviceInputSchema,
   serviceListQuerySchema,
   statusChangeInputSchema,
+  type AiPolishErrorCode,
   type CursorPage,
   type Service,
   type ServiceDetail,
@@ -22,6 +24,7 @@ import {
   storePhotosThen,
 } from "../lib/photoUploads.js";
 import { prisma } from "../lib/prisma.js";
+import { textPolisherOf } from "../lib/textPolisher.js";
 import { listServiceIds } from "../lib/serviceList.js";
 import { newPublicToken, nextSequence } from "../lib/serviceNumbers.js";
 import { serviceSelect, toService } from "../lib/serviceRows.js";
@@ -30,6 +33,7 @@ import {
   isForeignKeyViolation,
   isNotFound,
   parseBody,
+  sendError,
   sendFieldError,
   sendNotFound,
 } from "../lib/routeHelpers.js";
@@ -220,6 +224,38 @@ servicesRouter.put("/:id/customer-report", async (req, res) => {
   } catch (error) {
     if (!isNotFound(error)) throw error;
     sendNotFound(res, LABEL);
+  }
+});
+
+// AI polish of the draft in the textarea, not the saved report. Saves nothing, and only
+// the text reaches the model: the service is looked up to scope the route, never sent.
+servicesRouter.post("/:id/customer-report/polish", async (req, res) => {
+  const id = idParam(req, res, LABEL);
+  if (!id) return;
+  const polisher = textPolisherOf(req);
+  if (!polisher) {
+    sendError(
+      res,
+      503,
+      "AI polish is not configured",
+      "not_configured" satisfies AiPolishErrorCode,
+    );
+    return;
+  }
+  const input = parseBody(customerReportPolishInputSchema, req, res, LABEL);
+  if (!input) return;
+  const service = await prisma.service.findUnique({ where: { id }, select: { id: true } });
+  if (!service) {
+    sendNotFound(res, LABEL);
+    return;
+  }
+
+  try {
+    res.json(await polisher.polish(input.text));
+  } catch (error) {
+    // The report text must not reach the logs, and a provider's error may quote it.
+    console.error("AI polish failed:", error instanceof Error ? error.name : typeof error);
+    sendError(res, 503, "AI polish is unavailable", "unavailable" satisfies AiPolishErrorCode);
   }
 });
 
