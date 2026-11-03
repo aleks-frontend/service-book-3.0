@@ -465,9 +465,12 @@ async function postPhotoNote(page: Page, serviceId: string, text: string | null,
 
 test("photos open in a lightbox from a note and from the Photos strip", async ({ page }) => {
   const { drawer, serviceId } = await openServiceLog(page, "Milan Milić");
-  const strip = drawer.getByRole("region", { name: "Fotografije" });
-  // No photos: the strip is there to add some, with no thumbnails.
+  // The photos are a row of the service's details.
+  const strip = drawer.getByRole("region", { name: "Detalji servisa" });
+  await expect(strip.getByRole("term").filter({ hasText: "Fotografije" })).toBeVisible();
+  // No photos: the row says so, and offers to add some.
   await expect(drawer.getByTestId("log-entry")).toHaveCount(0);
+  await expect(strip.getByText("Nema fotografija")).toBeVisible();
   await expect(strip.getByRole("button", { name: "Dodaj fotografije" })).toBeVisible();
   await expect(strip.getByRole("img")).toHaveCount(0);
 
@@ -486,6 +489,7 @@ test("photos open in a lightbox from a note and from the Photos strip", async ({
     entry.photos.map((photo) => `/api/photos/${photo.id}/thumb`),
   );
   await expect(strip.getByRole("img")).toHaveCount(3);
+  await expect(strip.getByText("Nema fotografija")).toHaveCount(0);
   expect(
     await strip.getByRole("img").evaluateAll((imgs) => imgs.map((img) => img.getAttribute("src"))),
   ).toEqual(oldestFirst);
@@ -522,7 +526,7 @@ async function pickFromStrip(page: Page, drawer: Locator) {
   const [chooser] = await Promise.all([
     page.waitForEvent("filechooser"),
     drawer
-      .getByRole("region", { name: "Fotografije" })
+      .getByRole("region", { name: "Detalji servisa" })
       .getByRole("button", { name: "Dodaj fotografije" })
       .click(),
   ]);
@@ -535,7 +539,7 @@ test("a staff member adds photos from the Photos strip, shrunk before upload, an
   const { drawer, serviceId } = await openServiceLog(page, "Tamara Tomić");
   const details = drawer.getByRole("tab", { name: "Detalji" });
   await details.click();
-  const strip = drawer.getByRole("region", { name: "Fotografije" });
+  const strip = drawer.getByRole("region", { name: "Detalji servisa" });
   const dialog = page.getByRole("dialog", { name: "Dodaj fotografije" });
   const picked = dialog.getByRole("list", { name: "Izabrane fotografije" }).getByRole("img");
   const caption = dialog.getByLabel("Beleška");
@@ -592,7 +596,7 @@ test("the Add photos dialog holds no more than 10 photos, and keeps them through
   page,
 }) => {
   const { drawer } = await openServiceLog(page, "Stefan Stević");
-  const strip = drawer.getByRole("region", { name: "Fotografije" });
+  const strip = drawer.getByRole("region", { name: "Detalji servisa" });
   const dialog = page.getByRole("dialog", { name: "Dodaj fotografije" });
   const composer = dialog.getByTestId("note-composer");
   const picked = composer.getByRole("list", { name: "Izabrane fotografije" }).getByRole("img");
@@ -642,7 +646,7 @@ test("closing the Add photos dialog with photos or text in it asks before discar
   page,
 }) => {
   const { drawer, serviceId } = await openServiceLog(page, "Milica Milić");
-  const strip = drawer.getByRole("region", { name: "Fotografije" });
+  const strip = drawer.getByRole("region", { name: "Detalji servisa" });
   const dialog = page.getByRole("dialog", { name: "Dodaj fotografije" });
   const composer = dialog.getByTestId("note-composer");
   const picked = composer.getByRole("list", { name: "Izabrane fotografije" }).getByRole("img");
@@ -708,7 +712,7 @@ test("closing the Add photos dialog with photos or text in it asks before discar
 
 test("the Add photos dialog can't be closed while its note is saving", async ({ page }) => {
   const { drawer } = await openServiceLog(page, "Bojan Bojić");
-  const strip = drawer.getByRole("region", { name: "Fotografije" });
+  const strip = drawer.getByRole("region", { name: "Detalji servisa" });
   const dialog = page.getByRole("dialog", { name: "Dodaj fotografije" });
   const confirm = page.getByRole("dialog", { name: "Odbaciti ove fotografije?" });
 
@@ -748,7 +752,7 @@ test("a staff member deletes photos from a note's thumbnails and from the lightb
   await drawer.getByRole("tab", { name: "Dnevnik rada" }).click();
 
   const entries = drawer.getByTestId("log-entry");
-  const strip = drawer.getByRole("region", { name: "Fotografije" });
+  const strip = drawer.getByRole("region", { name: "Detalji servisa" });
   const confirm = page.getByRole("dialog", { name: "Obrisati fotografiju?" });
   const lightbox = page.getByRole("dialog", { name: "Pregled fotografija" });
   await expect(strip.getByRole("img")).toHaveCount(3);
@@ -871,7 +875,9 @@ test("a staff member registers a service with photos of its condition at intake,
 
   await page.goto(`/services?service=${service.id}`);
   const drawer = page.getByRole("dialog", { name: `Servis ${service.number}` });
-  await expect(drawer.getByRole("region", { name: "Fotografije" }).getByRole("img")).toHaveCount(3);
+  await expect(
+    drawer.getByRole("region", { name: "Detalji servisa" }).getByRole("img"),
+  ).toHaveCount(3);
   await drawer.getByRole("tab", { name: "Dnevnik rada" }).click();
   const entries = drawer.getByTestId("log-entry");
   await expect(entries).toHaveCount(1);

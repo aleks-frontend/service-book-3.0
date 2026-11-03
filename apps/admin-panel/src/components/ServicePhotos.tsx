@@ -1,19 +1,19 @@
-import { useId, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Camera } from "lucide-react";
 import { useServiceLogQuery } from "@/lib/services";
 import { AddPhotosDialog } from "./AddPhotosDialog";
+import { DrawerSummaryRow } from "./EntityDrawer";
 import { PhotoThumbnails } from "./PhotoThumbnails";
 import { Button } from "./ui/button";
 
 /**
- * Every photo in a service's log, oldest first, near the top of its drawer, under a
- * header whose "Add photos" button picks more and adds them as a note. Nothing until the
- * log has loaded; a log that fails to load says so on the Log tab.
+ * Every photo in a service's log, oldest first, as a row of its drawer's summary, with an
+ * "Add photos" button that picks more and adds them as a note. Nothing until the log has
+ * loaded; a log that fails to load says so on the Log tab.
  */
 export function ServicePhotos({ serviceId }: { serviceId: string }) {
   const { t } = useTranslation();
-  const headingId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [pickedPhotos, setPickedPhotos] = useState<File[] | null>(null);
   const { data: entries } = useServiceLogQuery(serviceId);
@@ -21,13 +21,22 @@ export function ServicePhotos({ serviceId }: { serviceId: string }) {
   const photos = entries.flatMap((entry) => entry.photos);
 
   return (
-    <section className="space-y-2" aria-labelledby={headingId}>
-      <div className="flex items-center justify-between gap-2">
-        <h3 id={headingId} className="text-sm font-semibold">
-          {t("Photos")}
-        </h3>
+    <DrawerSummaryRow label={t("Photos")}>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        {photos.length > 0 ? (
+          <PhotoThumbnails serviceId={serviceId} photos={photos} />
+        ) : (
+          <span className="text-muted-foreground">{t("No photos")}</span>
+        )}
         {/* Clicked in the button's own handler: browsers only open a file picker during a user gesture. */}
-        <Button type="button" variant="link" size="xs" onClick={() => inputRef.current?.click()}>
+        {/* No height or padding of its own, so the row is as tall as its neighbours and the button lines up with the text. */}
+        <Button
+          type="button"
+          variant="link"
+          size="xs"
+          className="h-auto px-0"
+          onClick={() => inputRef.current?.click()}
+        >
           <Camera className="mr-1 h-3.5 w-3.5" aria-hidden />
           {t("Add photos")}
         </Button>
@@ -46,7 +55,6 @@ export function ServicePhotos({ serviceId }: { serviceId: string }) {
           }}
         />
       </div>
-      {photos.length > 0 && <PhotoThumbnails serviceId={serviceId} photos={photos} />}
       {pickedPhotos && (
         <AddPhotosDialog
           serviceId={serviceId}
@@ -54,6 +62,6 @@ export function ServicePhotos({ serviceId }: { serviceId: string }) {
           onClose={() => setPickedPhotos(null)}
         />
       )}
-    </section>
+    </DrawerSummaryRow>
   );
 }

@@ -89,7 +89,6 @@ export function ServiceDrawer({ serviceId, place, onOpen }: ServiceDrawerProps) 
         {(service) => (
           <>
             <ServiceSummary service={service} onOpen={onOpen} />
-            <ServicePhotos serviceId={service.id} />
             <Tabs defaultValue="details">
               <TabsList>
                 <TabsTrigger value="details">{t("Details")}</TabsTrigger>
@@ -160,7 +159,7 @@ function PrintMenu({ service }: { service: ServiceDetail }) {
   );
 }
 
-/** The customer, devices, date, description and public link at a glance; the first four are changed in the edit modal. */
+/** The customer, devices, date, description, public link and photos at a glance; the first four are changed in the edit modal. */
 function ServiceSummary({ service, onOpen }: { service: ServiceDetail; onOpen: OpenDrawer }) {
   const { t, i18n } = useTranslation();
 
@@ -198,6 +197,7 @@ function ServiceSummary({ service, onOpen }: { service: ServiceDetail; onOpen: O
       <DrawerSummaryRow label={t("Public link")}>
         <PublicLink publicToken={service.publicToken} />
       </DrawerSummaryRow>
+      <ServicePhotos serviceId={service.id} />
     </DrawerSummary>
   );
 }
