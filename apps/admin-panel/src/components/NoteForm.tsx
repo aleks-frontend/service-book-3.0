@@ -26,6 +26,11 @@ type NoteFormProps = {
   autoFocus?: boolean;
   /** Called once the note is added and the form cleared. */
   onSaved?: () => void;
+  /**
+   * Called whenever the form gains or loses something to add (text, or photos picked or
+   * being shrunk) and when a save starts or ends, e.g. to ask before closing a dialog.
+   */
+  onDraftChange?: (draft: { hasDraft: boolean; saving: boolean }) => void;
   /** The form's classes, e.g. to fill a dialog. */
   className?: string;
   /**
@@ -45,6 +50,7 @@ export function NoteForm({
   initialPhotos,
   autoFocus,
   onSaved,
+  onDraftChange,
   className,
   children = ({ composer, addButton }) => (
     <>
@@ -73,6 +79,14 @@ export function NoteForm({
   });
   const hasContent = (watch("text") ?? "").trim() !== "" || picker.photos.length > 0;
   const canAdd = hasContent && !picker.processing && !addNote.isPending;
+
+  const hasDraft = hasContent || picker.processing;
+  // Read through a ref, so a callback written inline doesn't run on every render.
+  const onDraftChangeRef = useRef(onDraftChange);
+  onDraftChangeRef.current = onDraftChange;
+  useEffect(() => {
+    onDraftChangeRef.current?.({ hasDraft, saving: addNote.isPending });
+  }, [hasDraft, addNote.isPending]);
 
   // Added once, even when Strict Mode runs effects twice.
   const initialPhotosAdded = useRef(false);
