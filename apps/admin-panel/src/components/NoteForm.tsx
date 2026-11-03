@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "react-i18next";
@@ -11,6 +11,7 @@ import {
 } from "@servicebook/schemas";
 import { useAddNoteMutation } from "@/lib/services";
 import { usePhotoPicker } from "@/lib/usePhotoPicker";
+import { cn } from "@/lib/utils";
 import { NoteComposer } from "./NoteComposer";
 import { Button } from "./ui/button";
 
@@ -25,6 +26,13 @@ type NoteFormProps = {
   autoFocus?: boolean;
   /** Called once the note is added and the form cleared. */
   onSaved?: () => void;
+  /** The form's classes, e.g. to fill a dialog. */
+  className?: string;
+  /**
+   * Lays out the composer and the "Add note" button, e.g. to put the button in a dialog's
+   * footer; by default the button sits under the composer, on the right.
+   */
+  children?: (parts: { composer: ReactNode; addButton: ReactNode }) => ReactNode;
 };
 
 /**
@@ -37,6 +45,13 @@ export function NoteForm({
   initialPhotos,
   autoFocus,
   onSaved,
+  className,
+  children = ({ composer, addButton }) => (
+    <>
+      {composer}
+      <div className="flex justify-end">{addButton}</div>
+    </>
+  ),
 }: NoteFormProps) {
   const { t } = useTranslation();
   const id = useId();
@@ -82,8 +97,8 @@ export function NoteForm({
     );
   });
 
-  return (
-    <form className="space-y-2" onSubmit={submit}>
+  const composer = (
+    <>
       <label htmlFor={`${id}-note`} className="sr-only">
         {t("Note")}
       </label>
@@ -106,12 +121,18 @@ export function NoteForm({
         photosId={`${id}-photos`}
         disabled={addNote.isPending}
       />
-      <div className="flex justify-end">
-        <Button type="submit" size="sm" disabled={!canAdd}>
-          {addNote.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
-          {t("Add note")}
-        </Button>
-      </div>
+    </>
+  );
+  const addButton = (
+    <Button type="submit" size="sm" disabled={!canAdd}>
+      {addNote.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
+      {t("Add note")}
+    </Button>
+  );
+
+  return (
+    <form className={cn("space-y-2", className)} onSubmit={submit}>
+      {children({ composer, addButton })}
     </form>
   );
 }

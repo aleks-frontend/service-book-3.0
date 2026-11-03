@@ -466,9 +466,10 @@ async function postPhotoNote(page: Page, serviceId: string, text: string | null,
 test("photos open in a lightbox from a note and from the Photos strip", async ({ page }) => {
   const { drawer, serviceId } = await openServiceLog(page, "Milan Milić");
   const strip = drawer.getByRole("region", { name: "Fotografije" });
-  // No photos, no strip.
+  // No photos: the strip is there to add some, with no thumbnails.
   await expect(drawer.getByTestId("log-entry")).toHaveCount(0);
-  await expect(strip).toHaveCount(0);
+  await expect(strip.getByRole("button", { name: "Dodaj fotografije" })).toBeVisible();
+  await expect(strip.getByRole("img")).toHaveCount(0);
 
   await postPhotoNote(page, serviceId, "Prijem", 2);
   await postPhotoNote(page, serviceId, "Posle popravke", 1);
@@ -514,6 +515,127 @@ test("photos open in a lightbox from a note and from the Photos strip", async ({
   await lightbox.getByRole("button", { name: "Zatvori" }).click();
   await expect(lightbox).toBeHidden();
   await expect(drawer).toBeVisible();
+});
+
+/** Presses the Photos strip's "Add photos" button and returns the file picker it opens. */
+async function pickFromStrip(page: Page, drawer: Locator) {
+  const [chooser] = await Promise.all([
+    page.waitForEvent("filechooser"),
+    drawer
+      .getByRole("region", { name: "Fotografije" })
+      .getByRole("button", { name: "Dodaj fotografije" })
+      .click(),
+  ]);
+  return chooser;
+}
+
+test("a staff member adds photos from the Photos strip, shrunk before upload, and stays on their tab", async ({
+  page,
+}) => {
+  const { drawer, serviceId } = await openServiceLog(page, "Tamara Tomić");
+  const details = drawer.getByRole("tab", { name: "Detalji" });
+  await details.click();
+  const strip = drawer.getByRole("region", { name: "Fotografije" });
+  const dialog = page.getByRole("dialog", { name: "Dodaj fotografije" });
+  const picked = dialog.getByRole("list", { name: "Izabrane fotografije" }).getByRole("img");
+  const caption = dialog.getByLabel("Beleška");
+  await expect(strip.getByRole("img")).toHaveCount(0);
+
+  // The picker opens straight away, for several photos; cancelling it opens nothing.
+  const cancelled = await pickFromStrip(page, drawer);
+  expect(cancelled.isMultiple()).toBe(true);
+  expect(await cancelled.element().getAttribute("accept")).toBe("image/*");
+  await expect(dialog).toHaveCount(0);
+
+  // The chosen photos are already in the dialog, counted, with the cursor in the caption.
+  await (
+    await pickFromStrip(page, drawer)
+  ).setFiles([image("large.jpg", "image/jpeg"), image("photo.webp", "image/webp")]);
+  await expect(dialog).toBeVisible();
+  await expect(picked).toHaveCount(2);
+  await expect(dialog.getByText("2/10")).toBeVisible();
+  await expect(caption).toBeFocused();
+  await expect(caption).toHaveAttribute("placeholder", "Šta fotografije prikazuju? (neobavezno)");
+
+  await caption.fill("Stanje pre popravke");
+  await dialog.getByRole("button", { name: "Dodaj belešku" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(strip.getByRole("img")).toHaveCount(2);
+  // No toast, and the drawer stays on the tab it was on.
+  await expect(page.getByRole("status")).toHaveCount(0);
+  await expect(details).toHaveAttribute("aria-selected", "true");
+
+  // Without a caption the note is photos only.
+  await (await pickFromStrip(page, drawer)).setFiles([image("photo.jpg", "image/jpeg")]);
+  await expect(picked).toHaveCount(1);
+  await dialog.getByRole("button", { name: "Dodaj belešku" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(strip.getByRole("img")).toHaveCount(3);
+
+  // Both are ordinary notes in the Work log, the 4000 × 3000 fixture shrunk to 2048 px on its long edge.
+  const log = await (await page.request.get(`/api/services/${serviceId}/log`)).json();
+  expect(log.map((entry: { text: string | null }) => entry.text)).toEqual([
+    "Stanje pre popravke",
+    null,
+  ]);
+  expect(log[0].photos[0]).toEqual({ id: expect.any(String), width: 2048, height: 1536 });
+  await drawer.getByRole("tab", { name: "Dnevnik rada" }).click();
+  const entries = drawer.getByTestId("log-entry");
+  await expect(entries).toHaveCount(2);
+  await expect(entries.first()).toContainText("Stanje pre popravke");
+  await expect(entries.first()).toContainText("E2E Staff");
+  await expect(entries.first().getByRole("img")).toHaveCount(2);
+  await expect(entries.nth(1).getByRole("img")).toHaveCount(1);
+});
+
+test("the Add photos dialog holds no more than 10 photos, and keeps them through a failed save", async ({
+  page,
+}) => {
+  const { drawer } = await openServiceLog(page, "Stefan Stević");
+  const strip = drawer.getByRole("region", { name: "Fotografije" });
+  const dialog = page.getByRole("dialog", { name: "Dodaj fotografije" });
+  const composer = dialog.getByTestId("note-composer");
+  const picked = composer.getByRole("list", { name: "Izabrane fotografije" }).getByRole("img");
+
+  await (
+    await pickFromStrip(page, drawer)
+  ).setFiles(
+    Array.from({ length: 11 }, (_, n) => image("photo.jpg", "image/jpeg", `photo-${n + 1}.jpg`)),
+  );
+  await expect(page.getByText("Beleška može imati najviše 10 fotografija.")).toBeVisible();
+  await expect(picked).toHaveCount(10);
+  await expect(composer.getByText("10/10")).toBeVisible();
+  await expect(composer.getByRole("button", { name: "Fotografije", exact: true })).toBeDisabled();
+
+  // One removed makes room for one pasted.
+  await composer.getByRole("button", { name: "Ukloni: photo-1.jpg" }).click();
+  await expect(composer.getByText("9/10")).toBeVisible();
+  await paste(composer.getByLabel("Beleška"), [image("photo.webp", "image/webp")]);
+  await expect(composer.getByText("10/10")).toBeVisible();
+  await composer.getByLabel("Beleška").fill("Kućište");
+
+  // The first save fails: the dialog keeps its photos and caption.
+  await page.route(
+    "**/api/services/*/log",
+    (route) =>
+      route.request().method() === "POST"
+        ? route.fulfill({ status: 500, json: { error: "Internal server error" } })
+        : route.fallback(),
+    { times: 1 },
+  );
+  const add = dialog.getByRole("button", { name: "Dodaj belešku" });
+  await add.click();
+  await expect(page.getByText("Dodavanje beleške nije uspelo. Pokušajte ponovo.")).toBeVisible();
+  await expect(dialog).toBeVisible();
+  await expect(picked).toHaveCount(10);
+  await expect(composer.getByLabel("Beleška")).toHaveValue("Kućište");
+
+  await add.click();
+  await expect(dialog).toBeHidden();
+  await expect(strip.getByRole("img")).toHaveCount(10);
+  const entries = drawer.getByTestId("log-entry");
+  await expect(entries).toHaveCount(1);
+  await expect(entries.first()).toContainText("Kućište");
 });
 
 test("a staff member deletes photos from a note's thumbnails and from the lightbox", async ({
