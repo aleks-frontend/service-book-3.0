@@ -1,21 +1,11 @@
-import { useForm, type Resolver } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "react-i18next";
 import { ArrowRight, Loader2 } from "lucide-react";
-import {
-  LOG_NOTE_MAX,
-  logNoteInputSchema,
-  type LogEntry,
-  type LogNoteInput,
-  type LogNoteInputValues,
-} from "@servicebook/schemas";
+import type { LogEntry } from "@servicebook/schemas";
 import { formatDateTime } from "@/lib/format";
-import { useAddNoteMutation, useServiceLogQuery } from "@/lib/services";
-import { usePhotoPicker } from "@/lib/usePhotoPicker";
-import { NoteComposer } from "./NoteComposer";
+import { useServiceLogQuery } from "@/lib/services";
+import { NoteForm } from "./NoteForm";
 import { PhotoThumbnails } from "./PhotoThumbnails";
 import { StatusBadge } from "./StatusBadge";
-import { Button } from "./ui/button";
 
 /**
  * A service's internal log: staff notes, status changes and imported remarks,
@@ -43,7 +33,7 @@ export function ServiceLog({ serviceId }: { serviceId: string }) {
           ))}
         </ol>
       )}
-      <NoteForm serviceId={serviceId} />
+      <NoteForm serviceId={serviceId} placeholder={t("Add an internal note or photos…")} />
     </section>
   );
 }
@@ -88,73 +78,5 @@ export function LogEntryByline({ entry }: { entry: LogEntry }) {
         {formatDateTime(entry.createdAt, i18n.language)}
       </time>
     </div>
-  );
-}
-
-/** A new note with text, photos or both; Ctrl+Enter (⌘+Enter) adds it too. */
-function NoteForm({ serviceId }: { serviceId: string }) {
-  const { t } = useTranslation();
-  const addNote = useAddNoteMutation(serviceId);
-  const picker = usePhotoPicker();
-  const { register, handleSubmit, reset, watch } = useForm<
-    LogNoteInputValues,
-    unknown,
-    LogNoteInput
-  >({
-    // zodResolver submits the schema's parsed output (blank text as null), but
-    // @hookform/resolvers v3 only types it as the input.
-    resolver: zodResolver(logNoteInputSchema) as Resolver<
-      LogNoteInputValues,
-      unknown,
-      LogNoteInput
-    >,
-    defaultValues: { text: "" },
-  });
-  const hasContent = (watch("text") ?? "").trim() !== "" || picker.photos.length > 0;
-  const canAdd = hasContent && !picker.processing && !addNote.isPending;
-
-  const submit = handleSubmit(({ text }) => {
-    if (!canAdd) return;
-    addNote.mutate(
-      { text, photos: picker.photos },
-      {
-        onSuccess: () => {
-          reset();
-          picker.clear();
-        },
-      },
-    );
-  });
-
-  return (
-    <form className="space-y-2" onSubmit={submit}>
-      <label htmlFor="log-note" className="sr-only">
-        {t("Note")}
-      </label>
-      <NoteComposer
-        textarea={{
-          id: "log-note",
-          rows: 3,
-          maxLength: LOG_NOTE_MAX,
-          placeholder: t("Add an internal note or photos…"),
-          onKeyDown: (event) => {
-            if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
-              event.preventDefault();
-              void submit();
-            }
-          },
-          ...register("text"),
-        }}
-        picker={picker}
-        photosId="log-photos"
-        disabled={addNote.isPending}
-      />
-      <div className="flex justify-end">
-        <Button type="submit" size="sm" disabled={!canAdd}>
-          {addNote.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
-          {t("Add note")}
-        </Button>
-      </div>
-    </form>
   );
 }
