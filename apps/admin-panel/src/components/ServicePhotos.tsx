@@ -9,8 +9,9 @@ import { Button } from "./ui/button";
 
 /**
  * Every photo in a service's log, oldest first, as a row of its drawer's summary, with an
- * "Add photos" button that picks more and adds them as a note. Nothing until the log has
- * loaded; a log that fails to load says so on the Log tab.
+ * "Add photos" button that picks more and adds them as a note. With none, the whole row
+ * is a dashed box that picks them. Nothing until the log has loaded; a log that fails to
+ * load says so on the Log tab.
  */
 export function ServicePhotos({ serviceId }: { serviceId: string }) {
   const { t } = useTranslation();
@@ -20,41 +21,48 @@ export function ServicePhotos({ serviceId }: { serviceId: string }) {
   if (!entries) return null;
   const photos = entries.flatMap((entry) => entry.photos);
 
+  // Called from the buttons' own click handlers: browsers only open a file picker during a user gesture.
+  const pick = () => inputRef.current?.click();
+
   return (
     <DrawerSummaryRow label={t("Photos")}>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        {photos.length > 0 ? (
+      {photos.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <PhotoThumbnails serviceId={serviceId} photos={photos} />
-        ) : (
-          <span className="text-muted-foreground">{t("No photos")}</span>
-        )}
-        {/* Clicked in the button's own handler: browsers only open a file picker during a user gesture. */}
-        {/* No height or padding of its own, so the row is as tall as its neighbours and the button lines up with the text. */}
-        <Button
+          {/* No height or padding of its own, so the row is as tall as its neighbours and the button lines up with the text. */}
+          <Button type="button" variant="link" size="xs" className="h-auto px-0" onClick={pick}>
+            <Camera className="mr-1 h-3.5 w-3.5" aria-hidden />
+            {t("Add photos")}
+          </Button>
+        </div>
+      ) : (
+        <button
           type="button"
-          variant="link"
-          size="xs"
-          className="h-auto px-0"
-          onClick={() => inputRef.current?.click()}
+          aria-label={t("Add photos")}
+          className="flex w-full items-center justify-center gap-2 rounded-md border border-dashed bg-card px-3 py-3 text-sm hover:border-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
+          onClick={pick}
         >
-          <Camera className="mr-1 h-3.5 w-3.5" aria-hidden />
-          {t("Add photos")}
-        </Button>
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          multiple
-          aria-label={t("Photos to add")}
-          className="sr-only"
-          onChange={(event) => {
-            const files = [...(event.target.files ?? [])];
-            // Picking the same file again should still count as a change.
-            event.target.value = "";
-            if (files.length > 0) setPickedPhotos(files);
-          }}
-        />
-      </div>
+          <Camera className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+          <span>
+            <span className="font-semibold">{t("Add photos")}</span>{" "}
+            <span className="text-muted-foreground">{t("or drag here")}</span>
+          </span>
+        </button>
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        aria-label={t("Photos to add")}
+        className="sr-only"
+        onChange={(event) => {
+          const files = [...(event.target.files ?? [])];
+          // Picking the same file again should still count as a change.
+          event.target.value = "";
+          if (files.length > 0) setPickedPhotos(files);
+        }}
+      />
       {pickedPhotos && (
         <AddPhotosDialog
           serviceId={serviceId}

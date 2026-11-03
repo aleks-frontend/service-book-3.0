@@ -468,11 +468,18 @@ test("photos open in a lightbox from a note and from the Photos strip", async ({
   // The photos are a row of the service's details.
   const strip = drawer.getByRole("region", { name: "Detalji servisa" });
   await expect(strip.getByRole("term").filter({ hasText: "Fotografije" })).toBeVisible();
-  // No photos: the row says so, and offers to add some.
+  // No photos: the row is one box inviting to add some, named for what it does.
   await expect(drawer.getByTestId("log-entry")).toHaveCount(0);
-  await expect(strip.getByText("Nema fotografija")).toBeVisible();
-  await expect(strip.getByRole("button", { name: "Dodaj fotografije" })).toBeVisible();
+  const emptyBox = strip.getByRole("button", { name: "Dodaj fotografije", exact: true });
+  await expect(emptyBox).toBeVisible();
+  await expect(emptyBox).toContainText("Dodaj fotografije");
+  await expect(emptyBox).toContainText("ili prevuci ovde");
+  await expect(strip.getByRole("button", { name: "Dodaj fotografije" })).toHaveCount(1);
   await expect(strip.getByRole("img")).toHaveCount(0);
+  // Reachable with Tab, from the row above it.
+  await strip.getByRole("button", { name: "Kopiraj javni link" }).focus();
+  await page.keyboard.press("Tab");
+  await expect(emptyBox).toBeFocused();
 
   await postPhotoNote(page, serviceId, "Prijem", 2);
   await postPhotoNote(page, serviceId, "Posle popravke", 1);
@@ -489,7 +496,7 @@ test("photos open in a lightbox from a note and from the Photos strip", async ({
     entry.photos.map((photo) => `/api/photos/${photo.id}/thumb`),
   );
   await expect(strip.getByRole("img")).toHaveCount(3);
-  await expect(strip.getByText("Nema fotografija")).toHaveCount(0);
+  await expect(strip.getByText("ili prevuci ovde")).toHaveCount(0);
   expect(
     await strip.getByRole("img").evaluateAll((imgs) => imgs.map((img) => img.getAttribute("src"))),
   ).toEqual(oldestFirst);
@@ -544,6 +551,10 @@ test("a staff member adds photos from the Photos strip, shrunk before upload, an
   const picked = dialog.getByRole("list", { name: "Izabrane fotografije" }).getByRole("img");
   const caption = dialog.getByLabel("Beleška");
   await expect(strip.getByRole("img")).toHaveCount(0);
+  // With no photos yet, the first picks go through the empty box.
+  await expect(strip.getByRole("button", { name: "Dodaj fotografije" })).toContainText(
+    "ili prevuci ovde",
+  );
 
   // The picker opens straight away, for several photos; cancelling it opens nothing.
   const cancelled = await pickFromStrip(page, drawer);
@@ -565,6 +576,7 @@ test("a staff member adds photos from the Photos strip, shrunk before upload, an
   await dialog.getByRole("button", { name: "Dodaj belešku" }).click();
   await expect(dialog).toBeHidden();
   await expect(strip.getByRole("img")).toHaveCount(2);
+  await expect(strip.getByText("ili prevuci ovde")).toHaveCount(0);
   // No toast, and the drawer stays on the tab it was on.
   await expect(page.getByRole("status")).toHaveCount(0);
   await expect(details).toHaveAttribute("aria-selected", "true");
