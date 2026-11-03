@@ -536,6 +536,7 @@ function photosRow(drawer: Locator) {
     list: details.getByRole("list", { name: "Fotografije" }),
     add: details.getByRole("button", { name: "Dodaj fotografije", exact: true }),
     more: details.getByRole("button", { name: /^Prikaži starije fotografije/ }),
+    dropTarget: details.getByTestId("photos-drop-target"),
   };
 }
 
@@ -727,6 +728,80 @@ test("a staff member adds photos from the Photos strip, shrunk before upload, an
   await expect(entries.first()).toContainText("E2E Staff");
   await expect(entries.first().getByRole("img")).toHaveCount(2);
   await expect(entries.nth(1).getByRole("img")).toHaveCount(1);
+});
+
+test("photos dropped onto the Photos row, empty or not, open the Add photos dialog with them", async ({
+  page,
+}) => {
+  const { drawer, serviceId } = await openServiceLog(page, "Dragan Dragić");
+  await drawer.getByRole("tab", { name: "Detalji" }).click();
+  const { details, list, add, dropTarget } = photosRow(drawer);
+  const dialog = page.getByRole("dialog", { name: "Dodaj fotografije" });
+  const picked = dialog.getByRole("list", { name: "Izabrane fotografije" }).getByRole("img");
+  const onlyPhotos = page.getByText("Belešci se mogu dodati samo fotografije.");
+  const photo = [image("photo.jpg", "image/jpeg")];
+
+  // Dragged text is left to the browser: not highlighted, nothing opened.
+  expect(await drag(add, "dragenter", { text: "Pukla" })).toBe(false);
+  expect(await drag(add, "dragover", { text: "Pukla" })).toBe(false);
+  await expect(dropTarget).not.toHaveAttribute("data-drag-over");
+  expect(await drag(add, "drop", { text: "Pukla" })).toBe(false);
+  await expect(dialog).toHaveCount(0);
+
+  // Files over the empty box highlight it, until they leave it.
+  await drag(add, "dragenter", { files: photo });
+  await expect(dropTarget).toHaveAttribute("data-drag-over");
+  expect(await drag(add, "dragover", { files: photo })).toBe(true);
+  await drag(add, "dragleave", { files: photo });
+  await expect(dropTarget).not.toHaveAttribute("data-drag-over");
+  await expect(dialog).toHaveCount(0);
+
+  // Dropped onto it, they open the dialog, shrunk and counted like picked ones; one that isn't a photo is skipped.
+  expect(await drop(add, [image("large.jpg", "image/jpeg"), PDF])).toBe(true);
+  await expect(onlyPhotos).toBeVisible();
+  await expect(dialog).toBeVisible();
+  await expect(picked).toHaveCount(1);
+  await expect(dialog.getByText("1/10")).toBeVisible();
+  await dialog.getByRole("button", { name: "Dodaj belešku" }).click();
+  await expect(dialog).toBeHidden();
+  // The drop cleared the highlight.
+  await expect(dropTarget).not.toHaveAttribute("data-drag-over");
+  await expect(list.getByRole("img")).toHaveCount(1);
+  const log = await (await page.request.get(`/api/services/${serviceId}/log`)).json();
+  expect(log[0]).toMatchObject({ text: null });
+  expect(log[0].photos[0]).toEqual({ id: expect.any(String), width: 2048, height: 1536 });
+
+  // Onto the row with photos, over a thumbnail or the add button, highlighted while there.
+  const thumbnail = list.getByRole("img").first();
+  await drag(thumbnail, "dragenter", { files: photo });
+  await drag(add, "dragenter", { files: photo });
+  await drag(thumbnail, "dragleave", { files: photo });
+  await expect(dropTarget).toHaveAttribute("data-drag-over");
+  // Moving on beside the row clears it, even if its leave went missing.
+  await drag(details.getByRole("term").first(), "dragover", { files: photo });
+  await expect(dropTarget).not.toHaveAttribute("data-drag-over");
+
+  // As many as a note holds, the first ones that fit kept.
+  await drop(
+    thumbnail,
+    Array.from({ length: 11 }, (_, n) => image("photo.jpg", "image/jpeg", `photo-${n + 1}.jpg`)),
+  );
+  await expect(page.getByText("Beleška može imati najviše 10 fotografija.")).toBeVisible();
+  await expect(picked).toHaveCount(10);
+  await dialog.getByRole("button", { name: "Otkaži" }).click();
+  await page.getByRole("button", { name: "Odbaci" }).click();
+  await expect(dialog).toBeHidden();
+
+  // Only files that aren't photos: nothing opens.
+  await expect(onlyPhotos).toBeHidden({ timeout: 10_000 });
+  await drop(add, [PDF]);
+  await expect(onlyPhotos).toBeVisible();
+  await expect(dialog).toHaveCount(0);
+
+  // A drop beside the row is still kept from the browser.
+  expect(await drag(details.getByRole("term").first(), "drop", { files: photo })).toBe(true);
+  await expect(dialog).toHaveCount(0);
+  await expect(page).toHaveURL(/\/services/);
 });
 
 test("the Add photos dialog holds no more than 10 photos, and keeps them through a failed save", async ({
