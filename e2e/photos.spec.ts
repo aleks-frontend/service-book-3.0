@@ -638,6 +638,106 @@ test("the Add photos dialog holds no more than 10 photos, and keeps them through
   await expect(entries.first()).toContainText("Kućište");
 });
 
+test("closing the Add photos dialog with photos or text in it asks before discarding them", async ({
+  page,
+}) => {
+  const { drawer, serviceId } = await openServiceLog(page, "Milica Milić");
+  const strip = drawer.getByRole("region", { name: "Fotografije" });
+  const dialog = page.getByRole("dialog", { name: "Dodaj fotografije" });
+  const composer = dialog.getByTestId("note-composer");
+  const picked = composer.getByRole("list", { name: "Izabrane fotografije" }).getByRole("img");
+  const caption = composer.getByLabel("Beleška");
+  const confirm = page.getByRole("dialog", { name: "Odbaciti ove fotografije?" });
+
+  // Esc asks; keeping returns to the dialog as it was.
+  await (await pickFromStrip(page, drawer)).setFiles([image("photo.jpg", "image/jpeg")]);
+  await expect(picked).toHaveCount(1);
+  await caption.fill("Ogrebotina");
+  await page.keyboard.press("Escape");
+  await expect(confirm).toBeVisible();
+  await confirm.getByRole("button", { name: "Zadrži" }).click();
+  await expect(confirm).toBeHidden();
+  await expect(dialog).toBeVisible();
+  await expect(picked).toHaveCount(1);
+  await expect(caption).toHaveValue("Ogrebotina");
+
+  // Clicking outside asks too; Esc in the prompt keeps them.
+  await page.mouse.click(5, 5);
+  await expect(confirm).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(confirm).toBeHidden();
+  await expect(dialog).toBeVisible();
+  await expect(picked).toHaveCount(1);
+
+  // Cancel asks too; discarding closes the dialog and adds no note.
+  await dialog.getByRole("button", { name: "Otkaži" }).click();
+  await confirm.getByRole("button", { name: "Odbaci" }).click();
+  await expect(confirm).toBeHidden();
+  await expect(dialog).toBeHidden();
+
+  // Text alone is worth asking about.
+  await (await pickFromStrip(page, drawer)).setFiles([image("photo.jpg", "image/jpeg")]);
+  await expect(caption).toHaveValue("");
+  await composer.getByRole("button", { name: "Ukloni: photo.jpg" }).click();
+  await caption.fill("Samo tekst");
+  await page.keyboard.press("Escape");
+  await confirm.getByRole("button", { name: "Odbaci" }).click();
+  await expect(dialog).toBeHidden();
+
+  // An empty dialog closes straight away.
+  await (await pickFromStrip(page, drawer)).setFiles([image("photo.jpg", "image/jpeg")]);
+  await composer.getByRole("button", { name: "Ukloni: photo.jpg" }).click();
+  await caption.fill("   ");
+  await dialog.getByRole("button", { name: "Otkaži" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(confirm).toHaveCount(0);
+
+  const log = await (await page.request.get(`/api/services/${serviceId}/log`)).json();
+  expect(log).toEqual([]);
+  await expect(strip.getByRole("img")).toHaveCount(0);
+
+  // After keeping, the note can still be added.
+  await (await pickFromStrip(page, drawer)).setFiles([image("photo.jpg", "image/jpeg")]);
+  await expect(picked).toHaveCount(1);
+  await page.keyboard.press("Escape");
+  await confirm.getByRole("button", { name: "Zadrži" }).click();
+  await dialog.getByRole("button", { name: "Dodaj belešku" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(strip.getByRole("img")).toHaveCount(1);
+});
+
+test("the Add photos dialog can't be closed while its note is saving", async ({ page }) => {
+  const { drawer } = await openServiceLog(page, "Bojan Bojić");
+  const strip = drawer.getByRole("region", { name: "Fotografije" });
+  const dialog = page.getByRole("dialog", { name: "Dodaj fotografije" });
+  const confirm = page.getByRole("dialog", { name: "Odbaciti ove fotografije?" });
+
+  let release = () => {};
+  const held = new Promise<void>((resolve) => (release = resolve));
+  await page.route(
+    "**/api/services/*/log",
+    async (route) => {
+      if (route.request().method() !== "POST") return route.fallback();
+      await held;
+      await route.fallback();
+    },
+    { times: 1 },
+  );
+
+  await (await pickFromStrip(page, drawer)).setFiles([image("photo.jpg", "image/jpeg")]);
+  await expect(dialog.getByText("1/10")).toBeVisible();
+  await dialog.getByRole("button", { name: "Dodaj belešku" }).click();
+  await expect(dialog.getByRole("button", { name: "Otkaži" })).toBeDisabled();
+  await page.keyboard.press("Escape");
+  await page.mouse.click(5, 5);
+  await expect(confirm).toHaveCount(0);
+  await expect(dialog).toBeVisible();
+
+  release();
+  await expect(dialog).toBeHidden();
+  await expect(strip.getByRole("img")).toHaveCount(1);
+});
+
 test("a staff member deletes photos from a note's thumbnails and from the lightbox", async ({
   page,
 }) => {
