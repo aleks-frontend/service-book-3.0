@@ -161,7 +161,7 @@ export function DrawerSummaryRow({ label, children }: { label: string; children:
   return (
     <>
       <dt className="pr-4 text-muted-foreground">{label}</dt>
-      <dd className="break-words">{children}</dd>
+      <dd className="min-w-0 break-words">{children}</dd>
     </>
   );
 }

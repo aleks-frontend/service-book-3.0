@@ -8,9 +8,10 @@ import { PhotoThumbnails } from "./PhotoThumbnails";
 import { Button } from "./ui/button";
 
 /**
- * Every photo in a service's log, oldest first, as a row of its drawer's summary, with an
- * "Add photos" button that picks more and adds them as a note. With none, the whole row
- * is a dashed box that picks them. Nothing until the log has loaded; a log that fails to
+ * Every photo in a service's log, oldest first, as a row of its drawer's summary: one line
+ * of the newest that fit, after a "+N" tile for the older ones, with an add button at its
+ * end, named "Add photos", that picks more and adds them as a note. With none, the whole row is a dashed
+ * box that picks them. Nothing until the log has loaded; a log that fails to
  * load says so on the Log tab.
  */
 export function ServicePhotos({ serviceId }: { serviceId: string }) {
@@ -27,12 +28,25 @@ export function ServicePhotos({ serviceId }: { serviceId: string }) {
   return (
     <DrawerSummaryRow label={t("Photos")}>
       {photos.length > 0 ? (
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <PhotoThumbnails serviceId={serviceId} photos={photos} />
-          {/* No height or padding of its own, so the row is as tall as its neighbours and the button lines up with the text. */}
-          <Button type="button" variant="link" size="xs" className="h-auto px-0" onClick={pick}>
-            <Camera className="mr-1 h-3.5 w-3.5" aria-hidden />
-            {t("Add photos")}
+        <div className="flex items-center gap-3">
+          {/* Takes the room the button leaves, whatever the tiles in it would need, and fits them to it. */}
+          <PhotoThumbnails
+            serviceId={serviceId}
+            photos={photos}
+            compact
+            className="min-w-0 flex-1"
+          />
+          {/* No padding of its own, so it ends where the row's value does. On a phone, the camera alone. */}
+          <Button
+            type="button"
+            variant="link"
+            size="xs"
+            className="h-auto shrink-0 px-0"
+            aria-label={t("Add photos")}
+            onClick={pick}
+          >
+            <Camera className="h-3.5 w-3.5 sm:mr-1" aria-hidden />
+            <span className="hidden sm:inline">{t("Add")}</span>
           </Button>
         </div>
       ) : (

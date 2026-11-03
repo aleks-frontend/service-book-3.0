@@ -1,12 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Trash2, X } from "lucide-react";
 import Lightbox, { IconButton, type ControllerRef } from "yet-another-react-lightbox";
 import Zoom from "yet-another-react-lightbox/plugins/zoom";
 import "yet-another-react-lightbox/styles.css";
 import type { Photo } from "@servicebook/schemas";
+import { fitPhotoStrip } from "@/lib/photoStrip";
 import { photoUrl, thumbnailUrl } from "@/lib/photos";
 import { useDeletePhotoMutation } from "@/lib/services";
+import { useElementWidth } from "@/lib/useElementWidth";
 import { cn } from "@/lib/utils";
 import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog";
 
@@ -17,25 +19,54 @@ declare module "yet-another-react-lightbox" {
   }
 }
 
+// What a compact line is fitted with, in px: keep them in step with `h-[72px] w-[72px]` and `gap-2`.
+const COMPACT_TILE = 72;
+const TILE_GAP = 8;
+
 type PhotoThumbnailsProps = {
   /** The service whose log the photos are in. */
   serviceId: string;
   photos: Photo[];
+  /**
+   * Small tiles on one line, as many of the newest as fit its width, after a "+N" tile
+   * for the rest that opens the lightbox at the newest of them. No delete × of their own:
+   * deleting is left to the lightbox.
+   */
+  compact?: boolean;
   className?: string;
 };
 
 /**
- * A row of photo thumbnails. Clicking one opens it large in a lightbox that
- * pages through these photos, with zoom, swipe and the arrow keys. Each photo
- * can be deleted, from its thumbnail or from the lightbox, once confirmed.
+ * A row of photo thumbnails. Clicking one opens it large in a lightbox that pages
+ * through all these photos, with zoom, swipe and the arrow keys. Each photo can be
+ * deleted from the lightbox, and unless compact from its thumbnail, once confirmed.
  */
-export function PhotoThumbnails({ serviceId, photos, className }: PhotoThumbnailsProps) {
+export function PhotoThumbnails({
+  serviceId,
+  photos,
+  compact = false,
+  className,
+}: PhotoThumbnailsProps) {
   const { t } = useTranslation();
-  const listRef = useRef<HTMLUListElement>(null);
+  const listRef = useRef<HTMLUListElement | null>(null);
+  const [measureList, listWidth] = useElementWidth<HTMLUListElement>();
+  const setList = useCallback(
+    (list: HTMLUListElement | null) => {
+      listRef.current = list;
+      if (compact) measureList(list);
+    },
+    [compact, measureList],
+  );
   const controller = useRef<ControllerRef>(null);
   const [index, setIndex] = useState(-1);
   const open = index >= 0;
   const alt = (n: number) => t("Photo {{n}}", { n: n + 1 });
+  // All of them until the line has been measured, which happens before it is painted.
+  const { hidden } =
+    compact && listWidth !== null
+      ? fitPhotoStrip({ width: listWidth, tile: COMPACT_TILE, gap: TILE_GAP, count: photos.length })
+      : { hidden: 0 };
+  const tile = compact ? "h-[72px] w-[72px]" : "h-20 w-20";
   const deletePhoto = useDeletePhotoMutation(serviceId);
   // The photo being confirmed, and where the lightbox was if it was asked from there.
   const [confirming, setConfirming] = useState<{
@@ -74,34 +105,59 @@ export function PhotoThumbnails({ serviceId, photos, className }: PhotoThumbnail
 
   return (
     <>
-      <ul ref={listRef} className={cn("flex flex-wrap gap-2", className)} aria-label={t("Photos")}>
-        {photos.map((photo, n) => (
-          <li key={photo.id} className="relative">
+      <ul
+        ref={setList}
+        className={cn("flex gap-2", compact ? "flex-nowrap" : "flex-wrap", className)}
+        aria-label={t("Photos")}
+      >
+        {hidden > 0 && (
+          <li>
             <button
               type="button"
-              className="block rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              onClick={() => setIndex(n)}
+              className={cn(
+                "flex items-center justify-center rounded-md border bg-card text-sm font-bold hover:border-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                tile,
+              )}
+              aria-label={t("Show older photos ({{n}})", { n: hidden })}
+              onClick={() => setIndex(hidden - 1)}
             >
-              <img
-                src={thumbnailUrl(photo.id)}
-                alt={alt(n)}
-                width={photo.width}
-                height={photo.height}
-                loading="lazy"
-                className="h-20 w-20 rounded-md border object-cover"
-              />
-            </button>
-            <button
-              type="button"
-              className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full border bg-card text-foreground hover:border-foreground disabled:opacity-50"
-              aria-label={t("Delete photo {{n}}", { n: n + 1 })}
-              disabled={deletePhoto.isPending}
-              onClick={() => askToDelete(photo, null)}
-            >
-              <X className="h-3 w-3" aria-hidden />
+              +{hidden}
             </button>
           </li>
-        ))}
+        )}
+        {photos.slice(hidden).map((photo, shown) => {
+          // Counted across all the photos, as the lightbox counts them.
+          const n = hidden + shown;
+          return (
+            <li key={photo.id} className="relative">
+              <button
+                type="button"
+                className="block rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                onClick={() => setIndex(n)}
+              >
+                <img
+                  src={thumbnailUrl(photo.id)}
+                  alt={alt(n)}
+                  width={photo.width}
+                  height={photo.height}
+                  loading="lazy"
+                  className={cn("rounded-md border object-cover", tile)}
+                />
+              </button>
+              {!compact && (
+                <button
+                  type="button"
+                  className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full border bg-card text-foreground hover:border-foreground disabled:opacity-50"
+                  aria-label={t("Delete photo {{n}}", { n: n + 1 })}
+                  disabled={deletePhoto.isPending}
+                  onClick={() => askToDelete(photo, null)}
+                >
+                  <X className="h-3 w-3" aria-hidden />
+                </button>
+              )}
+            </li>
+          );
+        })}
       </ul>
       <Lightbox
         open={open}
