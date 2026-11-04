@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState, type Ref } from "react";
+import { useRef, type Ref } from "react";
 import { useTranslation } from "react-i18next";
-import toast from "react-hot-toast";
 import { Camera, Loader2, X } from "lucide-react";
 import { PHOTOS_PER_NOTE_MAX } from "@servicebook/schemas";
-import { carriesFiles } from "@/lib/fileDrag";
+import { useFileDrop } from "@/lib/fileDrag";
 import type { PhotoPickerState } from "@/lib/usePhotoPicker";
+import { usePhotosOnly } from "@/lib/usePhotosOnly";
 import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
 import { Textarea, type TextareaProps } from "./ui/textarea";
@@ -31,37 +31,12 @@ type NoteComposerProps = {
  */
 export function NoteComposer({ textarea, picker, photosId, disabled }: NoteComposerProps) {
   const { t } = useTranslation();
-  const boxRef = useRef<HTMLDivElement>(null);
+  const photosOnly = usePhotosOnly();
   const textRef = useRef<HTMLTextAreaElement | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { photos, processing, add, remove } = picker;
   const full = photos.length >= PHOTOS_PER_NOTE_MAX;
   const { ref: fieldRef, className, ...textareaProps } = textarea;
-  // Entering a child fires before leaving the box, so a drag is over the box until the count is back at 0.
-  const dragDepth = useRef(0);
-  const [dragOver, setDragOver] = useState(false);
-
-  // A leave can go missing, e.g. when the element under the cursor re-renders: the drag
-  // moving on beside the box, or ending anywhere, clears the highlight all the same.
-  useEffect(() => {
-    if (!dragOver) return;
-    function clear() {
-      dragDepth.current = 0;
-      setDragOver(false);
-    }
-    function clearBeside(event: DragEvent) {
-      if (!boxRef.current?.contains(event.target as Node)) clear();
-    }
-    window.addEventListener("dragover", clearBeside);
-    window.addEventListener("drop", clear);
-    window.addEventListener("dragend", clear);
-    return () => {
-      window.removeEventListener("dragover", clearBeside);
-      window.removeEventListener("drop", clear);
-      window.removeEventListener("dragend", clear);
-    };
-  }, [dragOver]);
-
   function setTextRef(element: HTMLTextAreaElement | null) {
     textRef.current = element;
     if (typeof fieldRef === "function") fieldRef(element);
@@ -70,44 +45,21 @@ export function NoteComposer({ textarea, picker, photosId, disabled }: NoteCompo
 
   /** Adds the photos among pasted or dropped files as if picked; any other files are skipped with a toast. */
   function addPhotos(files: File[]) {
-    const photos = files.filter((file) => file.type.startsWith("image/"));
-    if (photos.length < files.length) toast.error(t("Only photos can be added to a note."));
+    const photos = photosOnly(files);
     if (photos.length > 0) void add(photos);
   }
 
+  const dropTarget = useFileDrop<HTMLDivElement>({ disabled, onFiles: addPhotos });
+
   return (
     <div
-      ref={boxRef}
+      {...dropTarget}
       data-testid="note-composer"
-      data-drag-over={dragOver && !disabled ? "" : undefined}
       className="cursor-text rounded-md border border-input bg-card has-[textarea:focus-visible]:ring-2 has-[textarea:focus-visible]:ring-ring has-[textarea:focus-visible]:ring-offset-1 has-[textarea:focus-visible]:ring-offset-background data-[drag-over]:border-primary data-[drag-over]:bg-accent"
       onClick={(event) => {
         if (!(event.target as Element).closest("button, input, textarea, li")) {
           textRef.current?.focus();
         }
-      }}
-      onDragEnter={(event) => {
-        if (!carriesFiles(event)) return;
-        dragDepth.current += 1;
-        setDragOver(true);
-      }}
-      onDragLeave={(event) => {
-        if (!carriesFiles(event)) return;
-        dragDepth.current = Math.max(0, dragDepth.current - 1);
-        if (dragDepth.current === 0) setDragOver(false);
-      }}
-      onDragOver={(event) => {
-        if (!carriesFiles(event)) return;
-        // Taken over even while saving, so the browser doesn't open the file in place of the app.
-        event.preventDefault();
-        event.dataTransfer.dropEffect = disabled ? "none" : "copy";
-      }}
-      onDrop={(event) => {
-        if (!carriesFiles(event)) return;
-        event.preventDefault();
-        dragDepth.current = 0;
-        setDragOver(false);
-        if (!disabled) addPhotos([...event.dataTransfer.files]);
       }}
     >
       <Textarea

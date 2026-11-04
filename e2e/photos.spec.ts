@@ -468,11 +468,18 @@ test("photos open in a lightbox from a note and from the Photos strip", async ({
   // The photos are a row of the service's details.
   const strip = drawer.getByRole("region", { name: "Detalji servisa" });
   await expect(strip.getByRole("term").filter({ hasText: "Fotografije" })).toBeVisible();
-  // No photos: the row says so, and offers to add some.
+  // No photos: the row is one box inviting to add some, named for what it does.
   await expect(drawer.getByTestId("log-entry")).toHaveCount(0);
-  await expect(strip.getByText("Nema fotografija")).toBeVisible();
-  await expect(strip.getByRole("button", { name: "Dodaj fotografije" })).toBeVisible();
+  const emptyBox = strip.getByRole("button", { name: "Dodaj fotografije", exact: true });
+  await expect(emptyBox).toBeVisible();
+  await expect(emptyBox).toContainText("Dodaj fotografije");
+  await expect(emptyBox).toContainText("ili prevuci ovde");
+  await expect(strip.getByRole("button", { name: "Dodaj fotografije" })).toHaveCount(1);
   await expect(strip.getByRole("img")).toHaveCount(0);
+  // Reachable with Tab, from the row above it.
+  await strip.getByRole("button", { name: "Kopiraj javni link" }).focus();
+  await page.keyboard.press("Tab");
+  await expect(emptyBox).toBeFocused();
 
   await postPhotoNote(page, serviceId, "Prijem", 2);
   await postPhotoNote(page, serviceId, "Posle popravke", 1);
@@ -489,7 +496,7 @@ test("photos open in a lightbox from a note and from the Photos strip", async ({
     entry.photos.map((photo) => `/api/photos/${photo.id}/thumb`),
   );
   await expect(strip.getByRole("img")).toHaveCount(3);
-  await expect(strip.getByText("Nema fotografija")).toHaveCount(0);
+  await expect(strip.getByText("ili prevuci ovde")).toHaveCount(0);
   expect(
     await strip.getByRole("img").evaluateAll((imgs) => imgs.map((img) => img.getAttribute("src"))),
   ).toEqual(oldestFirst);
@@ -521,6 +528,132 @@ test("photos open in a lightbox from a note and from the Photos strip", async ({
   await expect(drawer).toBeVisible();
 });
 
+/** The Photos row of a drawer's details: its list of thumbnails, and its add button. */
+function photosRow(drawer: Locator) {
+  const details = drawer.getByRole("region", { name: "Detalji servisa" });
+  return {
+    details,
+    list: details.getByRole("list", { name: "Fotografije" }),
+    add: details.getByRole("button", { name: "Dodaj fotografije", exact: true }),
+    more: details.getByRole("button", { name: /^Prikaži starije fotografije/ }),
+    dropTarget: details.getByTestId("photos-drop-target"),
+  };
+}
+
+for (const { device, viewport, perNote } of [
+  { device: "desktop", viewport: null, perNote: 2 },
+  // A phone has room for two.
+  { device: "phone", viewport: { width: 375, height: 667 }, perNote: 1 },
+]) {
+  test(`a few photos sit in one line of small tiles, without delete buttons, beside an add button at the row's end (${device})`, async ({
+    page,
+  }) => {
+    if (viewport) await page.setViewportSize(viewport);
+    const { drawer, serviceId } = await openServiceLog(page, `Jelena Jović (${device})`);
+    await postPhotoNote(page, serviceId, "Prijem", perNote);
+    await postPhotoNote(page, serviceId, null, perNote);
+    await page.reload();
+    const { details, list, add, more } = photosRow(drawer);
+
+    // All of them, and nothing standing in for older ones.
+    await expect(list.getByRole("img")).toHaveCount(2 * perNote);
+    await expect(more).toHaveCount(0);
+    const tile = await list.getByRole("img").first().boundingBox();
+    expect([tile?.width, tile?.height]).toEqual([72, 72]);
+    // Deleting is done from the lightbox; the Work log's thumbnails keep their delete buttons.
+    await expect(details.getByRole("button", { name: /^Obriši fotografiju/ })).toHaveCount(0);
+    await drawer.getByRole("tab", { name: "Dnevnik rada" }).click();
+    await expect(
+      drawer.getByTestId("log-entry").first().getByRole("button", { name: "Obriši fotografiju 1" }),
+    ).toBeVisible();
+
+    // The add button reads just "Dodaj", or is the camera alone on a phone, at the right edge of the row's value.
+    if (viewport) await expect(add.getByText("Dodaj", { exact: true })).toBeHidden();
+    else await expect(add).toHaveText("Dodaj");
+    const valueEnd = await details
+      .getByRole("definition")
+      .filter({ has: page.getByRole("button", { name: "Dodaj fotografije", exact: true }) })
+      .evaluate((value) => {
+        const box = value.getBoundingClientRect();
+        return box.right - parseFloat(getComputedStyle(value).paddingRight);
+      });
+    const button = await add.boundingBox();
+    expect(Math.abs(valueEnd - (button!.x + button!.width))).toBeLessThan(1);
+  });
+}
+
+for (const { device, viewport } of [
+  { device: "desktop", viewport: null },
+  { device: "phone", viewport: { width: 375, height: 667 } },
+]) {
+  test(`many photos stay on one line, the newest shown after a "+N" tile that opens the older ones (${device})`, async ({
+    page,
+  }) => {
+    if (viewport) await page.setViewportSize(viewport);
+    const { drawer, serviceId } = await openServiceLog(page, `Nikola Nikolić (${device})`);
+    await postPhotoNote(page, serviceId, "Prijem", 10);
+    await postPhotoNote(page, serviceId, null, 10);
+    await postPhotoNote(page, serviceId, "Posle popravke", 6);
+    await page.reload();
+    const { list, add, more } = photosRow(drawer);
+    const lightbox = page.getByRole("dialog", { name: "Pregled fotografija" });
+
+    // "+N" says how many older photos it stands for, and comes first.
+    await expect(more).toBeVisible();
+    const hidden = Number((await more.getAttribute("aria-label"))?.match(/\((\d+)\)$/)?.[1]);
+    const shown = 26 - hidden;
+    expect(shown).toBeGreaterThanOrEqual(1);
+    await expect(list.getByRole("listitem").first()).toHaveText(`+${hidden}`);
+
+    // The newest photos, numbered across all of them.
+    const log = await (await page.request.get(`/api/services/${serviceId}/log`)).json();
+    const oldestFirst: string[] = log.flatMap((entry: { photos: { id: string }[] }) =>
+      entry.photos.map((photo) => `/api/photos/${photo.id}/thumb`),
+    );
+    const images = list.getByRole("img");
+    await expect(images).toHaveCount(shown);
+    expect(await images.evaluateAll((imgs) => imgs.map((img) => img.getAttribute("src")))).toEqual(
+      oldestFirst.slice(hidden),
+    );
+    await expect(images.last()).toHaveAccessibleName("Fotografija 26");
+    await expect(images.first()).toHaveAccessibleName(`Fotografija ${hidden + 1}`);
+
+    // One line, ending before the add button.
+    const tiles = await list
+      .getByRole("listitem")
+      .evaluateAll((items) => items.map((item) => item.getBoundingClientRect().toJSON()));
+    expect(new Set(tiles.map((tile) => tile.top)).size).toBe(1);
+    expect(tiles.at(-1).right).toBeLessThanOrEqual((await add.boundingBox())!.x);
+
+    // On a phone the add button is the camera alone; it is "Dodaj fotografije" either way.
+    if (viewport) await expect(add.getByText("Dodaj", { exact: true })).toBeHidden();
+    else await expect(add).toHaveText("Dodaj");
+
+    // "+N" opens the lightbox at the newest hidden photo, and the lightbox holds them all.
+    await more.click();
+    const counter = lightbox.locator(".yarl__slide_current");
+    await expect(counter).toHaveAccessibleName(`${hidden} od 26`);
+    await page.keyboard.press("ArrowLeft");
+    await expect(counter).toHaveAccessibleName(`${hidden - 1} od 26`);
+    await page.keyboard.press("Escape");
+    await expect(lightbox).toBeHidden();
+
+    // A visible thumbnail opens at its own photo.
+    await list.getByRole("button", { name: "Fotografija 26" }).click();
+    await expect(counter).toHaveAccessibleName("26 od 26");
+    await page.keyboard.press("Escape");
+
+    if (!viewport) {
+      // Narrowing the window fits fewer, still on one line.
+      await page.setViewportSize({ width: 375, height: 667 });
+      await expect.poll(() => images.count()).toBeLessThan(shown);
+      await expect(list.getByRole("listitem").first()).toHaveText(
+        `+${26 - (await images.count())}`,
+      );
+    }
+  });
+}
+
 /** Presses the Photos strip's "Add photos" button and returns the file picker it opens. */
 async function pickFromStrip(page: Page, drawer: Locator) {
   const [chooser] = await Promise.all([
@@ -544,6 +677,10 @@ test("a staff member adds photos from the Photos strip, shrunk before upload, an
   const picked = dialog.getByRole("list", { name: "Izabrane fotografije" }).getByRole("img");
   const caption = dialog.getByLabel("Beleška");
   await expect(strip.getByRole("img")).toHaveCount(0);
+  // With no photos yet, the first picks go through the empty box.
+  await expect(strip.getByRole("button", { name: "Dodaj fotografije" })).toContainText(
+    "ili prevuci ovde",
+  );
 
   // The picker opens straight away, for several photos; cancelling it opens nothing.
   const cancelled = await pickFromStrip(page, drawer);
@@ -565,6 +702,7 @@ test("a staff member adds photos from the Photos strip, shrunk before upload, an
   await dialog.getByRole("button", { name: "Dodaj belešku" }).click();
   await expect(dialog).toBeHidden();
   await expect(strip.getByRole("img")).toHaveCount(2);
+  await expect(strip.getByText("ili prevuci ovde")).toHaveCount(0);
   // No toast, and the drawer stays on the tab it was on.
   await expect(page.getByRole("status")).toHaveCount(0);
   await expect(details).toHaveAttribute("aria-selected", "true");
@@ -590,6 +728,80 @@ test("a staff member adds photos from the Photos strip, shrunk before upload, an
   await expect(entries.first()).toContainText("E2E Staff");
   await expect(entries.first().getByRole("img")).toHaveCount(2);
   await expect(entries.nth(1).getByRole("img")).toHaveCount(1);
+});
+
+test("photos dropped onto the Photos row, empty or not, open the Add photos dialog with them", async ({
+  page,
+}) => {
+  const { drawer, serviceId } = await openServiceLog(page, "Dragan Dragić");
+  await drawer.getByRole("tab", { name: "Detalji" }).click();
+  const { details, list, add, dropTarget } = photosRow(drawer);
+  const dialog = page.getByRole("dialog", { name: "Dodaj fotografije" });
+  const picked = dialog.getByRole("list", { name: "Izabrane fotografije" }).getByRole("img");
+  const onlyPhotos = page.getByText("Belešci se mogu dodati samo fotografije.");
+  const photo = [image("photo.jpg", "image/jpeg")];
+
+  // Dragged text is left to the browser: not highlighted, nothing opened.
+  expect(await drag(add, "dragenter", { text: "Pukla" })).toBe(false);
+  expect(await drag(add, "dragover", { text: "Pukla" })).toBe(false);
+  await expect(dropTarget).not.toHaveAttribute("data-drag-over");
+  expect(await drag(add, "drop", { text: "Pukla" })).toBe(false);
+  await expect(dialog).toHaveCount(0);
+
+  // Files over the empty box highlight it, until they leave it.
+  await drag(add, "dragenter", { files: photo });
+  await expect(dropTarget).toHaveAttribute("data-drag-over");
+  expect(await drag(add, "dragover", { files: photo })).toBe(true);
+  await drag(add, "dragleave", { files: photo });
+  await expect(dropTarget).not.toHaveAttribute("data-drag-over");
+  await expect(dialog).toHaveCount(0);
+
+  // Dropped onto it, they open the dialog, shrunk and counted like picked ones; one that isn't a photo is skipped.
+  expect(await drop(add, [image("large.jpg", "image/jpeg"), PDF])).toBe(true);
+  await expect(onlyPhotos).toBeVisible();
+  await expect(dialog).toBeVisible();
+  await expect(picked).toHaveCount(1);
+  await expect(dialog.getByText("1/10")).toBeVisible();
+  await dialog.getByRole("button", { name: "Dodaj belešku" }).click();
+  await expect(dialog).toBeHidden();
+  // The drop cleared the highlight.
+  await expect(dropTarget).not.toHaveAttribute("data-drag-over");
+  await expect(list.getByRole("img")).toHaveCount(1);
+  const log = await (await page.request.get(`/api/services/${serviceId}/log`)).json();
+  expect(log[0]).toMatchObject({ text: null });
+  expect(log[0].photos[0]).toEqual({ id: expect.any(String), width: 2048, height: 1536 });
+
+  // Onto the row with photos, over a thumbnail or the add button, highlighted while there.
+  const thumbnail = list.getByRole("img").first();
+  await drag(thumbnail, "dragenter", { files: photo });
+  await drag(add, "dragenter", { files: photo });
+  await drag(thumbnail, "dragleave", { files: photo });
+  await expect(dropTarget).toHaveAttribute("data-drag-over");
+  // Moving on beside the row clears it, even if its leave went missing.
+  await drag(details.getByRole("term").first(), "dragover", { files: photo });
+  await expect(dropTarget).not.toHaveAttribute("data-drag-over");
+
+  // As many as a note holds, the first ones that fit kept.
+  await drop(
+    thumbnail,
+    Array.from({ length: 11 }, (_, n) => image("photo.jpg", "image/jpeg", `photo-${n + 1}.jpg`)),
+  );
+  await expect(page.getByText("Beleška može imati najviše 10 fotografija.")).toBeVisible();
+  await expect(picked).toHaveCount(10);
+  await dialog.getByRole("button", { name: "Otkaži" }).click();
+  await page.getByRole("button", { name: "Odbaci" }).click();
+  await expect(dialog).toBeHidden();
+
+  // Only files that aren't photos: nothing opens.
+  await expect(onlyPhotos).toBeHidden({ timeout: 10_000 });
+  await drop(add, [PDF]);
+  await expect(onlyPhotos).toBeVisible();
+  await expect(dialog).toHaveCount(0);
+
+  // A drop beside the row is still kept from the browser.
+  expect(await drag(details.getByRole("term").first(), "drop", { files: photo })).toBe(true);
+  await expect(dialog).toHaveCount(0);
+  await expect(page).toHaveURL(/\/services/);
 });
 
 test("the Add photos dialog holds no more than 10 photos, and keeps them through a failed save", async ({
@@ -636,10 +848,12 @@ test("the Add photos dialog holds no more than 10 photos, and keeps them through
 
   await add.click();
   await expect(dialog).toBeHidden();
-  await expect(strip.getByRole("img")).toHaveCount(10);
+  // The strip ends with the newest of them.
+  await expect(strip.getByRole("img").last()).toHaveAccessibleName("Fotografija 10");
   const entries = drawer.getByTestId("log-entry");
   await expect(entries).toHaveCount(1);
   await expect(entries.first()).toContainText("Kućište");
+  await expect(entries.first().getByRole("img")).toHaveCount(10);
 });
 
 test("closing the Add photos dialog with photos or text in it asks before discarding them", async ({
