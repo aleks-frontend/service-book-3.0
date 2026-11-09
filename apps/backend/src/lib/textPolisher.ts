@@ -8,17 +8,19 @@ import {
   type CustomerReportPolish,
 } from "@servicebook/schemas";
 
+/** The kinds of text AI polish handles, each with its own instructions and length limit. */
+export type TextKind = "customer_report";
+
 /**
- * AI polish (GLOSSARY.md, ADR-0007): rewrites a draft customer report for
- * grammar and a professional tone, keeping its language, script and facts.
- * Only the text is ever sent to the model.
+ * AI polish (GLOSSARY.md, ADR-0007): tidies a draft text of the given kind,
+ * keeping its language, script and facts. Only the text is ever sent to the model.
  */
 export interface TextPolisher {
   /** The polished text, or a `TextPolishError` saying why there is none. */
-  polish(text: string): Promise<CustomerReportPolish>;
+  polish(text: string, kind: TextKind): Promise<CustomerReportPolish>;
 }
 
-const SYSTEM_PROMPT = `You polish the customer report of a repair shop: the text a customer reads about the work done on their device.
+const CUSTOMER_REPORT_PROMPT = `You polish the customer report of a repair shop: the text a customer reads about the work done on their device.
 
 - Fix grammar, spelling, punctuation and diacritics (e.g. "ociscen" becomes "očišćen").
 - Make the tone professional and customer-facing.
@@ -27,6 +29,11 @@ const SYSTEM_PROMPT = `You polish the customer report of a repair shop: the text
 - Terse notes may become full sentences, without new content.
 - Keep it about as long as the original.
 - Return only the polished text, with no quotes, preamble or explanation.`;
+
+/** What each kind of text tells the model, and how long its polished text may be. */
+const TEXT_KINDS: Record<TextKind, { systemPrompt: string; maxLength: number }> = {
+  customer_report: { systemPrompt: CUSTOMER_REPORT_PROMPT, maxLength: CUSTOMER_REPORT_MAX },
+};
 
 /** Why a polish failed (`AiPolishErrorCode`, but for `not_configured`, which never gets this far). */
 export type TextPolishFailure = Exclude<AiPolishErrorCode, "not_configured">;
@@ -72,10 +79,10 @@ const PREAMBLE =
   /^(?:here(?:['’]s| is)|evo|ево|íme)(?=\s)[^\n:]*:(?:[ \t]*\n|[ \t]*(?=["'“‘„«»]))\s*/iu;
 
 /**
- * The model's answer as a customer report: trimmed, without a preamble or
+ * The model's answer as a text of `kind`: trimmed, without a preamble or
  * wrapping quotes. Empty or over-long answers are `invalid_output`.
  */
-function cleanOutput(output: string) {
+function cleanOutput(output: string, kind: TextKind) {
   let text = output.trim().replace(PREAMBLE, "").trim();
   const quoted = WRAPPING_QUOTES.exec(text);
   if (quoted)
@@ -83,14 +90,14 @@ function cleanOutput(output: string) {
       .slice(1)
       .find((inner) => inner !== undefined)!
       .trim();
-  if (text === "" || text.length > CUSTOMER_REPORT_MAX) {
+  if (text === "" || text.length > TEXT_KINDS[kind].maxLength) {
     throw new TextPolishError("invalid_output");
   }
   return text;
 }
 
-function toPolishResult(input: string, output: string): CustomerReportPolish {
-  const text = cleanOutput(output);
+function toPolishResult(input: string, output: string, kind: TextKind): CustomerReportPolish {
+  const text = cleanOutput(output, kind);
   return { text, changed: normalized(text) !== normalized(input) };
 }
 
@@ -136,10 +143,10 @@ export function createTextPolisher({
   timeoutMs = 20_000,
   retryDelayMs = 1_000,
 }: TextPolisherOptions): TextPolisher {
-  async function generate(text: string, abortSignal: AbortSignal) {
+  async function generate(text: string, kind: TextKind, abortSignal: AbortSignal) {
     const result = await generateText({
       model,
-      system: SYSTEM_PROMPT,
+      system: TEXT_KINDS[kind].systemPrompt,
       prompt: text,
       temperature: 0.2,
       // The one retry is ours, so it shares the timeout and skips the SDK's longer backoff.
@@ -153,41 +160,41 @@ export function createTextPolisher({
   }
 
   return {
-    async polish(text) {
+    async polish(text, kind) {
       const signal = AbortSignal.timeout(timeoutMs);
       let output: string;
       try {
         try {
-          output = await generate(text, signal);
+          output = await generate(text, kind, signal);
         } catch (error) {
           if (signal.aborted || !isRetryable(error)) throw error;
           await sleep(retryDelayMs, undefined, { signal });
-          output = await generate(text, signal);
+          output = await generate(text, kind, signal);
         }
       } catch (error) {
         throw toPolishError(error, signal);
       }
-      return toPolishResult(text, output);
+      return toPolishResult(text, output, kind);
     },
   };
 }
 
 /**
  * A deterministic stand-in for the e2e tests (`AI_POLISH_FAKE`), which never
- * calls a provider. It marks the text as polished, so polishing twice differs
- * too, unless the text holds a marker picking another outcome:
+ * calls a provider, whatever the kind of text. It marks the text as polished,
+ * so polishing twice differs too, unless the text holds a marker picking another outcome:
  * `[unchanged]`, `[unavailable]`, `[daily limit]` or `[slow]` (polished after 2s).
  */
 export function createFakeTextPolisher(): TextPolisher {
   return {
-    async polish(text) {
-      if (text.includes("[unchanged]")) return toPolishResult(text, text);
+    async polish(text, kind) {
+      if (text.includes("[unchanged]")) return toPolishResult(text, text, kind);
       if (text.includes("[unavailable]")) throw new TextPolishError("unavailable");
       if (text.includes("[daily limit]")) {
         throw new TextPolishError("unavailable", { providerStatus: 429, dailyLimit: true });
       }
       if (text.includes("[slow]")) await sleep(2_000);
-      return toPolishResult(text, `${text.trim()} (polished)`);
+      return toPolishResult(text, `${text.trim()} (polished)`, kind);
     },
   };
 }

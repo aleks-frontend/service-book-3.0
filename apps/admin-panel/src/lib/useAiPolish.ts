@@ -1,14 +1,15 @@
 import { useRef, useState, type RefObject } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import type { AiPolishError, CustomerReportPolish } from "@servicebook/schemas";
 import type { HttpError } from "./http";
-import { usePolishCustomerReportMutation } from "./services";
 import { useMeQuery } from "./useMeQuery";
 
 type UseAiPolishOptions = {
-  serviceId: string;
-  /** The customer report's textarea, whose text a polish replaces. */
+  /** Sends a draft to be polished, e.g. `polishCustomerReport` for one service. */
+  request: (text: string) => Promise<CustomerReportPolish>;
+  /** The textarea whose text a polish replaces. */
   textareaRef: RefObject<HTMLTextAreaElement | null>;
   /** The text in the textarea now. */
   text: string;
@@ -27,7 +28,7 @@ type PolishOutcome =
   { kind: "none" } | { kind: "polished"; beforePolish: string } | { kind: "unchanged" };
 
 /**
- * AI polish (GLOSSARY.md) of a customer report textarea. The polished text
+ * AI polish (GLOSSARY.md) of a textarea, through `request`. The polished text
  * replaces the draft as a native edit, so Ctrl+Z (⌘+Z) undoes it where the browser
  * supports that; `undo` restores the text from just before the latest polish
  * anywhere. A polish that changes nothing, or fails, leaves the text alone: the
@@ -35,11 +36,11 @@ type PolishOutcome =
  * saves as usual, and disables its save actions while `isPolishing`. Its textarea is read-only meanwhile, and calls
  * `onEdit` on every change and `reset` once saved.
  */
-export function useAiPolish({ serviceId, textareaRef, text, setText }: UseAiPolishOptions) {
+export function useAiPolish({ request, textareaRef, text, setText }: UseAiPolishOptions) {
   const { t } = useTranslation();
   const { data: me } = useMeQuery();
   const enabled = me?.features.aiPolish ?? false;
-  const mutation = usePolishCustomerReportMutation(serviceId);
+  const mutation = useMutation({ mutationFn: request });
   // What the latest polish did, until the next edit, polish or save.
   const [outcome, setOutcome] = useState<PolishOutcome>({ kind: "none" });
   // Set while the hook itself changes the text, so the change isn't taken for the user's.

@@ -222,14 +222,14 @@ export function useSaveCustomerReportMutation(serviceId: string) {
   });
 }
 
-/** AI-polishes a draft customer report. Saves nothing; `useAiPolish` handles the result. */
-export function usePolishCustomerReportMutation(serviceId: string) {
-  return useMutation({
-    mutationFn: (text: string) =>
-      request<CustomerReportPolish>(`/services/${serviceId}/customer-report/polish`, {
-        method: "POST",
-        body: { text },
-      }),
+/**
+ * AI-polishes a draft customer report of a service. Saves nothing;
+ * `useAiPolish` handles the result.
+ */
+export function polishCustomerReport(serviceId: string, text: string) {
+  return request<CustomerReportPolish>(`/services/${serviceId}/customer-report/polish`, {
+    method: "POST",
+    body: { text },
   });
 }
 

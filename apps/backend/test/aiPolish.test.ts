@@ -97,6 +97,16 @@ describe("AI polish", () => {
     ]);
   });
 
+  it("instructs the model to polish a customer report", async () => {
+    const { agent, model, service } = await setUp();
+
+    await agent.post(polishPath(service.id)).send({ text: "zamenjen kondenzator" });
+
+    const system = model.doGenerateCalls[0].prompt.filter((message) => message.role === "system");
+    expect(system).toHaveLength(1);
+    expect(system[0].content).toMatch(/customer report/);
+  });
+
   it("asks OpenAI not to store the request", async () => {
     const { agent, model, service } = await setUp();
 

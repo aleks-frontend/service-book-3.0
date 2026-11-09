@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { Loader2 } from "lucide-react";
 import { CUSTOMER_REPORT_MAX, type ServiceDetail } from "@servicebook/schemas";
-import { useSaveCustomerReportMutation } from "@/lib/services";
+import { polishCustomerReport, useSaveCustomerReportMutation } from "@/lib/services";
 import { useAiPolish } from "@/lib/useAiPolish";
 import { PolishButton, PolishedBar } from "./AiPolish";
 import { Button } from "./ui/button";
@@ -24,7 +24,7 @@ export function CustomerReport({ service }: { service: ServiceDetail }) {
   });
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const polish = useAiPolish({
-    serviceId: service.id,
+    request: (text) => polishCustomerReport(service.id, text),
     textareaRef,
     text: watch("customerReport"),
     setText: (text) => setValue("customerReport", text, { shouldDirty: true }),

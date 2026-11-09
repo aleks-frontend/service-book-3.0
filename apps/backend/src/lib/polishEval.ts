@@ -74,7 +74,7 @@ export async function runPolishEval(
   const results: PolishEvalResult[] = [];
   for (const { kind, text } of samples) {
     try {
-      const { text: output } = await polisher.polish(text);
+      const { text: output } = await polisher.polish(text, "customer_report");
       const [before, after] = [scriptOf(text), scriptOf(output)];
       const warnings = before === after ? [] : [`script changed: ${before} → ${after}`];
       results.push({ kind, input: text, output, warnings });

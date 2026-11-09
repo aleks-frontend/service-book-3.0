@@ -284,7 +284,7 @@ servicesRouter.post("/:id/customer-report/polish", async (req, res) => {
   }
 
   try {
-    res.json(await polisher.polish(input.text));
+    res.json(await polisher.polish(input.text, "customer_report"));
   } catch (error) {
     sendPolishFailure(
       res,

@@ -6,7 +6,7 @@ import {
   runPolishEval,
   scriptOf,
 } from "../src/lib/polishEval.js";
-import { createFakeTextPolisher, TextPolishError } from "../src/lib/textPolisher.js";
+import { createFakeTextPolisher, TextPolishError, type TextKind } from "../src/lib/textPolisher.js";
 
 describe("the AI polish prompt eval", () => {
   it("covers the six sample kinds", () => {
@@ -45,12 +45,14 @@ describe("the AI polish prompt eval", () => {
 
   it("polishes every sample, flagging a changed script and keeping failures", async () => {
     const fake = createFakeTextPolisher();
+    const kinds: TextKind[] = [];
     const results = await runPolishEval(
       {
-        async polish(text) {
+        async polish(text, kind) {
+          kinds.push(kind);
           if (text === "fail") throw new TextPolishError("timeout");
           if (text === "латиница") return { text: "latinica", changed: true };
-          return fake.polish(text);
+          return fake.polish(text, kind);
         },
       },
       [
@@ -75,6 +77,7 @@ describe("the AI polish prompt eval", () => {
       },
       { kind: "Failed", input: "fail", output: null, warnings: ["failed: timeout"] },
     ]);
+    expect(kinds).toEqual(["customer_report", "customer_report", "customer_report"]);
   });
 
   it("prints each input next to its output, wrapped to the column width", () => {
