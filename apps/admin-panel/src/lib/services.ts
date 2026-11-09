@@ -9,7 +9,7 @@ import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import type {
   CursorPage,
-  CustomerReportPolish,
+  AiPolishResult,
   DeviceService,
   LogEntry,
   Service,
@@ -227,7 +227,18 @@ export function useSaveCustomerReportMutation(serviceId: string) {
  * `useAiPolish` handles the result.
  */
 export function polishCustomerReport(serviceId: string, text: string) {
-  return request<CustomerReportPolish>(`/services/${serviceId}/customer-report/polish`, {
+  return request<AiPolishResult>(`/services/${serviceId}/customer-report/polish`, {
+    method: "POST",
+    body: { text },
+  });
+}
+
+/**
+ * AI-polishes a draft service description, of a new service or one being edited.
+ * Saves nothing; `useAiPolish` handles the result.
+ */
+export function polishServiceDescription(text: string) {
+  return request<AiPolishResult>("/services/description/polish", {
     method: "POST",
     body: { text },
   });

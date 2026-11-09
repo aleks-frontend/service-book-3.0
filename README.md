@@ -50,9 +50,9 @@ The production cutover (#18) is a wizard: `scripts/cutover.sh` walks through fre
 
 ### AI polish prompt eval
 
-`npm run eval:ai-polish -w @servicebook/backend` sends six sample customer reports (Serbian in Latin, in Cyrillic and without diacritics, Hungarian, English, terse notes) through the text polisher and the model `AI_POLISH_MODEL` names, and prints each input next to its output. It needs `AI_POLISH_MODEL` and `OPENAI_API_KEY` in `apps/backend/.env`, and stops with a message without them. Each run is six real, paid calls (a fraction of a cent), so it isn't part of `npm test` or CI.
+`npm run eval:ai-polish -w @servicebook/backend` sends six sample customer reports (Serbian in Latin, in Cyrillic and without diacritics, Hungarian, English, terse notes) and five sample service descriptions (the same, without English) through the text polisher and the model `AI_POLISH_MODEL` names, and prints each input next to its output. It needs `AI_POLISH_MODEL` and `OPENAI_API_KEY` in `apps/backend/.env`, and stops with a message without them. Each run is eleven real, paid calls (a fraction of a cent), so it isn't part of `npm test` or CI.
 
-Run it after changing the prompt in `apps/backend/src/lib/textPolisher.ts` or switching models ([ADR-0007](./docs/adr/0007-ai-polish-through-a-paid-provider.md)). Check that every output keeps its input's language and script and adds no facts (parts, prices, causes, warranties); the script flags a failure or a changed script, but language and facts need a human read. The samples live in `apps/backend/src/lib/polishEval.ts`.
+Run it after changing the prompt in `apps/backend/src/lib/textPolisher.ts` or switching models ([ADR-0007](./docs/adr/0007-ai-polish-through-a-paid-provider.md)). Check that every output keeps its input's language and script and adds no facts (parts, prices, causes, warranties), and that descriptions keep their wording and stay terse; the script flags a failure or a changed script, but language and facts need a human read. The samples live in `apps/backend/src/lib/polishEval.ts`.
 
 ## Deploying
 

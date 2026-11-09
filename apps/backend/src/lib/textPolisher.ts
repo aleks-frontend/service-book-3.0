@@ -3,13 +3,14 @@ import type { Request } from "express";
 import { APICallError, generateText, type LanguageModel } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import {
+  AI_POLISH_MAX,
   CUSTOMER_REPORT_MAX,
   type AiPolishErrorCode,
-  type CustomerReportPolish,
+  type AiPolishResult,
 } from "@servicebook/schemas";
 
 /** The kinds of text AI polish handles, each with its own instructions and length limit. */
-export type TextKind = "customer_report";
+export type TextKind = "customer_report" | "service_description";
 
 /**
  * AI polish (GLOSSARY.md, ADR-0007): tidies a draft text of the given kind,
@@ -17,7 +18,7 @@ export type TextKind = "customer_report";
  */
 export interface TextPolisher {
   /** The polished text, or a `TextPolishError` saying why there is none. */
-  polish(text: string, kind: TextKind): Promise<CustomerReportPolish>;
+  polish(text: string, kind: TextKind): Promise<AiPolishResult>;
 }
 
 const CUSTOMER_REPORT_PROMPT = `You polish the customer report of a repair shop: the text a customer reads about the work done on their device.
@@ -30,16 +31,31 @@ const CUSTOMER_REPORT_PROMPT = `You polish the customer report of a repair shop:
 - Keep it about as long as the original.
 - Return only the polished text, with no quotes, preamble or explanation.`;
 
+/**
+ * A light polish: the description is printed on the intake receipt as the staff
+ * member wrote it, so only slips are fixed, never the wording or the length.
+ */
+const SERVICE_DESCRIPTION_PROMPT = `You correct the service description of a repair shop: the fault as the customer described it, typed by a staff member at the counter. It is printed on the intake receipt.
+
+- Fix only spelling, grammar, punctuation and diacritics (e.g. "ociscen" becomes "očišćen").
+- Do not rephrase. Keep the staff member's words, word order and tone.
+- Do not turn terse notes into sentences: "ekran razbijen, ne puni" stays a note.
+- Reply in the same language and the same script as the input. Never translate. Serbian in Latin stays Latin, Serbian in Cyrillic stays Cyrillic. If the input mixes languages, keep the dominant one.
+- Do not add facts: no parts, prices, causes, warranties or promises that are not in the input.
+- Keep it as long as the original.
+- Return only the corrected text, with no quotes, preamble or explanation.`;
+
 /** What each kind of text tells the model, and how long its polished text may be. */
 const TEXT_KINDS: Record<TextKind, { systemPrompt: string; maxLength: number }> = {
   customer_report: { systemPrompt: CUSTOMER_REPORT_PROMPT, maxLength: CUSTOMER_REPORT_MAX },
+  service_description: { systemPrompt: SERVICE_DESCRIPTION_PROMPT, maxLength: AI_POLISH_MAX },
 };
 
 /** Why a polish failed (`AiPolishErrorCode`, but for `not_configured`, which never gets this far). */
 export type TextPolishFailure = Exclude<AiPolishErrorCode, "not_configured">;
 
 /**
- * A failed polish. It never carries the report text or the provider's message,
+ * A failed polish. It never carries the text or the provider's message,
  * which may quote it, so it is safe to log.
  */
 export class TextPolishError extends Error {
@@ -96,7 +112,7 @@ function cleanOutput(output: string, kind: TextKind) {
   return text;
 }
 
-function toPolishResult(input: string, output: string, kind: TextKind): CustomerReportPolish {
+function toPolishResult(input: string, output: string, kind: TextKind): AiPolishResult {
   const text = cleanOutput(output, kind);
   return { text, changed: normalized(text) !== normalized(input) };
 }

@@ -25,7 +25,7 @@ export type AppOptions = {
   /** Where photos are stored. Defaults to the one the environment configures (`.env.example`). */
   photoStorage?: PhotoStorage;
   /**
-   * What AI-polishes customer reports; null switches AI polish off. Defaults to
+   * What AI-polishes customer reports and service descriptions; null switches AI polish off. Defaults to
    * the one the environment configures (`.env.example`).
    */
   textPolisher?: TextPolisher | null;

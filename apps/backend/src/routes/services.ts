@@ -1,8 +1,8 @@
-import { Router, type Response } from "express";
+import { Router, type Request, type Response } from "express";
 import * as Sentry from "@sentry/node";
 import {
   customerReportInputSchema,
-  customerReportPolishInputSchema,
+  aiPolishInputSchema,
   plainDateToUtc,
   serviceCreateInputSchema,
   serviceInputSchema,
@@ -26,7 +26,13 @@ import {
   storePhotosThen,
 } from "../lib/photoUploads.js";
 import { prisma } from "../lib/prisma.js";
-import { TextPolishError, textPolisherOf, type TextPolishFailure } from "../lib/textPolisher.js";
+import {
+  TextPolishError,
+  textPolisherOf,
+  type TextKind,
+  type TextPolisher,
+  type TextPolishFailure,
+} from "../lib/textPolisher.js";
 import { listServiceIds } from "../lib/serviceList.js";
 import { newPublicToken, nextSequence } from "../lib/serviceNumbers.js";
 import { serviceSelect, toService } from "../lib/serviceRows.js";
@@ -236,7 +242,7 @@ const POLISH_FAILURE_STATUS: Record<TextPolishFailure, number> = {
 };
 
 /**
- * Answers a failed AI polish. The report text must not reach the logs or Sentry,
+ * Answers a failed AI polish. The text must not reach the logs or Sentry,
  * and a provider's error may quote it, so only the failure code and the
  * provider's status are recorded.
  */
@@ -260,11 +266,8 @@ function sendPolishFailure(res: Response, failure: TextPolishError) {
   } satisfies AiPolishError);
 }
 
-// AI polish of the draft in the textarea, not the saved report. Saves nothing, and only
-// the text reaches the model: the service is looked up to scope the route, never sent.
-servicesRouter.post("/:id/customer-report/polish", async (req, res) => {
-  const id = idParam(req, res, LABEL);
-  if (!id) return;
+/** The text polisher, or false after answering 503 `not_configured` when AI polish is off. */
+function polisherOrNotConfigured(req: Request, res: Response) {
   const polisher = textPolisherOf(req);
   if (!polisher) {
     sendError(
@@ -273,24 +276,48 @@ servicesRouter.post("/:id/customer-report/polish", async (req, res) => {
       "AI polish is not configured",
       "not_configured" satisfies AiPolishErrorCode,
     );
-    return;
+    return false;
   }
-  const input = parseBody(customerReportPolishInputSchema, req, res, LABEL);
-  if (!input) return;
-  const service = await prisma.service.findUnique({ where: { id }, select: { id: true } });
-  if (!service) {
-    sendNotFound(res, LABEL);
-    return;
-  }
+  return polisher;
+}
 
+/** Answers the polished `text` of `kind`, or why it failed. */
+async function sendPolished(res: Response, polisher: TextPolisher, text: string, kind: TextKind) {
   try {
-    res.json(await polisher.polish(input.text, "customer_report"));
+    res.json(await polisher.polish(text, kind));
   } catch (error) {
     sendPolishFailure(
       res,
       error instanceof TextPolishError ? error : new TextPolishError("unavailable"),
     );
   }
+}
+
+// AI polish of the draft description in the service form, which saves nothing. Not
+// scoped to a service, since a new one has no id yet; only the text reaches the model.
+servicesRouter.post("/description/polish", async (req, res) => {
+  const polisher = polisherOrNotConfigured(req, res);
+  if (!polisher) return;
+  const input = parseBody(aiPolishInputSchema, req, res, LABEL);
+  if (!input) return;
+  await sendPolished(res, polisher, input.text, "service_description");
+});
+
+// AI polish of the draft in the textarea, not the saved report. Saves nothing, and only
+// the text reaches the model: the service is looked up to scope the route, never sent.
+servicesRouter.post("/:id/customer-report/polish", async (req, res) => {
+  const id = idParam(req, res, LABEL);
+  if (!id) return;
+  const polisher = polisherOrNotConfigured(req, res);
+  if (!polisher) return;
+  const input = parseBody(aiPolishInputSchema, req, res, LABEL);
+  if (!input) return;
+  const service = await prisma.service.findUnique({ where: { id }, select: { id: true } });
+  if (!service) {
+    sendNotFound(res, LABEL);
+    return;
+  }
+  await sendPolished(res, polisher, input.text, "customer_report");
 });
 
 // A change of status is logged with its author in the same transaction; setting
