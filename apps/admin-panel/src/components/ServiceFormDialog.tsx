@@ -30,7 +30,8 @@ type ServiceFormDialogProps = {
  * the drawer's "Edit service" modal for its customer, devices, date and description.
  * A new service may have a note and photos of the device's condition at
  * intake, which a failed save keeps. A newly registered service is followed
- * by an offer of its intake receipt.
+ * by an offer of its intake receipt. AI polish can tidy the description; while it
+ * runs, the dialog neither saves nor closes.
  */
 export function ServiceFormDialog({ open, onOpenChange, service }: ServiceFormDialogProps) {
   const { t } = useTranslation();
@@ -39,9 +40,12 @@ export function ServiceFormDialog({ open, onOpenChange, service }: ServiceFormDi
   const formId = service ? "service-edit-form" : "service-create-form";
   const [created, setCreated] = useState<ServiceDetail>();
   const intakeNotePhotos = usePhotoPicker();
+  // While the description is AI-polished, nothing saves and the dialog stays open.
+  const [polishing, setPolishing] = useState(false);
 
   function changeOpen(next: boolean) {
-    // The form goes with the dialog's content, so its photos go too.
+    if (!next && polishing) return;
+    // The form goes with the dialog's content, so its photos and polish outcome go too.
     if (!next) intakeNotePhotos.clear();
     onOpenChange(next);
   }
@@ -61,8 +65,9 @@ export function ServiceFormDialog({ open, onOpenChange, service }: ServiceFormDi
               service={service}
               intakeNotePhotos={service ? undefined : intakeNotePhotos}
               saving={saveService.isPending}
+              onPolishingChange={setPolishing}
               onSubmit={(input) => {
-                if (intakeNotePhotos.processing) return;
+                if (intakeNotePhotos.processing || polishing) return;
                 saveService.mutate(
                   service
                     ? { id: service.id, input }
@@ -79,13 +84,13 @@ export function ServiceFormDialog({ open, onOpenChange, service }: ServiceFormDi
           </DialogBody>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => changeOpen(false)}>
+            <Button variant="outline" disabled={polishing} onClick={() => changeOpen(false)}>
               {t("Cancel")}
             </Button>
             <Button
               type="submit"
               form={formId}
-              disabled={saveService.isPending || intakeNotePhotos.processing}
+              disabled={saveService.isPending || intakeNotePhotos.processing || polishing}
             >
               {saveService.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {service ? t("Save changes") : t("Create service")}

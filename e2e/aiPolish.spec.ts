@@ -197,6 +197,13 @@ test("the Polish button is hidden when the deployment has no AI provider key", a
   await completion.report.fill("zamenjena baterija");
   await expect(completion.dialog.getByRole("button", { name: "Samo sačuvaj" })).toBeEnabled();
   await expect(page.getByRole("button", { name: "Doteraj" })).toHaveCount(0);
+  await completion.dialog.getByRole("button", { name: "Preskoči" }).click();
+
+  // Nor on the description of a new service.
+  const newService = await openNewService(page);
+  await newService.description.fill("ne pali se");
+  await expect(newService.save).toBeEnabled();
+  await expect(newService.polish).toHaveCount(0);
 });
 
 test("a staff member polishes the customer report in the completion dialog, undoes it, polishes again and generates the service report", async ({
@@ -258,4 +265,206 @@ test("a staff member polishes the customer report in the completion dialog, undo
   expect(pdf.text).toContain("zamenjen ekran (polished)");
   const saved = await page.request.get(`/api/services/${service.id}`);
   expect((await saved.json()).customerReport).toBe("zamenjen ekran (polished)");
+});
+
+/**
+ * Opens the New service dialog with a new customer's new device picked, so it
+ * can be created once the description is in.
+ */
+async function openNewService(page: Page) {
+  const name = `Jovana Janković ${crypto.randomUUID().slice(0, 8)}`;
+  const customer = await send(page, "/api/customers", { name, phone: "0603" });
+  await send(page, "/api/devices", {
+    manufacturer: "Xiaomi",
+    model: "Redmi 9",
+    ownerId: customer.id,
+  });
+  await page.getByRole("button", { name: "Dodaj", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Novi servis" });
+  await dialog.getByLabel("Mušterija *").fill(name);
+  await page.getByRole("option", { name: new RegExp(`^${name}`) }).click();
+  await dialog.getByLabel("Uređaji *").fill("Redmi 9");
+  await page.getByRole("option", { name: /^Xiaomi Redmi 9/ }).click();
+  return descriptionControls(dialog, "Dodaj servis");
+}
+
+/** The description and the polish controls of a service form dialog, saved with `saveLabel`. */
+function descriptionControls(dialog: ReturnType<Page["getByRole"]>, saveLabel: string) {
+  return {
+    dialog,
+    description: dialog.getByLabel("Opis"),
+    polish: dialog.getByRole("button", { name: "Doteraj" }),
+    bar: dialog.getByText("Doterano uz AI"),
+    undo: dialog.getByRole("button", { name: "Poništi" }),
+    looksGood: dialog.getByText("Izgleda dobro, nema potrebe za izmenama."),
+    save: dialog.getByRole("button", { name: saveLabel }),
+    cancel: dialog.getByRole("button", { name: "Otkaži" }),
+  };
+}
+
+test("a staff member polishes the description of a new service, undoes it, and creates it polished", async ({
+  page,
+}) => {
+  await logIn(page);
+  await expect(page).toHaveURL("/services");
+  const { dialog, description, polish, bar, undo, looksGood, save } = await openNewService(page);
+
+  await expect(polish).toBeDisabled();
+  await description.fill("ne pali se,pao u vodu");
+  await polish.click();
+  await expect(description).toHaveValue("ne pali se,pao u vodu (polished)");
+  await expect(bar).toBeVisible();
+
+  await undo.click();
+  await expect(description).toHaveValue("ne pali se,pao u vodu");
+  await expect(bar).toBeHidden();
+
+  // Native undo takes back a polish too.
+  await polish.click();
+  await expect(description).toHaveValue("ne pali se,pao u vodu (polished)");
+  await description.press("ControlOrMeta+z");
+  await expect(description).toHaveValue("ne pali se,pao u vodu");
+  await expect(bar).toBeHidden();
+
+  // Typing after a polish builds on it: the bar goes.
+  await polish.click();
+  await expect(bar).toBeVisible();
+  await description.press("End");
+  await description.pressSequentially(" Ekran");
+  await expect(bar).toBeHidden();
+
+  // A polish that changes nothing says so, and leaves the text alone.
+  await description.fill("Ne pali se. [unchanged]");
+  await polish.click();
+  await expect(looksGood).toBeVisible();
+  await expect(description).toHaveValue("Ne pali se. [unchanged]");
+
+  await description.fill("ne pali se,pao u vodu");
+  await expect(looksGood).toBeHidden();
+  await polish.click();
+  await expect(bar).toBeVisible();
+  const created = page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/api/services") && response.request().method() === "POST",
+  );
+  await save.click();
+  await expect(dialog).toBeHidden();
+  const service = await (await created).json();
+  expect(service.description).toBe("ne pali se,pao u vodu (polished)");
+  await page
+    .getByRole("dialog", { name: "Odštampati prijemnicu?" })
+    .getByRole("button", { name: "Ne sada" })
+    .click();
+
+  // Opened again, the dialog starts with no polish outcome.
+  const again = await openNewService(page);
+  await expect(again.bar).toBeHidden();
+  await expect(again.description).toHaveValue("");
+});
+
+test("while the description is polished, the New service dialog neither saves nor closes", async ({
+  page,
+}) => {
+  await logIn(page);
+  await expect(page).toHaveURL("/services");
+  const { dialog, description, save, cancel, polish } = await openNewService(page);
+
+  await description.fill("ne pali se [slow]");
+  await polish.click();
+  await expect(dialog.getByRole("button", { name: "Doterujem…" })).toBeDisabled();
+  await expect(description).toHaveAttribute("readonly", "");
+  await expect(save).toBeDisabled();
+  await expect(cancel).toBeDisabled();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeVisible();
+  // An outside click is ignored too.
+  await page.mouse.click(5, 5);
+  await expect(dialog).toBeVisible();
+
+  await expect(description).toHaveValue("ne pali se [slow] (polished)");
+  await expect(description).not.toHaveAttribute("readonly");
+  await expect(save).toBeEnabled();
+  await expect(cancel).toBeEnabled();
+});
+
+test("a failed polish of the description leaves it alone and says so in a toast", async ({
+  page,
+}) => {
+  await logIn(page);
+  await expect(page).toHaveURL("/services");
+  const { description, polish, bar, save } = await openNewService(page);
+  const unavailable = "AI doterivanje trenutno nije dostupno. Pokušajte ponovo kasnije.";
+
+  await description.fill("ne pali se [unavailable]");
+  await polish.click();
+  await expect(page.getByText(unavailable, { exact: true })).toBeVisible();
+  await expect(description).toHaveValue("ne pali se [unavailable]");
+  await expect(bar).toBeHidden();
+  await expect(save).toBeEnabled();
+
+  await description.fill("ne pali se [daily limit]");
+  await polish.click();
+  await expect(page.getByText(`${unavailable} (dostignut dnevni limit)`)).toBeVisible();
+  await expect(description).toHaveValue("ne pali se [daily limit]");
+});
+
+test("a staff member polishes the description in the Edit service dialog and saves it", async ({
+  page,
+}) => {
+  const unavailable = "AI doterivanje trenutno nije dostupno. Pokušajte ponovo kasnije.";
+  await logIn(page);
+  await expect(page).toHaveURL("/services");
+  const service = await registerService(page);
+  await page.goto(`/services?service=${service.id}`);
+  const drawer = page.getByRole("dialog", { name: `Servis ${service.number}` });
+  await drawer.getByRole("button", { name: "Izmena servisa" }).click();
+  const { dialog, description, polish, bar, undo, looksGood, save, cancel } = descriptionControls(
+    page.getByRole("dialog", { name: "Izmena servisa" }),
+    "Sačuvaj izmene",
+  );
+
+  await description.fill("pukao ekran,ne puni");
+  await polish.click();
+  await expect(description).toHaveValue("pukao ekran,ne puni (polished)");
+  await undo.click();
+  await expect(description).toHaveValue("pukao ekran,ne puni");
+
+  // Typing after a polish builds on it: the bar goes.
+  await polish.click();
+  await expect(bar).toBeVisible();
+  await description.press("End");
+  await description.pressSequentially(" x");
+  await expect(bar).toBeHidden();
+
+  await description.fill("Pukao ekran. [unchanged]");
+  await polish.click();
+  await expect(looksGood).toBeVisible();
+
+  await description.fill("pukao ekran [unavailable]");
+  await polish.click();
+  await expect(page.getByText(unavailable, { exact: true })).toBeVisible();
+  await expect(description).toHaveValue("pukao ekran [unavailable]");
+  await description.fill("pukao ekran [daily limit]");
+  await polish.click();
+  await expect(page.getByText(`${unavailable} (dostignut dnevni limit)`)).toBeVisible();
+  await expect(description).toHaveValue("pukao ekran [daily limit]");
+
+  // While polishing, it neither saves nor closes.
+  await description.fill("pukao ekran,ne puni [slow]");
+  await polish.click();
+  await expect(save).toBeDisabled();
+  await expect(cancel).toBeDisabled();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeVisible();
+  await expect(description).toHaveValue("pukao ekran,ne puni [slow] (polished)");
+  await expect(save).toBeEnabled();
+  await expect(bar).toBeVisible();
+
+  await save.click();
+  await expect(dialog).toBeHidden();
+  await expect(drawer.getByRole("region", { name: "Detalji servisa" })).toContainText(
+    "pukao ekran,ne puni [slow] (polished)",
+  );
+  const saved = await page.request.get(`/api/services/${service.id}`);
+  expect((await saved.json()).description).toBe("pukao ekran,ne puni [slow] (polished)");
 });

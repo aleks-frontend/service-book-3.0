@@ -4,7 +4,7 @@ import * as Sentry from "@sentry/node";
 import { APICallError } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
 import type TestAgent from "supertest/lib/agent.js";
-import { CUSTOMER_REPORT_MAX } from "@servicebook/schemas";
+import { AI_POLISH_MAX, CUSTOMER_REPORT_MAX } from "@servicebook/schemas";
 import { createApp } from "../src/app.js";
 import {
   createTextPolisher,
@@ -95,6 +95,16 @@ describe("AI polish", () => {
     expect(user).toEqual([
       { role: "user", content: [{ type: "text", text: "zamenjen kondenzator" }] },
     ]);
+  });
+
+  it("instructs the model to polish a customer report", async () => {
+    const { agent, model, service } = await setUp();
+
+    await agent.post(polishPath(service.id)).send({ text: "zamenjen kondenzator" });
+
+    const system = model.doGenerateCalls[0].prompt.filter((message) => message.role === "system");
+    expect(system).toHaveLength(1);
+    expect(system[0].content).toMatch(/customer report/);
   });
 
   it("asks OpenAI not to store the request", async () => {
@@ -378,5 +388,119 @@ describe("textPolisherFromEnv", () => {
 
   it("uses the fake polisher when the test-only flag is set, with no key", () => {
     expect(textPolisherFromEnv({ AI_POLISH_FAKE: "true" })).not.toBeNull();
+  });
+});
+
+const DESCRIPTION_POLISH = "/api/services/description/polish";
+
+describe("AI polish of a service description", () => {
+  it("polishes a description with no service to scope it, saving nothing", async () => {
+    const model = mockModel("Ne pali se, pao u vodu, ekran razbijen.");
+    const { agent } = await authenticatedAgent({ textPolisher: createTextPolisher({ model }) });
+
+    const response = await agent
+      .post(DESCRIPTION_POLISH)
+      .send({ text: "ne pali se,pao u vodu ekran razbijen" });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      text: "Ne pali se, pao u vodu, ekran razbijen.",
+      changed: true,
+    });
+  });
+
+  it("sends the model only the text, with the light-polish instructions", async () => {
+    const model = mockModel("Ekran razbijen.");
+    const { agent } = await authenticatedAgent({ textPolisher: createTextPolisher({ model }) });
+
+    await agent.post(DESCRIPTION_POLISH).send({ text: "ekran razbijen" });
+
+    expect(model.doGenerateCalls).toHaveLength(1);
+    const [call] = model.doGenerateCalls;
+    expect(call.prompt.filter((message) => message.role === "user")).toEqual([
+      { role: "user", content: [{ type: "text", text: "ekran razbijen" }] },
+    ]);
+    const system = call.prompt.filter((message) => message.role === "system");
+    expect(system).toHaveLength(1);
+    expect(system[0].content).toMatch(/service description/);
+    expect(system[0].content).not.toMatch(/customer report/);
+    expect(call.providerOptions?.openai).toMatchObject({ store: false });
+  });
+
+  it("tells the model to answer a Cyrillic text in Cyrillic", async () => {
+    const model = mockModel("Екран разбијен.");
+    const { agent } = await authenticatedAgent({ textPolisher: createTextPolisher({ model }) });
+
+    await agent.post(DESCRIPTION_POLISH).send({ text: "екран разбијен,не пуни" });
+    await agent.post(DESCRIPTION_POLISH).send({ text: "ekran razbijen,ne puni" });
+
+    const [cyrillic, latin] = model.doGenerateCalls.map(
+      (call) => call.prompt.find((message) => message.role === "system")?.content,
+    );
+    expect(cyrillic).toMatch(/reply in Cyrillic letters/);
+    expect(latin).not.toMatch(/Cyrillic letters;/);
+  });
+
+  it.each([
+    ["blank", { text: "  \n " }],
+    ["over-length", { text: "a".repeat(AI_POLISH_MAX + 1) }],
+    ["missing", {}],
+  ])("rejects %s text with 400", async (_case, body) => {
+    const model = mockModel("x");
+    const { agent } = await authenticatedAgent({ textPolisher: createTextPolisher({ model }) });
+
+    const response = await agent.post(DESCRIPTION_POLISH).send(body);
+
+    expect(response.status).toBe(400);
+    expect(model.doGenerateCalls).toHaveLength(0);
+  });
+
+  it("requires a logged-in staff member", async () => {
+    const app = createApp({ textPolisher: createTextPolisher({ model: mockModel("x") }) });
+
+    const response = await request(app).post(DESCRIPTION_POLISH).send({ text: "radi" });
+
+    expect(response.status).toBe(401);
+  });
+
+  it("answers 503 not_configured when AI polish is off", async () => {
+    const { agent } = await authenticatedAgent({ textPolisher: null });
+
+    const response = await agent.post(DESCRIPTION_POLISH).send({ text: "radi" });
+
+    expect(response.status).toBe(503);
+    expect(response.body.code).toBe("not_configured");
+  });
+
+  it.each([
+    [
+      "a persisting outage",
+      failingModel([providerError(503), providerError(503)]),
+      503,
+      "unavailable",
+    ],
+    ["a hanging model", hangingModel(), 504, "timeout"],
+    ["an over-long output", mockModel("a".repeat(AI_POLISH_MAX + 1)), 502, "invalid_output"],
+  ])("answers a failure as the customer report does: %s", async (_case, model, status, code) => {
+    const { agent } = await authenticatedAgent({
+      textPolisher: createTextPolisher({ model, ...quickly }),
+    });
+
+    const response = await agent.post(DESCRIPTION_POLISH).send({ text: "radi" });
+
+    expect(response.status).toBe(status);
+    expect(response.body.code).toBe(code);
+  });
+
+  it("says when the provider's daily limit was reached", async () => {
+    const daily = () => providerError(429, "Rate limit reached on requests per day (RPD).");
+    const { agent } = await authenticatedAgent({
+      textPolisher: createTextPolisher({ model: failingModel([daily(), daily()]), ...quickly }),
+    });
+
+    const response = await agent.post(DESCRIPTION_POLISH).send({ text: "radi" });
+
+    expect(response.status).toBe(503);
+    expect(response.body).toMatchObject({ code: "unavailable", dailyLimit: true });
   });
 });

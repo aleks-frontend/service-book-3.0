@@ -4,7 +4,7 @@ import type { AiPolish } from "@/lib/useAiPolish";
 import { Button } from "./ui/button";
 
 /**
- * The "Polish" button, by the customer report's save actions. Not rendered when
+ * The "Polish" button, under the text it polishes. Not rendered when
  * the deployment doesn't offer AI polish. `disabled` is for the host's own
  * reasons, e.g. while it saves.
  */

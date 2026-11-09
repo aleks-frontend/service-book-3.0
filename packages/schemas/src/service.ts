@@ -57,17 +57,24 @@ export const customerReportInputSchema = z.object({
 export type CustomerReportInput = z.output<typeof customerReportInputSchema>;
 
 /**
- * `POST /api/services/:id/customer-report/polish`: the draft to AI-polish, which is
- * the text in the textarea, not the saved report.
+ * The longest draft AI polish takes, and the longest text it answers: a customer
+ * report's maximum, which a service description (with no maximum of its own) shares.
  */
-export const customerReportPolishInputSchema = z.object({
-  text: z.string().trim().min(1).max(CUSTOMER_REPORT_MAX),
+export const AI_POLISH_MAX = CUSTOMER_REPORT_MAX;
+
+/**
+ * The draft to AI-polish, which is the text in the textarea, not the saved one:
+ * a customer report (`POST /api/services/:id/customer-report/polish`) or a service
+ * description (`POST /api/services/description/polish`).
+ */
+export const aiPolishInputSchema = z.object({
+  text: z.string().trim().min(1).max(AI_POLISH_MAX),
 });
 
-export type CustomerReportPolishInput = z.output<typeof customerReportPolishInputSchema>;
+export type AiPolishInput = z.output<typeof aiPolishInputSchema>;
 
 /** The polished draft; `changed` is false when it reads the same as the one sent. */
-export type CustomerReportPolish = { text: string; changed: boolean };
+export type AiPolishResult = { text: string; changed: boolean };
 
 /** Why AI polish answered with an error, as the response's `code`. */
 export type AiPolishErrorCode = "not_configured" | "unavailable" | "timeout" | "invalid_output";

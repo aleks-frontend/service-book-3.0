@@ -82,6 +82,10 @@ _Avoid_: Comment, remark
 An image attached to a log entry; internal, like the log. Only staff notes carry photos, and a note needs text, photos or both. A service's photos are the photos of its log's notes (Serbian: fotografija).
 _Avoid_: Attachment, image, picture, file
 
+**Service description**:
+The fault as the customer described it when leaving their devices, typed by a staff member while registering the service and printed on the intake receipt (Serbian: opis).
+_Avoid_: Fault description, problem, complaint
+
 **Intake note**:
 The optional note written while registering a service, recording the device's condition at intake (scratches, cracks, dents) in text, photos or both. It is saved with the service, as the first note in its log (Serbian: stanje pri prijemu).
 _Avoid_: Intake photos, damage report
@@ -91,13 +95,13 @@ The final customer-facing text describing what was done on a service.
 _Avoid_: Remark, note, summary, description
 
 **AI polish**:
-Rewriting a draft customer report for grammar and a professional tone with an AI model, keeping its language, script and facts (Serbian: doterivanje).
+Tidying a draft text with an AI model, keeping its language, script and facts (Serbian: doterivanje). A customer report is rewritten for grammar and a professional tone, and terse notes may become sentences. A service description gets a lighter polish: spelling, grammar, diacritics and punctuation are fixed and curse words or rude phrasing removed, but it stays the staff member's short note.
 _Avoid_: Rewrite, improve, AI fix, enhance
 
 ### Documents & identity
 
 **Intake receipt**:
-The PDF handed to the customer when they leave their devices, which they bring back to pick them up: the customer's details, the devices, the fault description, a signature line for the staff member and one for the customer, and a QR code of the public link. It has no prices (Serbian: prijemnica; Hungarian: átvételi elismervény).
+The PDF handed to the customer when they leave their devices, which they bring back to pick them up: the customer's details, the devices, the service description, a signature line for the staff member and one for the customer, and a QR code of the public link. It has no prices (Serbian: prijemnica; Hungarian: átvételi elismervény).
 _Avoid_: Dispatch note, otpremnica, invoice
 
 **Service report**:

@@ -4,13 +4,20 @@ import {
   formatPolishEval,
   polishEvalPolisher,
   runPolishEval,
-  scriptOf,
 } from "../src/lib/polishEval.js";
-import { createFakeTextPolisher, TextPolishError } from "../src/lib/textPolisher.js";
+import {
+  createFakeTextPolisher,
+  scriptOf,
+  TextPolishError,
+  type TextKind,
+} from "../src/lib/textPolisher.js";
 
 describe("the AI polish prompt eval", () => {
-  it("covers the six sample kinds", () => {
-    expect(POLISH_EVAL_SAMPLES.map(({ kind }) => kind)).toEqual([
+  it("covers six customer reports and seven service descriptions", () => {
+    const labels = (kind: TextKind) =>
+      POLISH_EVAL_SAMPLES.filter((sample) => sample.kind === kind).map(({ label }) => label);
+
+    expect(labels("customer_report")).toEqual([
       "Serbian (Latin)",
       "Serbian (Cyrillic)",
       "Serbian without diacritics",
@@ -18,7 +25,15 @@ describe("the AI polish prompt eval", () => {
       "English",
       "Terse notes",
     ]);
-    expect(POLISH_EVAL_SAMPLES.at(-1)!.text).toBe("zamenjen kondenzator, ociscen, radi");
+    expect(labels("service_description")).toEqual([
+      "Serbian (Latin)",
+      "Serbian (Cyrillic)",
+      "Serbian without diacritics",
+      "Hungarian",
+      "Swearing",
+      "Terse notes",
+      "Terse notes (Cyrillic)",
+    ]);
   });
 
   it("refuses to run without a configured model and key, or on the fake", () => {
@@ -45,61 +60,79 @@ describe("the AI polish prompt eval", () => {
 
   it("polishes every sample, flagging a changed script and keeping failures", async () => {
     const fake = createFakeTextPolisher();
+    const kinds: TextKind[] = [];
     const results = await runPolishEval(
       {
-        async polish(text) {
+        async polish(text, kind) {
+          kinds.push(kind);
           if (text === "fail") throw new TextPolishError("timeout");
           if (text === "латиница") return { text: "latinica", changed: true };
-          return fake.polish(text);
+          return fake.polish(text, kind);
         },
       },
       [
-        { kind: "Kept", text: "zamenjen ekran" },
-        { kind: "Switched", text: "латиница" },
-        { kind: "Failed", text: "fail" },
+        { kind: "customer_report", label: "Kept", text: "zamenjen ekran" },
+        { kind: "service_description", label: "Switched", text: "латиница" },
+        { kind: "customer_report", label: "Failed", text: "fail" },
       ],
     );
 
     expect(results).toEqual([
       {
-        kind: "Kept",
+        kind: "customer_report",
+        label: "Kept",
         input: "zamenjen ekran",
         output: "zamenjen ekran (polished)",
         warnings: [],
       },
       {
-        kind: "Switched",
+        kind: "service_description",
+        label: "Switched",
         input: "латиница",
         output: "latinica",
         warnings: ["script changed: Cyrillic → Latin"],
       },
-      { kind: "Failed", input: "fail", output: null, warnings: ["failed: timeout"] },
+      {
+        kind: "customer_report",
+        label: "Failed",
+        input: "fail",
+        output: null,
+        warnings: ["failed: timeout"],
+      },
     ]);
+    expect(kinds).toEqual(["customer_report", "service_description", "customer_report"]);
   });
 
   it("prints each input next to its output, wrapped to the column width", () => {
     const report = formatPolishEval(
       [
         {
-          kind: "English",
+          kind: "customer_report",
+          label: "English",
           input: "replaced the charging port, phone charges normaly now",
           output: "We replaced the charging port and the phone now charges normally.",
           warnings: [],
         },
-        { kind: "Failed", input: "radi", output: null, warnings: ["failed: timeout"] },
+        {
+          kind: "service_description",
+          label: "Terse notes",
+          input: "radi",
+          output: null,
+          warnings: ["failed: timeout"],
+        },
       ],
       { columnWidth: 24 },
     );
 
     expect(report).toBe(
       [
-        "── English ──",
+        "── Customer report: English ──",
         "Input                    │ Output",
         "replaced the charging    │ We replaced the charging",
         "port, phone charges      │ port and the phone now",
         "normaly now              │ charges normally.",
         "",
-        "── Failed ──",
+        "── Service description: Terse notes ──",
         "Input                    │ Output",
         "radi                     │ —",
         "! failed: timeout",

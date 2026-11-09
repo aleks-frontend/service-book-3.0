@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Controller, useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "react-i18next";
@@ -14,8 +14,11 @@ import {
   type ServiceCreateInputValues,
 } from "@servicebook/schemas";
 import { todayPlainDate } from "@/lib/format";
+import { polishServiceDescription } from "@/lib/services";
+import { useAiPolish } from "@/lib/useAiPolish";
 import type { PhotoPickerState } from "@/lib/usePhotoPicker";
 import { cn } from "@/lib/utils";
+import { PolishButton, PolishedBar } from "./AiPolish";
 import { CustomerFormDialog } from "./CustomerFormDialog";
 import { CustomerPicker } from "./CustomerPicker";
 import { DeviceFormDialog } from "./DeviceFormDialog";
@@ -36,8 +39,10 @@ type ServiceFormProps = {
    * "Condition at intake" section: a note and its photos.
    */
   intakeNotePhotos?: PhotoPickerState;
-  /** Whether the service is being saved, which locks the intake photos. */
+  /** Whether the service is being saved, which locks the intake photos and AI polish. */
   saving?: boolean;
+  /** Told when an AI polish of the description starts and ends, so the host can hold its save. */
+  onPolishingChange?: (isPolishing: boolean) => void;
   /** The service's fields; `intakeNote` is set when creating only. */
   onSubmit: (input: ServiceCreateInput) => void;
 };
@@ -45,9 +50,17 @@ type ServiceFormProps = {
 /**
  * The customer, devices, date and description of a service, and, when one is
  * created, an optional note and photos of the device's condition at intake.
- * The customer and devices can be picked or created inline; the date starts as today.
+ * The customer and devices can be picked or created inline; the date starts as
+ * today, and AI polish can tidy the description.
  */
-export function ServiceForm({ id, service, intakeNotePhotos, saving, onSubmit }: ServiceFormProps) {
+export function ServiceForm({
+  id,
+  service,
+  intakeNotePhotos,
+  saving,
+  onPolishingChange,
+  onSubmit,
+}: ServiceFormProps) {
   const { t } = useTranslation();
 
   // The form only holds ids; the pickers also need the names to show.
@@ -64,6 +77,7 @@ export function ServiceForm({ id, service, intakeNotePhotos, saving, onSubmit }:
     handleSubmit,
     reset,
     setValue,
+    watch,
     formState: { errors, isSubmitted },
   } = useForm<ServiceCreateInputValues, unknown, ServiceCreateInput>({
     // zodResolver submits the schema's parsed output, but @hookform/resolvers
@@ -75,6 +89,20 @@ export function ServiceForm({ id, service, intakeNotePhotos, saving, onSubmit }:
     >,
   });
 
+  const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
+  const polish = useAiPolish({
+    request: polishServiceDescription,
+    textareaRef: descriptionRef,
+    text: watch("description") ?? "",
+    setText: (text) => setValue("description", text, { shouldDirty: true }),
+  });
+  const description = register("description", { onChange: polish.onEdit });
+  const resetPolish = polish.reset;
+
+  useEffect(() => {
+    onPolishingChange?.(polish.isPolishing);
+  }, [polish.isPolishing, onPolishingChange]);
+
   useEffect(() => {
     reset({
       customerId: service?.customer.id ?? "",
@@ -85,7 +113,9 @@ export function ServiceForm({ id, service, intakeNotePhotos, saving, onSubmit }:
     });
     setCustomer(service?.customer ?? null);
     setDevices(service?.devices ?? []);
-  }, [service, reset]);
+    // The description is the saved one again, so an Undo would restore a stale draft.
+    resetPolish();
+  }, [service, reset, resetPolish]);
 
   function changeCustomer(next: CustomerSummary | null) {
     setCustomer(next);
@@ -202,7 +232,19 @@ export function ServiceForm({ id, service, intakeNotePhotos, saving, onSubmit }:
           <label htmlFor={`${id}-description`} className="text-sm font-medium">
             {t("Description")}
           </label>
-          <Textarea id={`${id}-description`} rows={4} {...register("description")} />
+          <Textarea
+            id={`${id}-description`}
+            rows={4}
+            // Read-only rather than disabled, so the text stays readable while it is polished.
+            readOnly={polish.isPolishing}
+            {...description}
+            ref={(textarea) => {
+              description.ref(textarea);
+              descriptionRef.current = textarea;
+            }}
+          />
+          <PolishedBar polish={polish} />
+          <PolishButton polish={polish} disabled={saving} />
         </div>
 
         {intakeNotePhotos && (

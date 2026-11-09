@@ -3,7 +3,11 @@ import { useTranslation } from "react-i18next";
 import { AlertTriangle, ChevronRight, Loader2 } from "lucide-react";
 import { CUSTOMER_REPORT_MAX, type ServiceDetail } from "@servicebook/schemas";
 import { cn } from "@/lib/utils";
-import { useSaveCustomerReportMutation, useServiceLogQuery } from "@/lib/services";
+import {
+  polishCustomerReport,
+  useSaveCustomerReportMutation,
+  useServiceLogQuery,
+} from "@/lib/services";
 import { useAiPolish } from "@/lib/useAiPolish";
 import { PolishButton, PolishedBar } from "./AiPolish";
 import { LogEntryByline } from "./ServiceLog";
@@ -72,7 +76,7 @@ function CompletionForm({ service, open, onClose, onGenerate }: CompletionFormPr
   const isEmpty = customerReport.trim() === "";
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const polish = useAiPolish({
-    serviceId: service.id,
+    request: (text) => polishCustomerReport(service.id, text),
     textareaRef,
     text: customerReport,
     setText: setCustomerReport,
