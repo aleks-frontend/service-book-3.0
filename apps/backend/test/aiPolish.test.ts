@@ -427,6 +427,20 @@ describe("AI polish of a service description", () => {
     expect(call.providerOptions?.openai).toMatchObject({ store: false });
   });
 
+  it("tells the model to answer a Cyrillic text in Cyrillic", async () => {
+    const model = mockModel("Екран разбијен.");
+    const { agent } = await authenticatedAgent({ textPolisher: createTextPolisher({ model }) });
+
+    await agent.post(DESCRIPTION_POLISH).send({ text: "екран разбијен,не пуни" });
+    await agent.post(DESCRIPTION_POLISH).send({ text: "ekran razbijen,ne puni" });
+
+    const [cyrillic, latin] = model.doGenerateCalls.map(
+      (call) => call.prompt.find((message) => message.role === "system")?.content,
+    );
+    expect(cyrillic).toMatch(/reply in Cyrillic letters/);
+    expect(latin).not.toMatch(/Cyrillic letters;/);
+  });
+
   it.each([
     ["blank", { text: "  \n " }],
     ["over-length", { text: "a".repeat(AI_POLISH_MAX + 1) }],

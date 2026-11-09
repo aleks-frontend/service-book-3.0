@@ -4,12 +4,16 @@ import {
   formatPolishEval,
   polishEvalPolisher,
   runPolishEval,
-  scriptOf,
 } from "../src/lib/polishEval.js";
-import { createFakeTextPolisher, TextPolishError, type TextKind } from "../src/lib/textPolisher.js";
+import {
+  createFakeTextPolisher,
+  scriptOf,
+  TextPolishError,
+  type TextKind,
+} from "../src/lib/textPolisher.js";
 
 describe("the AI polish prompt eval", () => {
-  it("covers six customer reports and five service descriptions", () => {
+  it("covers six customer reports and seven service descriptions", () => {
     const labels = (kind: TextKind) =>
       POLISH_EVAL_SAMPLES.filter((sample) => sample.kind === kind).map(({ label }) => label);
 
@@ -26,7 +30,9 @@ describe("the AI polish prompt eval", () => {
       "Serbian (Cyrillic)",
       "Serbian without diacritics",
       "Hungarian",
+      "Swearing",
       "Terse notes",
+      "Terse notes (Cyrillic)",
     ]);
   });
 

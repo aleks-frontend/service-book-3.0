@@ -95,7 +95,7 @@ The final customer-facing text describing what was done on a service.
 _Avoid_: Remark, note, summary, description
 
 **AI polish**:
-Tidying a draft text with an AI model, keeping its language, script and facts (Serbian: doterivanje). A customer report is rewritten for grammar and a professional tone, and terse notes may become sentences. A service description gets a light polish: only spelling, grammar, punctuation and diacritics are fixed, keeping the staff member's wording and length.
+Tidying a draft text with an AI model, keeping its language, script and facts (Serbian: doterivanje). A customer report is rewritten for grammar and a professional tone, and terse notes may become sentences. A service description gets a lighter polish: spelling, grammar, diacritics and punctuation are fixed and curse words or rude phrasing removed, but it stays the staff member's short note.
 _Avoid_: Rewrite, improve, AI fix, enhance
 
 ### Documents & identity

@@ -5,6 +5,7 @@
  * script and facts. Never run in CI, as it calls the paid provider.
  */
 import {
+  scriptOf,
   TextPolishError,
   textPolisherFromEnv,
   type TextKind,
@@ -21,7 +22,7 @@ const KIND_TITLES: Record<TextKind, string> = {
 
 /**
  * One draft per kind of report and of description staff members write, each with
- * the slips AI polish should fix. Descriptions should come back as worded, only corrected.
+ * the slips AI polish should fix. Descriptions should come back short, punctuated and clean.
  */
 export const POLISH_EVAL_SAMPLES: readonly PolishEvalSample[] = [
   {
@@ -72,9 +73,16 @@ export const POLISH_EVAL_SAMPLES: readonly PolishEvalSample[] = [
   },
   {
     kind: "service_description",
+    label: "Swearing",
+    text: "jebeni telefon opet nece da se upali,mušterija besna kaže da je ovo sranje od punjača",
+  },
+  {
+    kind: "service_description",
     label: "Terse notes",
     text: "ekran razbijen, ne puni, kuciste ostceno",
   },
+  // Short Cyrillic notes were once answered in Latin.
+  { kind: "service_description", label: "Terse notes (Cyrillic)", text: "екран разбијен,не пуни" },
 ];
 
 /**
@@ -89,16 +97,6 @@ export function polishEvalPolisher(env: NodeJS.ProcessEnv): TextPolisher {
     );
   }
   return polisher;
-}
-
-export type Script = "Latin" | "Cyrillic" | "none";
-
-/** The script most of a text's letters are in. */
-export function scriptOf(text: string): Script {
-  const cyrillic = text.match(/\p{Script=Cyrillic}/gu)?.length ?? 0;
-  const latin = text.match(/\p{Script=Latin}/gu)?.length ?? 0;
-  if (cyrillic === 0 && latin === 0) return "none";
-  return cyrillic > latin ? "Cyrillic" : "Latin";
 }
 
 export type PolishEvalResult = {

@@ -32,24 +32,48 @@ const CUSTOMER_REPORT_PROMPT = `You polish the customer report of a repair shop:
 - Return only the polished text, with no quotes, preamble or explanation.`;
 
 /**
- * A light polish: the description is printed on the intake receipt as the staff
- * member wrote it, so only slips are fixed, never the wording or the length.
+ * The description is printed on the intake receipt, so it is made to read
+ * professionally (punctuation, no swearing), but stays the staff member's short note.
  */
-const SERVICE_DESCRIPTION_PROMPT = `You correct the service description of a repair shop: the fault as the customer described it, typed by a staff member at the counter. It is printed on the intake receipt.
+const SERVICE_DESCRIPTION_PROMPT = `You polish the service description of a repair shop: the fault as the customer described it, typed quickly by a staff member at the counter. It is printed on the intake receipt the customer takes home, so it must read clean and professional.
 
-- Fix only spelling, grammar, punctuation and diacritics (e.g. "ociscen" becomes "očišćen").
-- Do not rephrase. Keep the staff member's words, word order and tone.
-- Do not turn terse notes into sentences: "ekran razbijen, ne puni" stays a note.
-- Reply in the same language and the same script as the input. Never translate. Serbian in Latin stays Latin, Serbian in Cyrillic stays Cyrillic. If the input mixes languages, keep the dominant one.
-- Do not add facts: no parts, prices, causes, warranties or promises that are not in the input.
-- Keep it as long as the original.
-- Return only the corrected text, with no quotes, preamble or explanation.`;
+- Reply in the same language and the same script as the input. Never translate or transliterate: Serbian in Cyrillic stays in Cyrillic letters (e.g. "звучник крчи" becomes "Звучник крчи."), however short the text, and Serbian in Latin stays in Latin. The examples below are in Latin only for illustration; never copy their wording. If the input mixes languages, keep the dominant one.
+- Fix spelling, grammar and diacritics (e.g. "ociscen" becomes "očišćen").
+- Use proper punctuation: a capital letter at the start of each sentence or note, a space after every comma, and a full stop at the end.
+- Remove curse words, insults and slang, and replace emotional or rude phrasing with a neutral, professional equivalent (e.g. "jebeni telefon ne radi" becomes "Telefon ne radi."). Never keep or soften a curse word.
+- Otherwise keep the staff member's words and order. Rephrase only what reads unprofessional.
+- Keep it short: terse notes stay concise notes ("kamera mutna, slaba baterija" becomes "Kamera mutna, slaba baterija."), never a long explanation.
+- Do not add facts: no parts, prices, causes, diagnoses, warranties or promises that are not in the input.
+- Keep it about as long as the original, or shorter where something rude was removed.
+- Return only the polished text, with no quotes, preamble or explanation.`;
 
 /** What each kind of text tells the model, and how long its polished text may be. */
 const TEXT_KINDS: Record<TextKind, { systemPrompt: string; maxLength: number }> = {
   customer_report: { systemPrompt: CUSTOMER_REPORT_PROMPT, maxLength: CUSTOMER_REPORT_MAX },
   service_description: { systemPrompt: SERVICE_DESCRIPTION_PROMPT, maxLength: AI_POLISH_MAX },
 };
+
+export type Script = "Latin" | "Cyrillic" | "none";
+
+/** The script most of a text's letters are in. */
+export function scriptOf(text: string): Script {
+  const cyrillic = text.match(/\p{Script=Cyrillic}/gu)?.length ?? 0;
+  const latin = text.match(/\p{Script=Latin}/gu)?.length ?? 0;
+  if (cyrillic === 0 && latin === 0) return "none";
+  return cyrillic > latin ? "Cyrillic" : "Latin";
+}
+
+/**
+ * What `kind` tells the model about `text`. A Cyrillic text says so outright, since a
+ * model may answer a short Cyrillic note in Latin. A Latin one doesn't: "Latin" could
+ * read as Serbian Latin and pull an English text into Serbian.
+ */
+function systemPrompt(text: string, kind: TextKind) {
+  const { systemPrompt } = TEXT_KINDS[kind];
+  return scriptOf(text) === "Cyrillic"
+    ? `${systemPrompt}\n\nThe input is written in Cyrillic letters; reply in Cyrillic letters.`
+    : systemPrompt;
+}
 
 /** Why a polish failed (`AiPolishErrorCode`, but for `not_configured`, which never gets this far). */
 export type TextPolishFailure = Exclude<AiPolishErrorCode, "not_configured">;
@@ -162,7 +186,7 @@ export function createTextPolisher({
   async function generate(text: string, kind: TextKind, abortSignal: AbortSignal) {
     const result = await generateText({
       model,
-      system: TEXT_KINDS[kind].systemPrompt,
+      system: systemPrompt(text, kind),
       prompt: text,
       temperature: 0.2,
       // The one retry is ours, so it shares the timeout and skips the SDK's longer backoff.
